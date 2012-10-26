@@ -187,11 +187,6 @@ class SOM:
   self.learning = ( self.alpha_begin[trainingPhase] - self.alpha_end[trainingPhase] ) * math.exp( -t/timeCte ) + self.alpha_end[trainingPhase]
   return self.learning
   
-# def BMUneighbourhood(self, t, i, j, BMUindices, trainingPhase, Map):
-#  dist = ( (i - BMUindices[0])**2 + (j - BMUindices[1])**2 ) ** 0.5
-#  self.neighbourhood = math.exp( - dist**2 / ( 2*(self.radiusFunction(t, trainingPhase)**2) ) )
-#  return self.neighbourhood
-
  def rho(self, k,  BMUindices, Map):
   i,j = BMUindices
   rhoValue = max(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]), self.rhoValue)
