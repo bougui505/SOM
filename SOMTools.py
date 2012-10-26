@@ -116,7 +116,7 @@ def findMinRegionAll(matrix, scale = 1):
 # mins = numpy.min(matrix, axis=0)
 # ptps = numpy.ptp(matrix, axis = 0)/20
 # return matrix < mins + ptps
- return matrix < scale*(numpy.mean(matrix, axis=0) - numpy.std(matrix, axis=0))
+ return matrix < numpy.mean(matrix, axis=0) - scale*numpy.std(matrix, axis=0)
 
 def findMinAll(matrix):
  mins = numpy.min(matrix, axis=0)
