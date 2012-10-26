@@ -16,15 +16,6 @@ import scipy.spatial
 import tarfile
 import os
 
-# Import Psyco if available
-#try:
-# import psyco
-# psyco.full()
-#except ImportError:
-# print 'psyco not available'
-# pass
-
-
 class SOM:
  """
  Main class.
