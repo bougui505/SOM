@@ -16,7 +16,7 @@ import scipy.spatial
 import tarfile
 import os
 
-class SOM:
+class SOM3D:
  """
  Main class.
   Attributes:
@@ -25,9 +25,10 @@ class SOM:
    inputnames       : list of integers, vector names
    X                : integer, width of Kohonen map
    Y                : integer, height of Kohonen map
+   Z                : integer, depth of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, getRhoMatrix = False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
@@ -47,6 +48,8 @@ class SOM:
      self.X = int(line.split('=')[1]) # Number of neurons in X dimension
     if re.findall(r'Y\s*=', line):
      self.Y = int(line.split('=')[1]) # Number of neurons in Y dimension
+    if re.findall(r'Z\s*=', line):
+     self.Z = int(line.split('=')[1]) # Number of neurons in Z dimension
     if re.findall(r'number_of_phase\s*=', line):
      self.number_of_phase = int(line.split('=')[1]) # Number of training phase
   i = 1
@@ -83,7 +86,7 @@ class SOM:
    if mapFileName == None:
     maxinpvalue = self.inputvectors.max()
     mininpvalue = self.inputvectors.min()
-    somShape = [self.X, self.Y]
+    somShape = [self.X, self.Y, self.Z]
     vShape = numpy.array(self.inputvectors[0]).shape
     for e in vShape:
      somShape.append(e)
@@ -92,13 +95,26 @@ class SOM:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
+ # don't know what this is
+ #if len(self.M.shape) == 4:
+ # if self.M.shape[3] == 3:
+ #  self.threeDspace = True # compute euclidean distance in 3D space o find BMUs and autoParam
+ #else:
+ # self.threeDspace = False
+  self.threeDspace = False
+  self.getRhoMatrix=getRhoMatrix
   if autoParam:
    self.epsilonFile = open('epsilon.dat', 'w')
-   i,j = self.findBMU(0,self.M)
-#   radius = numpy.sqrt(self.X**2+self.Y**2)/2
-#   for i in range(len(self.radius_begin)):
-#    self.radius_begin[i] = radius
-#   print 'automatic Radius: %s' % self.radius_begin
+   i,j,k = self.findBMU(0,self.M)
+   if self.getRhoMatrix:
+    self.rhoMatrix = numpy.zeros((self.X,self.Y,self.Z))
+   else:
+    self.rhoValue = scipy.spatial.distance.euclidean(self.inputvectors[0], self.M[i,j,k])
+
+ def threeDspaceDistance(self, m,somMap):
+  sum1axis = len(somMap.shape) - 1
+  sum2axis = sum1axis - 1
+  return numpy.sqrt(((m - somMap)**2).sum(axis=sum1axis)).sum(axis=sum2axis)
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -107,6 +123,7 @@ class SOM:
   shape = numpy.shape(self.Map)
   self.X = shape[0]
   self.Y = shape[1]
+  self.Z = shape[2]
   return self.Map
   
  def makeSubInputvectors(self, n, jobIndex=''):
@@ -114,9 +131,9 @@ class SOM:
   Make a self.inputvectors variable with all known ligands and a random set of n unknown ligands
   """
   if jobIndex == '':
-   rocsom = ROCSOM.ROCSOM(MapFile = 'map_%sx%s.dat' % (self.X,self.Y))
+   rocsom = ROCSOM.ROCSOM(MapFile = 'map_%sx%sx%s.dat' % (self.X,self.Y,self.Z))
   else:
-   rocsom = ROCSOM.ROCSOM(MapFile = 'map_%sx%s_%s.dat' % (self.X,self.Y,jobIndex))
+   rocsom = ROCSOM.ROCSOM(MapFile = 'map_%sx%sx%s_%s.dat' % (self.X,self.Y,self.Z,jobIndex))
   KL = rocsom.KL
   UL = rocsom.UL
   rmL = random.sample(UL, len(UL)-n) # list of randomly chosen ligands to remove
@@ -160,12 +177,15 @@ class SOM:
   """
    Find the Best Matching Unit for the input vector number k
   """
-  return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric).argmin(), (self.X,self.Y))
+  if not self.threeDspace:
+   return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y*self.Z,self.cardinal)), self.metric).argmin(), (self.X,self.Y,self.Z))
+  else:
+   return numpy.unravel_index(self.threeDspaceDistance(self.inputvectors[k], Map).argmin(), (self.X,self.Y,self.Z))
   
  def defaultDist(self, vector, Map, distKW):
-  X,Y,cardinal=distKW['X'],distKW['Y'],distKW['cardinal']
-  V=numpy.ones((X,Y,cardinal))*vector
-  return numpy.sum( (V - Map) * ( (V - Map)* (numpy.ones([X,Y,cardinal])*numpy.ones([1,cardinal])) ) , axis=2 )**0.5
+  X,Y,Z,cardinal=distKW['X'],distKW['Y'],distKW['Z'],distKW['cardinal']
+  V=numpy.ones((X,Y,Z,cardinal))*vector
+  return numpy.sum( (V - Map) * ( (V - Map)* (numpy.ones([X,Y,Z,cardinal])*numpy.ones([1,cardinal])) ) , axis=3 )**0.5
   
  def radiusFunction(self, t, trainingPhase=0):
   timeCte = float(self.iterations[trainingPhase])/10
@@ -178,41 +198,64 @@ class SOM:
   return self.learning
   
  def rho(self, k,  BMUindices, Map):
-  i,j = BMUindices
-  rhoValue = max(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]), self.rhoValue)
-  self.rhoValue = rhoValue
+  i,j,z = BMUindices
+  if not self.threeDspace:
+   dist=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z])
+   if self.getRhoMatrix:
+    print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
+    rhoValue = max(dist, self.rhoMatrix[i,j,z])
+    self.rhoMatrix[i,j,z]=rhoValue
+   else:
+    print "%.4f %.4f"%(dist,self.rhoValue),
+    rhoValue = max(dist, self.rhoValue)
+    self.rhoValue = rhoValue
   return rhoValue
 
  def epsilon(self, k, BMUindices, Map):
-  i,j = BMUindices
-  return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
+  i,j,z = BMUindices
+  if not self.threeDspace:
+   eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
+   print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
+   return eps
+  else:
+   return self.threeDspaceDistance(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map)
 
 
  def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
-  i,j = BMUindices
+  i,j,z = BMUindices
   i2 = i + self.X
   j2 = j + self.Y
-  X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+  z2 = z + self.Z
+  X,Y,Z=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1,-z2:3*self.Z-z2:1]
   if not self.autoParam:
-   adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
+   adjMap = numpy.exp( -(X**2+Y**2+Z**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
-   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.*self.radiusFunction(t, trainingPhase)*self.epsilon(k,BMUindices,Map) )**2 )
-  adjMapR = numpy.zeros((self.X,self.Y,9))
+   adjMap = numpy.exp(-(X**2+Y**2+Z**2)/ ( 2.*self.radiusFunction(t, trainingPhase)*self.epsilon(k,BMUindices,Map) )**2 )
+  adjMapR = numpy.zeros((self.X,self.Y,self.Z,27))
   c = itertools.count()
   for i in range(3):
    for j in range(3):
-    adjMapR[:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y]
-  return numpy.max(adjMapR, axis=2)
+    for z in range(3):
+     adjMapR[:,:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y,z*self.Z:(z+1)*self.Z]
+  return numpy.max(adjMapR, axis=3)
 
  def adjustment(self, k, t, trainingPhase, Map, BMUindices):
   self.adjustMap = numpy.zeros(Map.shape)
   if not self.autoParam:
    learning = self.learningRate(t, trainingPhase)
-   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
+   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
    learning = self.epsilon(k, BMUindices, Map)
    self.epsilonFile.write('%s %s\n'%(t, learning))
-   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
+   if not self.threeDspace:
+    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
+   else:
+    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1, 1)) * learning * (self.inputvectors[k] - Map)
+#  for i in range(self.X):
+#   for j in range(self.Y):
+#    W = Map[i,j]
+#    neighbourhood = self.BMUneighbourhood(t, i, j, BMUindices, trainingPhase, Map)
+#    self.adjustMap[i,j] = neighbourhood * learning * (self.inputvectors[k] - W)
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
@@ -250,9 +293,9 @@ class SOM:
    pbar.finish()
   self.Map = Map
   if jobIndex == '':
-   MapFile = open('map_%sx%s.dat' % (self.X,self.Y), 'w')
+   MapFile = open('map_%sx%sx%s.dat' % (self.X,self.Y,self.Z), 'w')
   else:
-   MapFile = open('map_%sx%s_%s.dat' % (self.X,self.Y,jobIndex), 'w')
+   MapFile = open('map_%sx%sx%s_%s.dat' % (self.X,self.Y,self.Z,jobIndex), 'w')
   pickle.dump(Map, MapFile) # Write Map into file map.dat
   MapFile.close()
   if self.autoParam:
@@ -260,9 +303,10 @@ class SOM:
   return self.Map
   
  def distmapPlot(self,k,Map):
-  V=numpy.ones((self.X,self.Y,self.cardinal))*self.inputvectors[k]
-  distmat = numpy.sum( (V - Map) * ( (V-Map)* (numpy.ones([self.X,self.Y,self.cardinal])*numpy.ones([1,self.cardinal])) ) , axis=2 )**0.5
-  matplotlib.pyplot.imshow(numpy.ones((self.X,self.Y))-distmat/distmat.max(), interpolation='nearest') # Normalized Map for color plot
+  # TODO: make this a .map generator for use with vmd (3D) - shouldn't be functional right now
+  V=numpy.ones((self.X,self.Y,self.Z,self.cardinal))*self.inputvectors[k]
+  distmat = numpy.sum( (V - Map) * ( (V-Map)* (numpy.ones([self.X,self.Y,self.Z,self.cardinal])*numpy.ones([1,self.cardinal])) ) , axis=3 )**0.5
+  matplotlib.pyplot.imshow(numpy.ones((self.X,self.Y,self.Z))-distmat/distmat.max(), interpolation='nearest') # Normalized Map for color plot
   matplotlib.pyplot.show()
   
  def mapPlot(self,Map):
@@ -270,17 +314,19 @@ class SOM:
   matplotlib.pyplot.show()
 
  def borderline(self,Map):
-  borderMat = numpy.zeros((self.X*2,self.Y*2))
-  initMat = numpy.repeat(numpy.repeat(Map,2,axis=0),2,axis=1)
+  # useless (dixit guillaume)
+  borderMat = numpy.zeros((self.X*2,self.Y*2,self.Z*2))
+  initMat = numpy.repeat(numpy.repeat(numpy.repeat(Map,2,axis=0),2,axis=1),2,axis=2)
   for i in range(0,self.X*2,2):
    for j in range(0,self.Y*2,2):
-    if j > 1:
-     if self.distFunc is None:
-      borderMat[i,j] = ( numpy.dot( initMat[i,j]-initMat[i,j-1], numpy.transpose( initMat[i,j]-initMat[i,j-1] ) ) )**0.5
+    for k in range(0,self.Z*2,2):
+     if j > 1:
+      if self.distFunc is None:
+       borderMat[i,j] = ( numpy.dot( initMat[i,j]-initMat[i,j-1], numpy.transpose( initMat[i,j]-initMat[i,j-1] ) ) )**0.5
+      else:
+       borderMat[i,j] = self.distFunc(initMat[i,j], initMat[i,j-1])
      else:
-      borderMat[i,j] = self.distFunc(initMat[i,j], initMat[i,j-1])
-    else:
-     borderMat[i,j] = 0
+      borderMat[i,j] = 0
   for i in range(0,self.X*2,2):
    for j in range(1,self.Y*2,2):
     if i > 1:
@@ -315,6 +361,7 @@ class SOM:
   return self.borderMat
 
  def clusterDiscovery(self,Map,T):
+  # useless (dixit guillaume)
   borderMat = self.borderline(Map)
   Nv = [[i,j] for i in range(self.X) for j in range(self.Y)]
   random.shuffle(Nv)
@@ -339,6 +386,7 @@ class SOM:
   return self.clustersMap
    
  def cluster(self,borderMat,Nv,N,T,C,A):
+  # useless (dixit guillaume)
   C.append(N) # assign N to C
   #print 'Nv%s'%Nv
   Nv.remove(N) # mark N as visited
@@ -366,6 +414,7 @@ class SOM:
   return A, C, Nv
 
  def clusterLooseness(self, clustersMap, Map):
+  # useless (dixit guillaume)
   """
   return an self.X * self.Y matrix with cluster containing cluster looseness values
   """
@@ -391,6 +440,7 @@ class SOM:
   return self.clusterLoosenessMat
   
  def clusterDistance(self, clustersMap, Map):
+  # useless (dixit guillaume)
   m = int(clustersMap.max()) # Total number of clusters
   #print m
   clusterDistanceMat = numpy.zeros((m,m))
@@ -419,6 +469,7 @@ class SOM:
   return self.clusterDistanceMat
     
  def calibration(self, Map, clustersMap, BMUs = None, name = False):
+  # useless (dixit guillaume)
   dataClusters = {}
   if name:
    nameClusters = {}
@@ -449,6 +500,7 @@ class SOM:
    return self.dataClusters
     
  def dataLooseness(self, dataClusters, clustersMap, q=None):
+  # useless (dixit guillaume)
   #m = len(dataClusters.keys())
   CIds = dataClusters.keys()
   dataLoosenessMat = numpy.ones((self.X,self.Y))*(-1)
@@ -486,6 +538,7 @@ class SOM:
    q.put(self.dataLoosenessMat)
   
  def dataDistance(self, dataClusters, q=None):
+  # useless (dixit guillaume)
   CIds = dataClusters.keys()
   dataDistanceMat = numpy.zeros((len(CIds),len(CIds)))
   i = 0
@@ -527,6 +580,7 @@ class SOM:
    q.put(self.dataDistanceMat)
   
  def xi(self, dataLoosenessMat, dataDistanceMat):
+  # useless (dixit guillaume)
   m = numpy.shape(dataDistanceMat)[0]
   if m == 1:
    return None
@@ -537,6 +591,7 @@ class SOM:
    return self.xi_value
    
  def xiT(self, Map):
+  # useless (dixit guillaume)
   """
   Find the best clustering.
   """
@@ -597,6 +652,7 @@ class SOM:
   return self.T_best
     
  def tree(self, Map, jobIndex=''):
+  # useless (dixit guillaume)
   print 'Building tree from Kohonen map'
   ### finding BMUs for Map
   BMUs = []
