@@ -38,7 +38,7 @@ def restraintsPotential(matrix, r0, r1, r2, k=1):
 
 def energyMaps(som, energyFileName, frameMasks):
  energies = numpy.genfromtxt(energyFileName)[:frameMasks.shape[1]]
- energyMatrix = numpy.reshape((frameMasks * energies), (som.X,som.Y,frameMasks.shape[1]))
+ energyMatrix = numpy.reshape((frameMasks * energies), (som.X,som.Y,som.Z,frameMasks.shape[1]))
  return numpy.ma.masked_array(energyMatrix, energyMatrix == 0)
 
 def plotMat(matrix, outFileName, colorbar=True, cbarTicks = None, cmap = None, contour=False, clabel = True, texts=None, interpolation=None, vmin = None, vmax = None):
@@ -116,7 +116,7 @@ def findMinRegionAll(matrix, scale = 1):
 # mins = numpy.min(matrix, axis=0)
 # ptps = numpy.ptp(matrix, axis = 0)/20
 # return matrix < mins + ptps
- return matrix < numpy.mean(matrix, axis=0) - scale*numpy.std(matrix, axis=0)
+ return matrix < scale*(numpy.mean(matrix, axis=0) - numpy.std(matrix, axis=0))
 
 def findMinAll(matrix):
  mins = numpy.min(matrix, axis=0)
@@ -283,26 +283,28 @@ def minPath(matrix, gradThreshold):
 def getEMmapCorrelationMatrix(correlations, allMins, som):
  correlationsMatrix = allMins * correlations
  correlationsMatrix = numpy.ma.masked_array(correlationsMatrix, correlationsMatrix == 0.)
- meanCorrelationMatrix = numpy.reshape(correlationsMatrix.mean(axis=1),(som.X, som.Y))
+ meanCorrelationMatrix = numpy.reshape(correlationsMatrix.mean(axis=1),(som.X, som.Y, som.Z))
  return meanCorrelationMatrix
 
-def getUmatrix(map):
- X,Y,cardinal = map.shape
- distanceMatrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(map.reshape(X*Y,cardinal)))
- uMatrix = numpy.zeros((X,Y))
+def getUmatrix(Map):
+ X,Y,Z,cardinal = Map.shape
+ distanceMatrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(Map.reshape(X*Y*Z,cardinal)))
+ uMatrix = numpy.zeros((X,Y,Z))
  for i in range(X):
   for j in range(Y):
-   iRef = numpy.ravel_multi_index((i%X,j%Y),(X,Y))
-   jRef1 = numpy.ravel_multi_index(((i-1)%X,(j-1)%Y),(X,Y))
-   jRef2 = numpy.ravel_multi_index(((i-1)%X,(j)%Y),(X,Y))
-   jRef3 = numpy.ravel_multi_index(((i-1)%X,(j+1)%Y),(X,Y))
-   jRef4 = numpy.ravel_multi_index(((i)%X,(j-1)%Y),(X,Y))
-   jRef5 = numpy.ravel_multi_index(((i)%X,(j+1)%Y),(X,Y))
-   jRef6 = numpy.ravel_multi_index(((i+1)%X,(j-1)%Y),(X,Y))
-   jRef7 = numpy.ravel_multi_index(((i+1)%X,(j)%Y),(X,Y))
-   jRef8 = numpy.ravel_multi_index(((i+1)%X,(j+1)%Y),(X,Y))
-   mean = numpy.mean([distanceMatrix[iRef,jRef1], distanceMatrix[iRef,jRef2], distanceMatrix[iRef,jRef3], distanceMatrix[iRef,jRef4], distanceMatrix[iRef,jRef5], distanceMatrix[iRef,jRef6], distanceMatrix[iRef,jRef7], distanceMatrix[iRef,jRef8]])
-   uMatrix[i,j] = mean
+   for k in range(Z):
+    iRef = numpy.ravel_multi_index((i%X,j%Y,k%Z),(X,Y,Z))
+    iS=[(i-1)%X,i%X,(i+1)%X]
+    jS=[(j-1)%Y,j%Y,(j+1)%Y]
+    kS=[(k-1)%Z,k%Z,(k+1)%Z]
+    neighbors=[]
+    for a in range(3):
+     for b in range(3):
+      for c in range(3):
+       if not (a==b==c==1): neighbors.append((iS[a],jS[b],kS[c]))
+    jRefs = [ numpy.ravel_multi_index(tup,(X,Y,Z)) for tup in neighbors ]
+    mean=numpy.mean([ distanceMatrix[iRef,jRefs[idx]] for idx in range(26)  ])
+    uMatrix[i,j,k] = mean
  return uMatrix
 
 def sliceMatrix(matrix, nslice = 100):
@@ -375,11 +377,17 @@ def condenseMatrix(matrix):
 
 def continuousMap(clusters):
  for i in range(clusters.shape[0]):
-  if clusters[i,0] != 0 and clusters[i,-1] != 0:
-   clusters[clusters == clusters[i,-1]] = clusters[i,0]
+  for j in range(clusters.shape[1]):
+   if clusters[i,j,0] != 0 and clusters[i,j,-1] != 0:
+    clusters[clusters == clusters[i,j,-1]] = clusters[i,j,0]
  for j in range(clusters.shape[1]):
-  if clusters[0,j] != 0 and clusters[-1,j] != 0:
-   clusters[clusters == clusters[-1,j]] = clusters[0,j]
+  for k in range(clusters.shape[2]):
+   if clusters[0,j,k] != 0 and clusters[-1,j,k] != 0:
+    clusters[clusters == clusters[-1,j,k]] = clusters[0,j,k]
+ for i in range(clusters.shape[0]):
+  for k in range(clusters.shape[2]):
+   if clusters[i,0,k] != 0 and clusters[i,-1,k] != 0:
+    clusters[clusters == clusters[i,-1,k]] = clusters[i,0,k]
  return clusters
 
 def uDensity(bmuDensity,uMatrix,nslice = 100,clip=True):
@@ -405,7 +413,7 @@ def densityProb(som, allMaps, t = None):
  c = 0
  for dMap in allMaps.T:
   bmuRavel = numpy.where(dMap==dMap.min())
-  bmu = numpy.unravel_index(bmuRavel, (som.X,som.Y))
+  bmu = numpy.unravel_index(bmuRavel, (som.X,som.Y,som.Z))
   pMap = som.BMUneighbourhood(t,bmu,1).flatten()*(dMap**2)
   beta = 1/((dMap**2).max())
   p = -(beta*pMap).sum()
