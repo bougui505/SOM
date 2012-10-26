@@ -95,13 +95,6 @@ class SOM3D:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
- # don't know what this is
- #if len(self.M.shape) == 4:
- # if self.M.shape[3] == 3:
- #  self.threeDspace = True # compute euclidean distance in 3D space o find BMUs and autoParam
- #else:
- # self.threeDspace = False
-  self.threeDspace = False
   self.getRhoMatrix=getRhoMatrix
   if autoParam:
    self.epsilonFile = open('epsilon.dat', 'w')
@@ -114,11 +107,6 @@ class SOM3D:
    for i in range(len(self.radius_begin)):
     self.radius_begin[i] = radius
    print 'automatic Radius: %s' % self.radius_begin
-
- def threeDspaceDistance(self, m,somMap):
-  sum1axis = len(somMap.shape) - 1
-  sum2axis = sum1axis - 1
-  return numpy.sqrt(((m - somMap)**2).sum(axis=sum1axis)).sum(axis=sum2axis)
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -181,10 +169,7 @@ class SOM3D:
   """
    Find the Best Matching Unit for the input vector number k
   """
-  if not self.threeDspace:
-   return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y*self.Z,self.cardinal)), self.metric).argmin(), (self.X,self.Y,self.Z))
-  else:
-   return numpy.unravel_index(self.threeDspaceDistance(self.inputvectors[k], Map).argmin(), (self.X,self.Y,self.Z))
+  return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y*self.Z,self.cardinal)), self.metric).argmin(), (self.X,self.Y,self.Z))
   
  def defaultDist(self, vector, Map, distKW):
   X,Y,Z,cardinal=distKW['X'],distKW['Y'],distKW['Z'],distKW['cardinal']
@@ -203,26 +188,22 @@ class SOM3D:
   
  def rho(self, k,  BMUindices, Map):
   i,j,z = BMUindices
-  if not self.threeDspace:
-   dist=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z])
-   if self.getRhoMatrix:
-    print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
-    rhoValue = max(dist, self.rhoMatrix[i,j,z])
-    self.rhoMatrix[i,j,z]=rhoValue
-   else:
-    print "%.4f %.4f"%(dist,self.rhoValue),
-    rhoValue = max(dist, self.rhoValue)
-    self.rhoValue = rhoValue
+  dist=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z])
+  if self.getRhoMatrix:
+   print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
+   rhoValue = max(dist, self.rhoMatrix[i,j,z])
+   self.rhoMatrix[i,j,z]=rhoValue
+  else:
+   print "%.4f %.4f"%(dist,self.rhoValue),
+   rhoValue = max(dist, self.rhoValue)
+   self.rhoValue = rhoValue
   return rhoValue
 
  def epsilon(self, k, BMUindices, Map):
   i,j,z = BMUindices
-  if not self.threeDspace:
-   eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
-   print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
-   return eps
-  else:
-   return self.threeDspaceDistance(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map)
+  eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
+  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
+  return eps
 
 
  def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
@@ -251,15 +232,7 @@ class SOM3D:
   elif self.autoParam:
    learning = self.epsilon(k, BMUindices, Map)
    self.epsilonFile.write('%s %s\n'%(t, learning))
-   if not self.threeDspace:
-    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
-   else:
-    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1, 1)) * learning * (self.inputvectors[k] - Map)
-#  for i in range(self.X):
-#   for j in range(self.Y):
-#    W = Map[i,j]
-#    neighbourhood = self.BMUneighbourhood(t, i, j, BMUindices, trainingPhase, Map)
-#    self.adjustMap[i,j] = neighbourhood * learning * (self.inputvectors[k] - W)
+   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
