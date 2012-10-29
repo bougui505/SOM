@@ -40,14 +40,14 @@ else:
 
 #Learning #############################################################################################################
 if glob.glob(mapFileName) == []:
- som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam)
+ som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam)
  if parallelLearning:
   parallelSOM.learn(som)
  else:
   som.learn(nSnapshots = nSnapshots)
  os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 else:
- som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam)
+ som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam)
  if relearn:
   if parallelLearning:
    parallelSOM.learn(som)
@@ -56,7 +56,7 @@ else:
   os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 #######################################################################################################################
 
-som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
+som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
 bmuCoordinates = []
 bmuProb = []
 sys.stdout.write('Computing density\n')
