@@ -186,11 +186,11 @@ class SOM3D:
   i,j,z = BMUindices
   dist=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z])
   if self.getRhoMatrix:
-   print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
+#   print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
    rhoValue = max(dist, self.rhoMatrix[i,j,z])
    self.rhoMatrix[i,j,z]=rhoValue
   else:
-   print "%.4f %.4f"%(dist,self.rhoValue),
+#   print "%.4f %.4f"%(dist,self.rhoValue),
    rhoValue = max(dist, self.rhoValue)
    self.rhoValue = rhoValue
   return rhoValue
@@ -198,7 +198,7 @@ class SOM3D:
  def epsilon(self, k, BMUindices, Map):
   i,j,z = BMUindices
   eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
-  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
+#  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
   return eps
 
 
