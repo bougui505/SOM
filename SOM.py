@@ -28,7 +28,7 @@ class SOM3D:
    Z                : integer, depth of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, getRhoMatrix = False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
@@ -95,14 +95,10 @@ class SOM3D:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
-  self.getRhoMatrix=getRhoMatrix
   if autoParam:
    self.epsilonFile = open('epsilon.dat', 'w')
    i,j,k = self.findBMU(0,self.M)
-   if self.getRhoMatrix:
-    self.rhoMatrix = numpy.zeros((self.X,self.Y,self.Z))
-   else:
-    self.rhoValue = scipy.spatial.distance.euclidean(self.inputvectors[0], self.M[i,j,k])
+   self.rhoValue = 0
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -185,14 +181,8 @@ class SOM3D:
  def rho(self, k,  BMUindices, Map):
   i,j,z = BMUindices
   dist=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z])
-  if self.getRhoMatrix:
-#   print "%.4f %.4f"%(dist,self.rhoMatrix[i,j,z]),
-   rhoValue = max(dist, self.rhoMatrix[i,j,z])
-   self.rhoMatrix[i,j,z]=rhoValue
-  else:
-#   print "%.4f %.4f"%(dist,self.rhoValue),
-   rhoValue = max(dist, self.rhoValue)
-   self.rhoValue = rhoValue
+  rhoValue = max(dist, self.rhoValue)
+  self.rhoValue = rhoValue
   return rhoValue
 
  def epsilon(self, k, BMUindices, Map):
