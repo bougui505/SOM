@@ -95,11 +95,10 @@ class SOM:
   if autoParam:
    self.epsilonFile = open('epsilon.dat', 'w')
    i,j = self.findBMU(0,self.M)
-   self.rhoValue = scipy.spatial.distance.euclidean(self.inputvectors[0], self.M[i,j])
-   radius = numpy.sqrt(self.X**2+self.Y**2)/2
-   for i in range(len(self.radius_begin)):
-    self.radius_begin[i] = radius
-   print 'automatic Radius: %s' % self.radius_begin
+#   radius = numpy.sqrt(self.X**2+self.Y**2)/2
+#   for i in range(len(self.radius_begin)):
+#    self.radius_begin[i] = radius
+#   print 'automatic Radius: %s' % self.radius_begin
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -197,7 +196,7 @@ class SOM:
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
-   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.*self.radius_begin[trainingPhase]*self.epsilon(k,BMUindices,Map) )**2 )
+   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.*self.radiusFunction(t, trainingPhase)*self.epsilon(k,BMUindices,Map) )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,9))
   c = itertools.count()
   for i in range(3):
@@ -221,6 +220,8 @@ class SOM:
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
   for trainingPhase in range(self.number_of_phase):
+   if self.autoParam:
+    self.rhoValue = 0
    print '%s iterations'%self.iterations[trainingPhase]
    ## Progress bar
    tpn = trainingPhase + 1
