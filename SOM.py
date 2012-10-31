@@ -92,13 +92,6 @@ class SOM:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
-  if autoParam:
-   self.epsilonFile = open('epsilon.dat', 'w')
-   i,j = self.findBMU(0,self.M)
-#   radius = numpy.sqrt(self.X**2+self.Y**2)/2
-#   for i in range(len(self.radius_begin)):
-#    self.radius_begin[i] = radius
-#   print 'automatic Radius: %s' % self.radius_begin
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -196,7 +189,9 @@ class SOM:
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
-   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.*self.radiusFunction(t, trainingPhase)*self.epsilon(k,BMUindices,Map) )**2 )
+   radius = min(self.radiusFunction(t, trainingPhase), self.epsilon(k,BMUindices,Map) * self.radius_begin[trainingPhase])
+   self.radius_values.append(radius)
+   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,9))
   c = itertools.count()
   for i in range(3):
@@ -211,11 +206,12 @@ class SOM:
    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
    learning = self.epsilon(k, BMUindices, Map)
-   self.epsilonFile.write('%s %s\n'%(t, learning))
    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
+  if self.autoParam:
+   self.radius_values = []
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
@@ -256,7 +252,7 @@ class SOM:
   pickle.dump(Map, MapFile) # Write Map into file map.dat
   MapFile.close()
   if self.autoParam:
-   self.epsilonFile.close()
+   numpy.savetxt('radius_values.txt', self.radius_values, fmt='%10.5f')
   return self.Map
   
  def distmapPlot(self,k,Map):
