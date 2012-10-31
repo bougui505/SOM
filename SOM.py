@@ -27,7 +27,10 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, filter_outliers=True):
+  self.filter_outliers = filter_outliers
+  if self.filter_outliers:
+   self.n_outliers = 0
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
@@ -191,9 +194,19 @@ class SOM:
   elif self.autoParam:
    self.epsilon_value = self.epsilon(k,BMUindices,Map)
    radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
-   radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
+   radius_max = self.radiusFunction(t, trainingPhase)
+   radius = min(radius_max, radius_auto)
+   if self.filter_outliers:
+    if radius_auto > radius_max:
+     self.n_outliers += 1
+     print 'Warning: removing %d outlier(s)'%(self.n_outliers)
+     radius = 0.
+     self.epsilon_value = 0.
+   if radius != 0.:
+    adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
+   else:
+    adjMap = numpy.zeros((3*self.X,3*self.Y), dtype=float)
    self.epsilon_values.append(self.epsilon_value)
-   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,9))
   c = itertools.count()
   for i in range(3):
