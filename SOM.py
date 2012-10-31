@@ -189,7 +189,9 @@ class SOM:
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
-   radius = min(self.radiusFunction(t, trainingPhase), self.epsilon(k,BMUindices,Map) * self.radius_begin[trainingPhase])
+   self.epsilon_value = self.epsilon(k,BMUindices,Map)
+   radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
+   radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
    self.radius_values.append(radius)
    adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,9))
@@ -205,8 +207,9 @@ class SOM:
    learning = self.learningRate(t, trainingPhase)
    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
-   learning = self.epsilon(k, BMUindices, Map)
-   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
+   radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
+   learning = self.epsilon_value
+   self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
