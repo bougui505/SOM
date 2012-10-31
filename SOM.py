@@ -192,7 +192,7 @@ class SOM:
    self.epsilon_value = self.epsilon(k,BMUindices,Map)
    radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
    radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
-   self.radius_values.append(radius)
+   self.epsilon_values.append(self.epsilon_value)
    adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,9))
   c = itertools.count()
@@ -214,7 +214,7 @@ class SOM:
  
  def learn(self, jobIndex='', nSnapshots = 50):
   if self.autoParam:
-   self.radius_values = []
+   self.epsilon_values = []
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
@@ -255,7 +255,7 @@ class SOM:
   pickle.dump(Map, MapFile) # Write Map into file map.dat
   MapFile.close()
   if self.autoParam:
-   numpy.savetxt('radius_values.txt', self.radius_values, fmt='%10.5f')
+   numpy.savetxt('epsilon_values.txt', self.epsilon_values, fmt='%10.5f')
   return self.Map
   
  def distmapPlot(self,k,Map):
