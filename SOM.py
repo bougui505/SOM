@@ -27,8 +27,9 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, filter_outliers=True):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, filter_outliers=True, isSortVectors=True):
   self.filter_outliers = filter_outliers
+  self.isSortVectors = isSortVectors
   if self.filter_outliers:
    self.n_outliers = 0
   self.metric = metric
@@ -224,6 +225,12 @@ class SOM:
    learning = self.epsilon_value
    self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
+
+ def sortVectors(self, Map):
+  distMat = scipy.spatial.distance.cdist(self.inputvectors, Map.reshape(self.X*self.Y,self.cardinal)).min(axis=1)
+  sorted_index = distMat.argsort()
+  sortedVectors = self.inputvectors[sorted_index]
+  return sortedVectors, sorted_index
  
  def learn(self, jobIndex='', nSnapshots = 50):
   self.epsilon_values = []
@@ -233,6 +240,9 @@ class SOM:
   self.rhoValue = 0
   for trainingPhase in range(self.number_of_phase):
    print '%s iterations'%self.iterations[trainingPhase]
+   if self.isSortVectors:
+    sortedVectors, sorted_index = self.sortVectors(Map)
+    iterk = itertools.cycle(sorted_index)
    ## Progress bar
    tpn = trainingPhase + 1
    widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
@@ -241,13 +251,20 @@ class SOM:
    ###
    snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
-    try:
-     k = random.choice(kv)
-     kv.remove(k)
-    except IndexError:
-     kv = range(len(self.inputvectors))
-     k = random.choice(kv)
-     kv.remove(k)
+    if not self.isSortVectors or trainingPhase == 0:
+     if t==0:
+      print "Random choice for training phase %s"%trainingPhase
+     try:
+      k = random.choice(kv)
+      kv.remove(k)
+     except IndexError:
+      kv = range(len(self.inputvectors))
+      k = random.choice(kv)
+      kv.remove(k)
+    else:
+     if t == 0:
+      print "Sorted vectors for training phase %s"%trainingPhase
+     k = iterk.next()
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
     if t in snapshots:
      snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
