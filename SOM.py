@@ -95,6 +95,7 @@ class SOM3D:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
+  self.getRhoMatrix=getRhoMatrix
   if autoParam:
    self.epsilonFile = open('epsilon.dat', 'w')
    i,j,k = self.findBMU(0,self.M)
