@@ -189,24 +189,24 @@ class SOM:
   i2 = i + self.X
   j2 = j + self.Y
   X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+  self.epsilon_value = self.epsilon(k,BMUindices,Map)
+  radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
+  radius_max = self.radiusFunction(t, trainingPhase)
   if not self.autoParam:
-   adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
+   radius = radius_max
   elif self.autoParam:
-   self.epsilon_value = self.epsilon(k,BMUindices,Map)
-   radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
-   radius_max = self.radiusFunction(t, trainingPhase)
    radius = min(radius_max, radius_auto)
-   if self.filter_outliers:
-    if radius_auto > radius_max:
-     self.n_outliers += 1
-     print 'Warning: removing %d outlier(s)'%(self.n_outliers)
-     radius = 0.
-     self.epsilon_value = 0.
-   if radius != 0.:
-    adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
-   else:
-    adjMap = numpy.zeros((3*self.X,3*self.Y), dtype=float)
-   self.epsilon_values.append(self.epsilon_value)
+  if self.filter_outliers:
+   if radius_auto > radius_max:
+    self.n_outliers += 1
+    print 'Warning: removing %d/%d learning iterations'%(self.n_outliers, t)
+    radius = 0.
+    self.epsilon_value = 0.
+  if radius != 0.:
+   adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
+  else:
+   adjMap = numpy.zeros((3*self.X,3*self.Y), dtype=float)
+  self.epsilon_values.append(self.epsilon_value)
   adjMapR = numpy.zeros((self.X,self.Y,9))
   c = itertools.count()
   for i in range(3):
@@ -218,7 +218,7 @@ class SOM:
   self.adjustMap = numpy.zeros(Map.shape)
   if not self.autoParam:
    learning = self.learningRate(t, trainingPhase)
-   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
+   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
    radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
    learning = self.epsilon_value
@@ -226,14 +226,12 @@ class SOM:
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
-  if self.autoParam:
-   self.epsilon_values = []
+  self.epsilon_values = []
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
+  self.rhoValue = 0
   for trainingPhase in range(self.number_of_phase):
-   if self.autoParam:
-    self.rhoValue = 0
    print '%s iterations'%self.iterations[trainingPhase]
    ## Progress bar
    tpn = trainingPhase + 1
