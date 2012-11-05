@@ -58,34 +58,35 @@ else:
 
 som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
 bmuCoordinates = []
-bmuProb = []
+#bmuProb = []
 sys.stdout.write('Computing density\n')
 n = inputMatrix.shape[0]
 c = 0
 for l in inputMatrix:
  c = c + 1
- bmu, p = getBmuProb(som, l)
+# bmu, p = getBmuProb(som, l)
+ bmu = getBMU(som,l)
  bmuCoordinates.append(bmu)
- bmuProb.append(p)
- sys.stdout.write('%s/%s: %.4f'%(c,n,p))
+# bmuProb.append(p)
+ sys.stdout.write('%s/%s'%(c,n))
  sys.stdout.write('\r')
  sys.stdout.flush()
 sys.stdout.write('\ndone\n')
 bmuCoordinates = numpy.array(bmuCoordinates)
-bmuProb = numpy.array(bmuProb)
+#bmuProb = numpy.array(bmuProb)
 numpy.save('bmuCoordinates.npy', bmuCoordinates)
-numpy.save('bmuProb.npy', bmuProb)
+#numpy.save('bmuProb.npy', bmuProb)
 
 density = numpy.zeros((som.X,som.Y))
 densityProb = numpy.zeros((som.X,som.Y))
-iterbmuProb = itertools.chain(bmuProb)
+#iterbmuProb = itertools.chain(bmuProb)
 for l in bmuCoordinates:
  i,j = l
  density[i,j] = density[i,j] + 1
- densityProb[i,j] += numpy.log(iterbmuProb.next())
-densityProb = numpy.exp(densityProb / density)
+# densityProb[i,j] += numpy.log(iterbmuProb.next())
+#densityProb = numpy.exp(densityProb / density)
 numpy.save('density.npy', density)
-numpy.save('densityProb.npy', densityProb)
+#numpy.save('densityProb.npy', densityProb)
 
 
 ##########################################################################
