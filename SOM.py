@@ -95,11 +95,6 @@ class SOM3D:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
   self.distFunc = distFunc
-  self.getRhoMatrix=getRhoMatrix
-  if autoParam:
-   self.epsilonFile = open('epsilon.dat', 'w')
-   i,j,k = self.findBMU(0,self.M)
-   self.rhoValue = 0
 
  def loadMap(self, MapFile):
   MapFileFile = open(MapFile, 'r')
@@ -202,7 +197,11 @@ class SOM3D:
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2+Z**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
-   adjMap = numpy.exp(-(X**2+Y**2+Z**2)/ ( 2.*self.radiusFunction(t, trainingPhase)*self.epsilon(k,BMUindices,Map) )**2 )
+   self.epsilon_value = self.epsilon(k,BMUindices,Map)
+   radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
+   radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
+   self.epsilon_values.append(self.epsilon_value)
+   adjMap = numpy.exp(-(X**2+Y**2+Z**2)/ ( 2.* radius )**2 )
   adjMapR = numpy.zeros((self.X,self.Y,self.Z,27))
   c = itertools.count()
   for i in range(3):
@@ -217,12 +216,14 @@ class SOM3D:
    learning = self.learningRate(t, trainingPhase)
    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
-   learning = self.epsilon(k, BMUindices, Map)
-   self.epsilonFile.write('%s %s\n'%(t, learning))
-   self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k), (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
+   radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
+   learning = self.epsilon_value
+   self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, self.Z, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
  def learn(self, jobIndex='', nSnapshots = 50):
+  if self.autoParam:
+   self.epsilon_values = []
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
@@ -263,7 +264,7 @@ class SOM3D:
   pickle.dump(Map, MapFile) # Write Map into file map.dat
   MapFile.close()
   if self.autoParam:
-   self.epsilonFile.close()
+   numpy.savetxt('epsilon_values.txt', self.epsilon_values, fmt='%10.5f')
   return self.Map
   
  def distmapPlot(self,k,Map):
