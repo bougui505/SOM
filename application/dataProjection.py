@@ -24,6 +24,7 @@ try:
  vmax = float(vmax)
 except ValueError:
  vmax = None
+smap = numpy.load(smap)
 X,Y,Z,cardinal = smap.shape
 dataMap = numpy.zeros((X,Y,Z))
 data = numpy.genfromtxt(infile)
