@@ -11,12 +11,11 @@ Config = ConfigParser.ConfigParser()
 Config.read(configFileName)
 
 infile = Config.get('dataProjection', 'dataFile')
-outPDFFileName = Config.get('dataProjection', 'outPDFFileName')
+outFileName = Config.get('dataProjection', 'outFileName')
 bmuFileName = Config.get('dataProjection', 'bmuFileName')
 X = Config.getint('dataProjection', 'X')
 Y = Config.getint('dataProjection', 'Y')
-interpolation = Config.get('dataProjection', 'interpolation')
-contour = Config.getboolean('dataProjection', 'contour')
+Z = Config.getint('dataProjection', 'Z')
 vmin = Config.get('dataProjection', 'vmin')
 vmax = Config.get('dataProjection', 'vmax')
 try:
@@ -28,18 +27,17 @@ try:
 except ValueError:
  vmax = None
 
-dataMap = numpy.zeros((X,Y))
+dataMap = numpy.zeros((X,Y,Z))
 data = numpy.genfromtxt(infile)
 idata = itertools.chain(data)
 bmuCoordinates = numpy.load(bmuFileName)
 if data.shape[0] == bmuCoordinates.shape[0]:
- density = numpy.zeros((X,Y))
+ density = numpy.zeros((X,Y,Z))
  for bmu in bmuCoordinates:
-  i,j = bmu
-  dataMap[i,j] += idata.next()
-  density[i,j] += 1
+  i,j,k = bmu
+  dataMap[i,j,k] += idata.next()
+  density[i,j,k] += 1
  dataMap = dataMap / density
- pickle.dump(dataMap, open('%s.dat'%outPDFFileName.split('.')[0], 'w'))
- plotMat(dataMap, outPDFFileName, interpolation = interpolation, contour = contour, vmin = vmin, vmax = vmax)
+ pickle.dump(dataMap, open('%s.dat'%outFileName.split('.')[0], 'w'))
 else:
  print 'Shape mismatch between data (%s) and bmuCoordinates (%s)!'%(data.shape[0], bmuCoordinates.shape[0])
