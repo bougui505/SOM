@@ -8,7 +8,6 @@ import matplotlib.pyplot
 import random
 import progressbar
 import pickle
-import ROCSOM
 import sys
 from multiprocessing import Process, Queue
 import itertools
@@ -28,12 +27,13 @@ class SOM3D:
    Z                : integer, depth of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
   self.inputnames = inputnames
   self.autoParam = autoParam
+  self.sort2ndPhase = sort2ndPhase
   conffile = open(confname, 'r')
   lines = conffile.readlines()
   conffile.close()
@@ -227,6 +227,8 @@ class SOM3D:
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
+  firstpass=0
+  kdone=[]
   for trainingPhase in range(self.number_of_phase):
    if self.autoParam:
     self.rhoValue = 0
@@ -239,13 +241,24 @@ class SOM3D:
    ###
    snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
-    try:
-     k = random.choice(kv)
-     kv.remove(k)
-    except IndexError:
-     kv = range(len(self.inputvectors))
-     k = random.choice(kv)
-     kv.remove(k)
+    kv=[]
+    if self.sort2ndPhase and tpn > 1:
+     if len(kv) > 0:
+      k = kv.pop()
+     else:
+      kv = list(numpy.asarray(kdone)[numpy.argsort(self.epsilon_values)[::1 if self.autoParam else -1]])
+      k = kv.pop()
+    else:
+     try:
+      k = random.choice(kv)
+      kv.remove(k)
+      if firstpass==1: kdone.append(k)
+     except IndexError:
+      firstpass+=1
+      kv = range(len(self.inputvectors))
+      k = random.choice(kv)
+      kv.remove(k)
+      if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
     if t in snapshots:
      snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
