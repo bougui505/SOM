@@ -208,7 +208,7 @@ class SOM:
    self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   elif self.autoParam:
    radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
-   learning = self.epsilon_value
+   learning = min(self.epsilon_value, self.learningRate(t, trainingPhase))
    self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
