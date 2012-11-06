@@ -13,9 +13,7 @@ Config.read(configFileName)
 infile = Config.get('dataProjection', 'dataFile')
 outFileName = Config.get('dataProjection', 'outFileName')
 bmuFileName = Config.get('dataProjection', 'bmuFileName')
-X = Config.getint('dataProjection', 'X')
-Y = Config.getint('dataProjection', 'Y')
-Z = Config.getint('dataProjection', 'Z')
+smap = Config.get('dataProjection', 'map')
 vmin = Config.get('dataProjection', 'vmin')
 vmax = Config.get('dataProjection', 'vmax')
 try:
@@ -26,7 +24,7 @@ try:
  vmax = float(vmax)
 except ValueError:
  vmax = None
-
+X,Y,Z,cardinal = smap.shape
 dataMap = numpy.zeros((X,Y,Z))
 data = numpy.genfromtxt(infile)
 idata = itertools.chain(data)
@@ -39,5 +37,7 @@ if data.shape[0] == bmuCoordinates.shape[0]:
   density[i,j,k] += 1
  dataMap = dataMap / density
  pickle.dump(dataMap, open('%s.dat'%outFileName, 'w'))
+ flatten_map = numpy.concatenate((smap.reshape(X*Y*Z,cardinal), numpy.atleast_2d(charge_map.reshape(X*Y*Z)).T), axis=1)
+ numpy.savetxt('%s.txt'%outFileName, flatten_map)
 else:
  print 'Shape mismatch between data (%s) and bmuCoordinates (%s)!'%(data.shape[0], bmuCoordinates.shape[0])
