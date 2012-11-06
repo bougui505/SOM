@@ -38,6 +38,6 @@ if data.shape[0] == bmuCoordinates.shape[0]:
   dataMap[i,j,k] += idata.next()
   density[i,j,k] += 1
  dataMap = dataMap / density
- pickle.dump(dataMap, open('%s.dat'%outFileName.split('.')[0], 'w'))
+ pickle.dump(dataMap, open('%s.dat'%outFileName, 'w'))
 else:
  print 'Shape mismatch between data (%s) and bmuCoordinates (%s)!'%(data.shape[0], bmuCoordinates.shape[0])
