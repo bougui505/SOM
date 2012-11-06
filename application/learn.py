@@ -102,7 +102,3 @@ numpy.save('uMatrix.npy', uMatrix)
 # [outfile.write('%s\n'%(e+1)) for e in cluster] # start from 1
 # outfile.write('\n')
 # outfile.close()
-vmdMap(sliceMatrix(uMatrix), 'uMatrix.map')
-plotMat(uMatrix, 'uMatrix.pdf', contour=False)
-plotMat(density, 'density.pdf', interpolation='nearest')
-plotMat(densityProb, 'densityProb.pdf', interpolation='nearest')
