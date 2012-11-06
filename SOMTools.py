@@ -422,6 +422,10 @@ def densityProb(som, allMaps, t = None):
  densityProb = numpy.exp(densityProb.mean(axis=1).reshape(som.X,som.Y))
  return densityProb
 
+def getBMU(som, vector):
+ dMap = scipy.spatial.distance.cdist(som.Map.reshape(som.X*som.Y*som.Z,som.cardinal), numpy.atleast_2d(vector)).flatten()
+ bmuCoordinates = numpy.unravel_index(numpy.argmin(dMap), (som.X, som.Y, som.Z))
+ return bmuCoordinates
 def getBmuProb(som, vector):
  t = som.iterations[1]
  dMap = scipy.spatial.distance.cdist(som.Map.reshape(som.X*som.Y,som.cardinal), numpy.atleast_2d(vector)).flatten()
