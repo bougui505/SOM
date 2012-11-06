@@ -38,7 +38,7 @@ if data.shape[0] == bmuCoordinates.shape[0]:
   density[i,j,k] += 1
  dataMap = dataMap / density
  pickle.dump(dataMap, open('%s.dat'%outFileName, 'w'))
- flatten_map = numpy.concatenate((smap.reshape(X*Y*Z,cardinal), numpy.atleast_2d(charge_map.reshape(X*Y*Z)).T), axis=1)
+ flatten_map = numpy.concatenate((smap.reshape(X*Y*Z,cardinal), numpy.atleast_2d(dataMap.reshape(X*Y*Z)).T), axis=1)
  numpy.savetxt('%s.txt'%outFileName, flatten_map)
 else:
  print 'Shape mismatch between data (%s) and bmuCoordinates (%s)!'%(data.shape[0], bmuCoordinates.shape[0])
