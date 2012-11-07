@@ -26,13 +26,15 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
   self.inputnames = inputnames
   self.autoParam = autoParam
   self.sort2ndPhase = sort2ndPhase
+  self.toricMap = toricMap
+  self.randomInit = randomInit
   conffile = open(confname, 'r')
   lines = conffile.readlines()
   conffile.close()
@@ -81,13 +83,49 @@ class SOM:
   if randomUnit is None:
    # Matrix initialization
    if mapFileName == None:
-    maxinpvalue = self.inputvectors.max()
-    mininpvalue = self.inputvectors.min()
-    somShape = [self.X, self.Y]
-    vShape = numpy.array(self.inputvectors[0]).shape
-    for e in vShape:
-     somShape.append(e)
-    self.M = RandomArray.uniform(mininpvalue,maxinpvalue,somShape)
+    if randomInit:
+     maxinpvalue = self.inputvectors.max()
+     mininpvalue = self.inputvectors.min()
+     somShape = [self.X, self.Y]
+     vShape = numpy.array(self.inputvectors[0]).shape
+     for e in vShape:
+      somShape.append(e)
+     self.M = RandomArray.uniform(mininpvalue,maxinpvalue,somShape)
+    else:
+     inputarray=numpy.asarray(self.inputvectors)
+     inputmean=inputarray.mean(axis=0)
+     M=inputarray-inputmean
+     if numpy.argmin(M.shape) == 0:
+      # (min,max) * (max,min) -> (min,min)
+      # (0,1) * (1,0) -> (0,0)
+      mmt=True
+      covararray=numpy.dot(M,M.T)
+     else:
+      # (1,0) * (0,1) -> (1,1)
+      mmt=False
+      covararray=numpy.dot(M.T,M)
+     eival,eivec=numpy.linalg.eigh(covararray)
+     args=eival.argsort()[::-1]
+     eival=eival[args]
+     eivec=eivec[:,args]
+     sqev=numpy.sqrt(eival)[:3]
+     if autoSizeMap:
+      self.X,self.Y=map(lambda x: int(round(x)),sqev/((numpy.prod(sqev)/(self.X*self.Y))**(1./2))) # returns a size with axes size proportional to the eigenvalues and so that the total number of neurons is at least the number of neurons given in SOM.conf (X*Y)
+      print "Size of map will be %dx%d."%(self.X,self.Y)
+     # (1,0)*(0,0) if mmt else (0,1)*(1,1)
+     proj=numpy.dot(M.T,eivec) if mmt else numpy.dot(M,eivec)
+     Cmin=proj.min(axis=0)
+     Cmax=proj.max(axis=0)
+     Xmin,Ymin=Cmin[:2]
+     Xmax,Ymax=Cmax[:2]
+     origrid=numpy.mgrid[Xmin:Xmax:self.X*1j,Ymin:Ymax:self.Y*1j]
+     restn=inputarray.shape[1]-2
+     if restn > 0:
+      # now do the rest
+      restptp=Cmax[2:]-Cmin[2:]
+      rest=numpy.random.random((restn,self.X,self.Y))*restptp[:,numpy.newaxis,numpy.newaxis]+Cmin[2:,numpy.newaxis,numpy.newaxis]
+      origrid=numpy.r_[origrid,rest]
+     self.M=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
    else:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
@@ -183,9 +221,12 @@ class SOM:
 
  def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
   i,j = BMUindices
-  i2 = i + self.X
-  j2 = j + self.Y
-  X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+  if self.toricMap:
+   i2 = i + self.X
+   j2 = j + self.Y
+   X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+  else:
+   X,Y=numpy.mgrid[-i:self.X-i,-j:self.Y-j]
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
@@ -194,12 +235,15 @@ class SOM:
    radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
    self.epsilon_values.append(self.epsilon_value)
    adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
-  adjMapR = numpy.zeros((self.X,self.Y,9))
-  c = itertools.count()
-  for i in range(3):
-   for j in range(3):
-    adjMapR[:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y]
-  return numpy.max(adjMapR, axis=2)
+  if self.toricMap:
+   adjMapR = numpy.zeros((self.X,self.Y,9))
+   c = itertools.count()
+   for i in range(3):
+    for j in range(3):
+     adjMapR[:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y]
+   return numpy.max(adjMapR, axis=2)
+  else:
+   return adjMap
 
  def adjustment(self, k, t, trainingPhase, Map, BMUindices):
   self.adjustMap = numpy.zeros(Map.shape)
