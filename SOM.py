@@ -281,8 +281,10 @@ class SOM:
      if len(kv) > 0:
       k = kv.pop()
      else:
-      indx=numpy.argsort(self.epsilon_values)[::1 if self.autoParam else -1]
       asarkd=numpy.asarray(kdone)
+      print "Computing epsilon values for the current map..."
+      epsvalues=[ self.epsilon(k,self.findBMU(k),self.Map) for k in asarkd ]
+      indx=numpy.argsort(epsvalues)[::1 if self.autoParam else -1]
       kv = list(asarkd[indx])
       k = kv.pop()
     else:
