@@ -183,7 +183,7 @@ class SOM3D:
 
  def epsilon(self, k, BMUindices, Map):
   i,j,z = BMUindices
-  eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
+  eps=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map)
 #  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
   return eps
 
