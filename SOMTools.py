@@ -286,25 +286,43 @@ def getEMmapCorrelationMatrix(correlations, allMins, som):
  meanCorrelationMatrix = numpy.reshape(correlationsMatrix.mean(axis=1),(som.X, som.Y, som.Z))
  return meanCorrelationMatrix
 
-def getUmatrix(Map):
+def getUmatrix(Map,toricMap=True):
  X,Y,Z,cardinal = Map.shape
  distanceMatrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(Map.reshape(X*Y*Z,cardinal)))
  uMatrix = numpy.zeros((X,Y,Z))
- for i in range(X):
-  for j in range(Y):
-   for k in range(Z):
-    iRef = numpy.ravel_multi_index((i%X,j%Y,k%Z),(X,Y,Z))
-    iS=[(i-1)%X,i%X,(i+1)%X]
-    jS=[(j-1)%Y,j%Y,(j+1)%Y]
-    kS=[(k-1)%Z,k%Z,(k+1)%Z]
-    neighbors=[]
-    for a in range(3):
-     for b in range(3):
-      for c in range(3):
-       if not (a==b==c==1): neighbors.append((iS[a],jS[b],kS[c]))
-    jRefs = [ numpy.ravel_multi_index(tup,(X,Y,Z)) for tup in neighbors ]
-    mean=numpy.mean([ distanceMatrix[iRef,jRefs[idx]] for idx in range(26)  ])
-    uMatrix[i,j,k] = mean
+ if toricMap:
+  for i in range(X):
+   for j in range(Y):
+    for k in range(Z):
+     iRef = numpy.ravel_multi_index((i%X,j%Y,k%Z),(X,Y,Z))
+     iS=[(i-1)%X,i%X,(i+1)%X]
+     jS=[(j-1)%Y,j%Y,(j+1)%Y]
+     kS=[(k-1)%Z,k%Z,(k+1)%Z]
+     neighbors=[]
+     for a in range(3):
+      for b in range(3):
+       for c in range(3):
+        if not (a==b==c==1): neighbors.append((iS[a],jS[b],kS[c]))
+     jRefs = [ numpy.ravel_multi_index(tup,(X,Y,Z)) for tup in neighbors ]
+     mean=numpy.mean([ distanceMatrix[iRef,jRefs[idx]] for idx in range(26)  ])
+     uMatrix[i,j,k] = mean
+ else:
+  for i in range(X):
+   for j in range(Y):
+    for k in range(Z):
+     iRef = numpy.ravel_multi_index((i%X,j%Y,k%Z),(X,Y,Z))
+     iS=[(i-1),i,(i+1)]
+     jS=[(j-1),j,(j+1)]
+     kS=[(k-1),k,(k+1)]
+     neighbors=[]
+     for a in range(3):
+      for b in range(3):
+       for c in range(3):
+        if not (a==b==c==1) and 0 <= iS[a] < X and 0 <= jS[b] < Y and 0 <= kS[c] < Z:
+         neighbors.append((iS[a],jS[b],kS[c]))
+     jRefs = [ numpy.ravel_multi_index(tup,(X,Y,Z)) for tup in neighbors ]
+     mean=numpy.mean([ distanceMatrix[iRef,idc] for idc in jRefs ])
+     uMatrix[i,j,k] = mean
  return uMatrix
 
 def sliceMatrix(matrix, nslice = 100):
