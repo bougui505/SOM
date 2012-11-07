@@ -93,6 +93,8 @@ numpy.save('density.npy', density)
 #uMatrix #############################################################
 uMatrix = getUmatrix(som.Map)
 numpy.save('uMatrix.npy', uMatrix)
+uMatrix_flatten = numpy.concatenate((som.Map.reshape((som.X*som.Y*som.Z,som.cardinal)),numpy.atleast_2d(uMatrix.flatten()).T), axis=1)
+numpy.savetxt('uMatrix.txt', uMatrix_flatten)
 #clusterMatrix, nClusters = scipy.ndimage.measurements.label(findMinRegion(uMatrix, scale = 0.75))
 #plotMat(clusterMatrix, 'clusterMatrix.pdf', interpolation='nearest')
 #for i in range(1,nClusters+1):
