@@ -183,7 +183,8 @@ class SOM3D:
 
  def epsilon(self, k, BMUindices, Map):
   i,j,z = BMUindices
-  eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
+  #eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
+  eps=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map)
 #  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
   return eps
 
@@ -230,6 +231,7 @@ class SOM3D:
   firstpass=0
   kdone=[]
   for trainingPhase in range(self.number_of_phase):
+   kv=[]
    if self.autoParam:
     self.rhoValue = 0
    print '%s iterations'%self.iterations[trainingPhase]
@@ -241,19 +243,20 @@ class SOM3D:
    ###
    snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
-    kv=[]
     if self.sort2ndPhase and tpn > 1:
      if len(kv) > 0:
       k = kv.pop()
      else:
-      kv = list(numpy.asarray(kdone)[numpy.argsort(self.epsilon_values)[::1 if self.autoParam else -1]])
+      indx=numpy.argsort(self.epsilon_values)[::1 if self.autoParam else -1]
+      asarkd=numpy.asarray(kdone)
+      kv = list(asarkd[indx])
       k = kv.pop()
     else:
-     try:
+     if len(kv) > 0:
       k = random.choice(kv)
       kv.remove(k)
       if firstpass==1: kdone.append(k)
-     except IndexError:
+     else:
       firstpass+=1
       kv = range(len(self.inputvectors))
       k = random.choice(kv)
