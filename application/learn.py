@@ -40,11 +40,15 @@ else:
   inputMatrix = cPickle.load(inMfile)
   inMfile.close()
 
+mapFileName = 'map_*.dat'
+
 #Learning #############################################################################################################
 if glob.glob(mapFileName) == []:
  som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  som.learn(nSnapshots = nSnapshots)
 else:
+ mapFileName = glob.glob(mapFileName)[0]
+ print "Map file: %s"%mapFileName
  som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  if relearn:
   som.learn(nSnapshots = nSnapshots)
