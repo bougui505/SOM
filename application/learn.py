@@ -44,12 +44,10 @@ else:
 if glob.glob(mapFileName) == []:
  som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  som.learn(nSnapshots = nSnapshots)
- os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 else:
  som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  if relearn:
   som.learn(nSnapshots = nSnapshots)
-  os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 #######################################################################################################################
 
 #som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
