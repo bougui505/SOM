@@ -8,7 +8,6 @@ import matplotlib.pyplot
 import random
 import progressbar
 import pickle
-import ROCSOM
 import sys
 from multiprocessing import Process, Queue
 import itertools
@@ -28,12 +27,15 @@ class SOM3D:
    Z                : integer, depth of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False):
+ def __init__(self, inputvectors, inputnames, confname = 'SOM3D.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
   self.inputnames = inputnames
   self.autoParam = autoParam
+  self.sort2ndPhase = sort2ndPhase
+  self.toricMap = toricMap
+  self.randomInit = randomInit
   conffile = open(confname, 'r')
   lines = conffile.readlines()
   conffile.close()
@@ -84,13 +86,49 @@ class SOM3D:
   if randomUnit is None:
    # Matrix initialization
    if mapFileName == None:
-    maxinpvalue = self.inputvectors.max()
-    mininpvalue = self.inputvectors.min()
-    somShape = [self.X, self.Y, self.Z]
-    vShape = numpy.array(self.inputvectors[0]).shape
-    for e in vShape:
-     somShape.append(e)
-    self.M = RandomArray.uniform(mininpvalue,maxinpvalue,somShape)
+    if randomInit:
+     maxinpvalue = self.inputvectors.max()
+     mininpvalue = self.inputvectors.min()
+     somShape = [self.X, self.Y, self.Z]
+     vShape = numpy.array(self.inputvectors[0]).shape
+     for e in vShape:
+      somShape.append(e)
+     self.M = RandomArray.uniform(mininpvalue,maxinpvalue,somShape)
+    else:
+     inputarray=numpy.asarray(self.inputvectors)
+     inputmean=inputarray.mean(axis=0)
+     M=inputarray-inputmean
+     if numpy.argmin(M.shape) == 0:
+      # (min,max) * (max,min) -> (min,min)
+      # (0,1) * (1,0) -> (0,0)
+      mmt=True
+      covararray=numpy.dot(M,M.T)
+     else:
+      # (1,0) * (0,1) -> (1,1)
+      mmt=False
+      covararray=numpy.dot(M.T,M)
+     eival,eivec=numpy.linalg.eigh(covararray)
+     args=eival.argsort()[::-1]
+     eival=eival[args]
+     eivec=eivec[:,args]
+     sqev=numpy.sqrt(eival)[:3]
+     if autoSizeMap:
+      self.X,self.Y,self.Z=map(lambda x: int(round(x)),sqev/((numpy.prod(sqev)/(self.X*self.Y*self.Z))**(1./3))) # returns a size with axes size proportional to the eigenvalues and so that the total number of neurons is at least the number of neurons given in SOM.conf (x*Y*Z)
+      print "Size of map will be %dx%dx%d."%(self.X,self.Y,self.Z)
+     # (1,0)*(0,0) if mmt else (0,1)*(1,1)
+     proj=numpy.dot(M.T,eivec) if mmt else numpy.dot(M,eivec)
+     Cmin=proj.min(axis=0)
+     Cmax=proj.max(axis=0)
+     Xmin,Ymin,Zmin=Cmin[:3]
+     Xmax,Ymax,Zmax=Cmax[:3]
+     origrid=numpy.mgrid[Xmin:Xmax:self.X*1j,Ymin:Ymax:self.Y*1j,Zmin:Zmax:self.Z*1j]
+     restn=inputarray.shape[1]-3
+     if restn > 0:
+      # now do the rest
+      restptp=Cmax[3:]-Cmin[3:]
+      rest=numpy.random.random((restn,self.X,self.Y,self.Z))*restptp[:,numpy.newaxis,numpy.newaxis,numpy.newaxis]+Cmin[3:,numpy.newaxis,numpy.newaxis,numpy.newaxis]
+      origrid=numpy.r_[origrid,rest]
+     self.M=numpy.dot(origrid.transpose([1,2,3,0]),eivec.T)+inputmean
    else:
     self.M = self.loadMap(mapFileName)
    print "Shape of the SOM:%s"%str(self.M.shape)
@@ -183,6 +221,7 @@ class SOM3D:
 
  def epsilon(self, k, BMUindices, Map):
   i,j,z = BMUindices
+  #eps=min(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map),0.5)
   eps=scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j,z]) / self.rho(k, BMUindices, Map)
 #  print "%.4f %.4f"%(eps,eps*self.radius_begin[0])
   return eps
@@ -190,10 +229,13 @@ class SOM3D:
 
  def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
   i,j,z = BMUindices
-  i2 = i + self.X
-  j2 = j + self.Y
-  z2 = z + self.Z
-  X,Y,Z=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1,-z2:3*self.Z-z2:1]
+  if self.toricMap:
+   i2 = i + self.X
+   j2 = j + self.Y
+   z2 = z + self.Z
+   X,Y,Z=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1,-z2:3*self.Z-z2:1]
+  else:
+   X,Y,Z=numpy.mgrid[-i:self.X-i,-j:self.Y-j,-z:self.Z-z]
   if not self.autoParam:
    adjMap = numpy.exp( -(X**2+Y**2+Z**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
   elif self.autoParam:
@@ -202,13 +244,16 @@ class SOM3D:
    radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
    self.epsilon_values.append(self.epsilon_value)
    adjMap = numpy.exp(-(X**2+Y**2+Z**2)/ ( 2.* radius )**2 )
-  adjMapR = numpy.zeros((self.X,self.Y,self.Z,27))
-  c = itertools.count()
-  for i in range(3):
-   for j in range(3):
-    for z in range(3):
-     adjMapR[:,:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y,z*self.Z:(z+1)*self.Z]
-  return numpy.max(adjMapR, axis=3)
+  if self.toricMap:
+   adjMapR = numpy.zeros((self.X,self.Y,self.Z,27))
+   c = itertools.count()
+   for i in range(3):
+    for j in range(3):
+     for z in range(3):
+      adjMapR[:,:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y,z*self.Z:(z+1)*self.Z]
+   return numpy.max(adjMapR, axis=3)
+  else:
+   return adjMap
 
  def adjustment(self, k, t, trainingPhase, Map, BMUindices):
   self.adjustMap = numpy.zeros(Map.shape)
@@ -227,7 +272,10 @@ class SOM3D:
   Map = self.M
   kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
+  firstpass=0
+  kdone=[]
   for trainingPhase in range(self.number_of_phase):
+   kv=[]
    if self.autoParam:
     self.rhoValue = 0
    print '%s iterations'%self.iterations[trainingPhase]
@@ -239,13 +287,27 @@ class SOM3D:
    ###
    snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
-    try:
-     k = random.choice(kv)
-     kv.remove(k)
-    except IndexError:
-     kv = range(len(self.inputvectors))
-     k = random.choice(kv)
-     kv.remove(k)
+    if self.sort2ndPhase and tpn > 1:
+     if len(kv) > 0:
+      k = kv.pop()
+     else:
+      asarkd=numpy.asarray(kdone)
+      print "Computing epsilon values for the current map..."
+      epsvalues=[ self.epsilon(k,self.findBMU(k,Map),Map) for k in asarkd ]
+      indx=numpy.argsort(epsvalues)[::1 if self.autoParam else -1]
+      kv = list(asarkd[indx])
+      k = kv.pop()
+    else:
+     if len(kv) > 0:
+      k = random.choice(kv)
+      kv.remove(k)
+      if firstpass==1: kdone.append(k)
+     else:
+      firstpass+=1
+      kv = range(len(self.inputvectors))
+      k = random.choice(kv)
+      kv.remove(k)
+      if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
     if t in snapshots:
      snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
