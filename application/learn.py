@@ -9,7 +9,6 @@ import scipy.ndimage.measurements
 import SOM
 import parallelSOM
 import glob
-#from newProtocolModule import *
 from SOMTools import *
 import cPickle
 import os
@@ -23,9 +22,12 @@ Config.read(configFileName)
 inputMatrixFileName = Config.get('learn', 'inputMatrixFileName')
 mapFileName = Config.get('learn', 'mapFileName')
 relearn = Config.getboolean('learn', 'relearn')
-parallelLearning = Config.getboolean('learn', 'parallelLearning')
 nSnapshots = Config.getint('learn', 'nSnapshots')
 autoParam = Config.getboolean('learn', 'autoParam')
+sort2ndPhase = Config.getboolean('learn', 'sort2ndPhase')
+toricMap = Config.getboolean('learn', 'toricMap')
+randomInit = Config.getboolean('learn', 'randomInit')
+autoSizeMap = Config.getboolean('learn', 'autoSizeMap')
 
 
 if glob.glob(inputMatrixFileName) == []:
@@ -40,23 +42,17 @@ else:
 
 #Learning #############################################################################################################
 if glob.glob(mapFileName) == []:
- som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam)
- if parallelLearning:
-  parallelSOM.learn(som)
- else:
-  som.learn(nSnapshots = nSnapshots)
+ som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
+ som.learn(nSnapshots = nSnapshots)
  os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 else:
- som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam)
+ som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  if relearn:
-  if parallelLearning:
-   parallelSOM.learn(som)
-  else:
-   som.learn(nSnapshots = nSnapshots)
+  som.learn(nSnapshots = nSnapshots)
   os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
 #######################################################################################################################
 
-som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
+#som = SOM.SOM3D(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
 bmuCoordinates = []
 #bmuProb = []
 sys.stdout.write('Computing density\n')
@@ -95,12 +91,3 @@ uMatrix = getUmatrix(som.Map)
 numpy.save('uMatrix.npy', uMatrix)
 uMatrix_flatten = numpy.concatenate((som.Map.reshape((som.X*som.Y*som.Z,som.cardinal)),numpy.atleast_2d(uMatrix.flatten()).T), axis=1)
 numpy.savetxt('uMatrix.txt', uMatrix_flatten)
-#clusterMatrix, nClusters = scipy.ndimage.measurements.label(findMinRegion(uMatrix, scale = 0.75))
-#plotMat(clusterMatrix, 'clusterMatrix.pdf', interpolation='nearest')
-#for i in range(1,nClusters+1):
-# indices = (allMins * numpy.atleast_2d((clusterMatrix == i).flatten()).T).any(axis=0)
-# cluster = numpy.array(som.inputnames)[indices]
-# outfile = open('cluster_%s.out'%i, 'w')
-# [outfile.write('%s\n'%(e+1)) for e in cluster] # start from 1
-# outfile.write('\n')
-# outfile.close()
