@@ -93,3 +93,6 @@ uMatrix = getUmatrix(som.Map, toricMap=toricMap)
 numpy.save('uMatrix.npy', uMatrix)
 uMatrix_flatten = numpy.concatenate((som.Map.reshape((som.X*som.Y*som.Z,som.cardinal)),numpy.atleast_2d(uMatrix.flatten()).T), axis=1)
 numpy.savetxt('uMatrix.txt', uMatrix_flatten)
+#Density
+density_flatten = numpy.concatenate((som.Map.reshape((som.X*som.Y*som.Z,som.cardinal)),numpy.atleast_2d(density.flatten()).T), axis=1)
+numpy.savetxt('density.txt', density_flatten)
