@@ -263,7 +263,6 @@ class SOM:
   if self.autoParam:
    self.epsilon_values = []
   Map = self.M
-  kv = range(len(self.inputvectors))
   print 'Learning for %s vectors'%len(self.inputvectors)
   firstpass=0
   kdone=[]
@@ -292,14 +291,13 @@ class SOM:
       k = kv.pop()
     else:
      if len(kv) > 0:
-      k = random.choice(kv)
-      kv.remove(k)
+      k = kv.pop()
       if firstpass==1: kdone.append(k)
      else:
       firstpass+=1
       kv = range(len(self.inputvectors))
-      k = random.choice(kv)
-      kv.remove(k)
+      random.shuffle(kv)
+      k = kv.pop()
       if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
     if t in snapshots:
