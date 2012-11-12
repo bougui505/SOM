@@ -74,7 +74,10 @@ class SOM:
      if re.findall(r'radius_end_%s\s*='%i, line):
       self.radius_end.append(float(line.split('=')[1]))
      if re.findall(r'iterations_%s\s*='%i, line):
-      self.iterations.append(int(line.split('=')[1]))
+      try:
+       self.iterations.append(int(line.split('=')[1]))
+      except ValueError:
+       self.iterations.append(self.inputvectors.shape[0])
    i=i+1
   # Vector simplification
   if simplify_vectors:
