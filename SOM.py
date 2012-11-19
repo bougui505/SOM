@@ -278,8 +278,7 @@ class SOM3D:
   kdone=[]
   for trainingPhase in range(self.number_of_phase):
    kv=[]
-   if self.autoParam:
-    self.rhoValue = 0
+   self.rhoValue = 0
    print '%s iterations'%self.iterations[trainingPhase]
    ## Progress bar
    tpn = trainingPhase + 1
