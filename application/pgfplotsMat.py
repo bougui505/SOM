@@ -31,6 +31,9 @@ else:
  raise IOError("wrong format for matrix data file. Must be 'dat' for a python pickle file or 'npy' for a numpy file object")
 X,Y = matrix.shape
 
+if numpy.ma.isMaskedArray(matrix):
+ matrix = matrix.filled(numpy.nan)
+
 outFile = open('%s.tex'%matrixFileName.split('.')[0], 'w')
 header = """
 \documentclass{article}
