@@ -294,15 +294,16 @@ def getUmatrix(Map,toricMap=True):
   for i in range(X):
    for j in range(Y):
     iRef = numpy.ravel_multi_index((i%X,j%Y),(X,Y))
-    iS=[(i-1)%X,i%X,(i+1)%X]
-    jS=[(j-1)%Y,j%Y,(j+1)%Y]
-    neighbors=[]
-    for a in range(2):
-     for b in range(2):
-      if not (a==b==1): neighbors.append((iS[a],jS[b]))
-    jRefs = [ numpy.ravel_multi_index(tup,(X,Y)) for tup in neighbors ]
-    mean=numpy.mean([ distanceMatrix[iRef,jRefs[idx]] for idx in range(8)  ])
-    uMatrix[i,j,k] = mean
+    jRef1 = numpy.ravel_multi_index(((i-1)%X,(j-1)%Y),(X,Y))
+    jRef2 = numpy.ravel_multi_index(((i-1)%X,(j)%Y),(X,Y))
+    jRef3 = numpy.ravel_multi_index(((i-1)%X,(j+1)%Y),(X,Y))
+    jRef4 = numpy.ravel_multi_index(((i)%X,(j-1)%Y),(X,Y))
+    jRef5 = numpy.ravel_multi_index(((i)%X,(j+1)%Y),(X,Y))
+    jRef6 = numpy.ravel_multi_index(((i+1)%X,(j-1)%Y),(X,Y))
+    jRef7 = numpy.ravel_multi_index(((i+1)%X,(j)%Y),(X,Y))
+    jRef8 = numpy.ravel_multi_index(((i+1)%X,(j+1)%Y),(X,Y))
+    mean = numpy.mean([distanceMatrix[iRef,jRef1], distanceMatrix[iRef,jRef2], distanceMatrix[iRef,jRef3], distanceMatrix[iRef,jRef4], distanceMatrix[iRef,jRef5], distanceMatrix[iRef,jRef6], distanceMatrix[iRef,jRef7], distanceMatrix[iRef,jRef8]])
+    uMatrix[i,j] = mean
  else:
   for i in range(X):
    for j in range(Y):
