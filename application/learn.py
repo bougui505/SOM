@@ -9,7 +9,6 @@ import scipy.ndimage.measurements
 import SOM
 import parallelSOM
 import glob
-#from newProtocolModule import *
 from SOMTools import *
 import cPickle
 import os
@@ -23,9 +22,12 @@ Config.read(configFileName)
 inputMatrixFileName = Config.get('learn', 'inputMatrixFileName')
 mapFileName = Config.get('learn', 'mapFileName')
 relearn = Config.getboolean('learn', 'relearn')
-parallelLearning = Config.getboolean('learn', 'parallelLearning')
 nSnapshots = Config.getint('learn', 'nSnapshots')
 autoParam = Config.getboolean('learn', 'autoParam')
+sort2ndPhase = Config.getboolean('learn', 'sort2ndPhase')
+toricMap = Config.getboolean('learn', 'toricMap')
+randomInit = Config.getboolean('learn', 'randomInit')
+autoSizeMap = Config.getboolean('learn', 'autoSizeMap')
 
 
 if glob.glob(inputMatrixFileName) == []:
@@ -40,23 +42,17 @@ else:
 
 #Learning #############################################################################################################
 if glob.glob(mapFileName) == []:
- som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam)
- if parallelLearning:
-  parallelSOM.learn(som)
- else:
-  som.learn(nSnapshots = nSnapshots)
- os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
+ som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
+ som.learn(nSnapshots = nSnapshots)
 else:
- som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam)
+ mapFileName = glob.glob(mapFileName)[0]
+ print "Map file: %s"%mapFileName
+ som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  if relearn:
-  if parallelLearning:
-   parallelSOM.learn(som)
-  else:
-   som.learn(nSnapshots = nSnapshots)
-  os.system('mv map_%sx%s.dat map1.dat'%(som.X,som.Y))
+  som.learn(nSnapshots = nSnapshots)
 #######################################################################################################################
 
-som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
+#som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
 bmuCoordinates = []
 #bmuProb = []
 sys.stdout.write('Computing density\n')
