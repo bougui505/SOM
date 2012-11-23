@@ -29,6 +29,7 @@ nProcess = Config.getint('makeVectors', 'nProcess')
 pool = Pool(processes=nProcess)
 
 ref = True
+descriptorsList = []
 eigenVectorsList = []
 eigenValuesList = []
 
@@ -62,12 +63,15 @@ while trajIndex < nframe:
    eigenVectors_ref = eigenVectors
    ref = False
   eigenVectors = eigenVectors*numpy.sign(numpy.dot(eigenVectors.T,eigenVectors_ref).diagonal())
+  eigenVectorsList.append(eigenVectors.flatten())
   if projection:
    descriptor = numpy.dot(eigenVectors.T,distMat).flatten()
   else:
    descriptor = eigenVectors.T.flatten()
-  eigenVectorsList.append(descriptor)
-inputMatrix = numpy.asarray(eigenVectorsList)
+  descriptorsList.append(descriptor)
+inputMatrix = numpy.asarray(descriptorsList)
 numpy.save('inputMatrix.npy', inputMatrix)
+eigenVectorsList = numpy.asarray(eigenVectorsList)
+numpy.save('eigenVectorsList', eigenVectorsList)
 eigenValuesList = numpy.asarray(eigenValuesList)
 numpy.save('eigenValues.npy', eigenValuesList)
