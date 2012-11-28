@@ -32,6 +32,7 @@ ref = True
 descriptorsList = []
 eigenVectorsList = []
 eigenValuesList = []
+meansList = []
 
 struct = IO.Structure(structFile)
 
@@ -50,6 +51,8 @@ while trajIndex < nframe:
   shapeTraj = traj_i.reshape(traj.natom,3)
   dist = scipy.spatial.distance.pdist(shapeTraj)
   distMat = scipy.spatial.distance.squareform(dist)**2
+  mean = numpy.mean(distMat,axis=1)
+  meansList.append(mean)
   distMats.append(distMat)
   proc += 1
   trajIndex += 1
@@ -74,4 +77,6 @@ numpy.save('inputMatrix.npy', inputMatrix)
 eigenVectorsList = numpy.asarray(eigenVectorsList)
 numpy.save('eigenVectorsList', eigenVectorsList)
 eigenValuesList = numpy.asarray(eigenValuesList)
-numpy.save('eigenValues.npy', eigenValuesList)
+numpy.save('eigenValues', eigenValuesList)
+meansList = numpy.asarray(meansList)
+numpy.save('meansList', meansList)
