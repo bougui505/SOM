@@ -33,7 +33,10 @@ def getChiralities(coords):
 
 smap = numpy.load('map_50x50.dat')
 uMatrix = numpy.load('uMatrix.npy')
-outPath, clusterPathMat, grads = SOMTools.minPath(uMatrix, 4000)
+energy = numpy.log(uMatrix/uMatrix.max())
+outPath, clusterPathMat, grads = SOMTools.minPath(energy, 0.13)
+clusterPathMat[outPath[0]] = 1
+outPath = outPath
 os.mkdir('PDB')
 for i in range(len(outPath)):
     w,v,coords = getCoordFromNeuron(smap[outPath[i]])
@@ -48,5 +51,6 @@ for i in range(len(outPath)):
     chiralities = [ numpy.sum(numpy.sign(getChiralities(e))) for e in coordsN ]
     print chiralities
     coords = coordsN[numpy.argmax(chiralities)]
-    numpy.savetxt('PDB/s_%d.txt'%i, coords)
+    coords = numpy.concatenate(( coords, numpy.atleast_2d(numpy.ones(coords.shape[0])*clusterPathMat[outPath[i]] ).T ) ,axis=1) # in beta: the cluster id
+    numpy.savetxt('PDB/s_%d.txt'%i, coords, fmt=('%.3f','%.3f','%.3f','%d'))
     print "%d/%d %d"%(i,len(outPath),numpy.max(chiralities))
