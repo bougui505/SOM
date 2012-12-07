@@ -4,6 +4,7 @@
 import SOMTools
 import numpy
 import os
+import pickle
 
 def getCoordFromNeuron(n):
     naa = n.size/9
@@ -31,7 +32,8 @@ def getChiralities(coords):
         chiralities.append(chirality)
     return chiralities
 
-smap = numpy.load('map_50x50.dat')
+#smap = numpy.load('map_50x50.dat')
+smap = pickle.load(open('map_50x50.dat'))
 uMatrix = numpy.load('uMatrix.npy')
 energy = numpy.log(uMatrix/uMatrix.max())
 outPath, clusterPathMat, grads = SOMTools.minPath(energy, 0.13)
