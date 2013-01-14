@@ -33,13 +33,22 @@ def getChiralities(coords):
     return chiralities
 
 #smap = numpy.load('map_50x50.dat')
+getPath = False
 smap = pickle.load(open('map_50x50.dat'))
-uMatrix = numpy.load('uMatrix.npy')
-energy = numpy.log(uMatrix/uMatrix.max())
-outPath, clusterPathMat, grads = SOMTools.minPath(energy, 0.13)
-clusterPathMat[outPath[0]] = 1
-outPath = outPath
-os.mkdir('PDB')
+if getPath:
+    uMatrix = numpy.load('uMatrix.npy')
+    energy = numpy.log(uMatrix/uMatrix.max())
+    outPath, clusterPathMat, grads = SOMTools.minPath(energy, 0.13)
+    clusterPathMat[outPath[0]] = 1
+    outPath = outPath
+    dirname = 'PDB_Path'
+else:
+    dirname = 'PDB_SOM'
+    outPath = []
+    for i in range(smap.shape[0]):
+        for j in range(smap.shape[1]):
+            outPath.append((i,j))
+os.mkdir(dirname)
 for i in range(len(outPath)):
     w,v,coords = getCoordFromNeuron(smap[outPath[i]])
     if i == 0:
@@ -53,6 +62,9 @@ for i in range(len(outPath)):
     chiralities = [ numpy.sum(numpy.sign(getChiralities(e))) for e in coordsN ]
     print chiralities
     coords = coordsN[numpy.argmax(chiralities)]
-    coords = numpy.concatenate(( coords, numpy.atleast_2d(numpy.ones(coords.shape[0])*clusterPathMat[outPath[i]] ).T ) ,axis=1) # in beta: the cluster id
-    numpy.savetxt('PDB/s_%d.txt'%i, coords, fmt=('%.3f','%.3f','%.3f','%d'))
+    if getPath:
+        coords = numpy.concatenate(( coords, numpy.atleast_2d(numpy.ones(coords.shape[0])*clusterPathMat[outPath[i]] ).T ) ,axis=1) # in beta: the cluster id
+        numpy.savetxt('%s/s_%d.txt'%(dirname,i), coords, fmt=('%.3f','%.3f','%.3f','%d'))
+    else:
+        numpy.savetxt('%s/s_%d.txt'%(dirname,i), coords, fmt=('%.3f','%.3f','%.3f'))
     print "%d/%d %d"%(i,len(outPath),numpy.max(chiralities))
