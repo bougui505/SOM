@@ -58,8 +58,8 @@ header = """
 \\begin{document}
 \\begin{figure}
 \\begin{tikzpicture}
-\\begin{axis}[colorbar, colormap/bluered, width=\\figwidth, height=\\figheight, unbounded coords=jump, point meta min=%.3f, point meta max=%.3f, mark size=%s\\figwidth, clip marker paths=true, pin distance=0pt]
-"""%(Y/X, numpy.nanmin(matrix), numpy.nanmax(matrix), 1/(2.6*X))
+\\begin{axis}[colorbar, colormap/bluered, width=\\figwidth, height=\\figheight, unbounded coords=jump, point meta min=%.3f, point meta max=%.3f, mark size=%s\\figwidth, clip marker paths=true, pin distance=0pt, xmin=-1, ymin=-1, xmax=%d, ymax=%d]
+"""%(Y/X, numpy.nanmin(matrix), numpy.nanmax(matrix), 1/(2.25*X),X,Y)
 #\\begin{axis}[colorbar, colormap/bluered, width=\\figwidth, height=\\figheight, unbounded coords=jump, point meta min=%.3f, point meta max=%.3f, mark size=%s\\figwidth]
 outFile.write(header)
 # for matrix plot
