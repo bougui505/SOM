@@ -10,6 +10,7 @@ parser.add_option("-i", "--input", dest="matrixFileName", help="input matrix fil
 parser.add_option("-n", "--name", dest="namesFileName", help="names to write on the map", metavar="names.npy", default=None)
 parser.add_option("-b", "--bmuCoordinates", dest="bmuCoordsFileName", help="BMU Coordinates. Required only for plotting names", default=None)
 parser.add_option("-c", "--contour", action="store_false", dest="use_mapped_color", help="Add contour to pixels", default=True)
+parser.add_option("-o", "--offset", type="int", nargs=2, dest="offset", help="Add x and y offset", metavar= "0 0", default=(0,0))
 (options, args) = parser.parse_args()
 
 matrixFileName = options.matrixFileName
@@ -23,6 +24,9 @@ if options.namesFileName != None:
  names = numpy.unique(names)
  bmuCoordinates = numpy.load(options.bmuCoordsFileName)
 
+x_offset = options.offset[0]
+y_offset = options.offset[1]
+
 if matrixFileName.split('.')[1] == 'npy':
  matrix = numpy.load(matrixFileName)
 elif matrixFileName.split('.')[1] == 'dat':
@@ -30,6 +34,13 @@ elif matrixFileName.split('.')[1] == 'dat':
 else:
  raise IOError("wrong format for matrix data file. Must be 'dat' for a python pickle file or 'npy' for a numpy file object")
 X,Y = matrix.shape
+
+if x_offset !=0 or y_offset != 0:
+ matrix_o = numpy.ma.masked_all_like(matrix)
+ for i in range(X):
+  for j in range(Y):
+   matrix_o[i,j] = matrix[(i+x_offset)%X,(j+y_offset)%Y]
+ matrix = matrix_o
 
 if numpy.ma.isMaskedArray(matrix):
  matrix = matrix.filled(numpy.nan)
