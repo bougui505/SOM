@@ -5,6 +5,8 @@ import scipy.spatial
 import SOMTools
 from scipy import ndimage
 import copy
+import scipy.ndimage.morphology as morphology
+import scipy.ndimage.filters as filters
 
 class StepAndSlide:
     def __init__(self, matrix, step, tol, start, stop, dist_tol = 0.):
@@ -15,9 +17,44 @@ class StepAndSlide:
         self.start = start
         self.stop = stop
         self.dist_tol = dist_tol
+        self.count=0
+        self.path = []
         if not self.areIsoEnergetic(start, stop):
             print "Error: Start and stop points are not isoenergetic!"
             sys.exit(0)
+
+    def detect_local_minima(self, arr):
+        # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
+        """
+        Takes an array and detects the troughs using the local maximum filter.
+        Returns a boolean mask of the troughs (i.e. 1 when
+        the pixel's value is the neighborhood maximum, 0 otherwise)
+        """
+        # define an connected neighborhood
+        # http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html#generate_binary_structure
+        neighborhood = morphology.generate_binary_structure(len(arr.shape),2)
+        # apply the local minimum filter; all locations of minimum value
+        # in their neighborhood are set to 1
+        # http://www.scipy.org/doc/api_docs/SciPy.ndimage.filters.html#minimum_filter
+        local_min = (filters.minimum_filter(arr, footprint=neighborhood)==arr)
+        # local_min is a mask that contains the peaks we are
+        # looking for, but also the background.
+        # In order to isolate the peaks we must remove the background from the mask.
+        #
+        # we create the mask of the background
+        background = (arr==0)
+        #
+        # a little technicality: we must erode the background in order to
+        # successfully subtract it from local_min, otherwise a line will
+        # appear along the background border (artifact of the local minimum filter)
+        # http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html#binary_erosion
+        eroded_background = morphology.binary_erosion(
+            background, structure=neighborhood, border_value=1)
+        #
+        # we obtain the final mask, containing only peaks,
+        # by removing the background from the local_min mask
+        detected_minima = local_min - eroded_background
+        return numpy.where(detected_minima)
 
     def findIsoEnergeticPoints(self,point):
         endValue = self.matrix[point[0],point[1]]
@@ -93,6 +130,7 @@ class StepAndSlide:
         v1, v2 = v1_ori, v2_ori
         test1, test2 = (v1-v1_ori < self.step), (v2-v2_ori < self.step)
         while (test1 or test2) and scipy.spatial.distance.euclidean(point1,point2)>numpy.sqrt(2):
+            self.count += 1
             guess = self.getInitialGuess(point1, point2)
             neighbors1 = numpy.asarray(self.getNeighbors(point1,self.matrix))
             neighbors1 = (neighbors1[:,0], neighbors1[:,1])
@@ -134,8 +172,13 @@ class StepAndSlide:
         d_prev = d
         test = (d.min() <= d_prev.min())
         while test:
+            self.count += 1
             neighbors1, neighbors2 = numpy.asarray(self.getIsoNeighbors(point1, matrix)).T, numpy.asarray(self.getIsoNeighbors(point2, matrix)).T
-            matrix[(i,k),(j,l)] = 10*matrix.max()
+            for e in slidePath1:
+                if neighbors1.size != 0: neighbors1 = numpy.delete(neighbors1, numpy.where(numpy.all(neighbors1==e,axis=1))[0], axis=0)
+            for e in slidePath2:
+                if neighbors2.size != 0: neighbors2 = numpy.delete(neighbors2, numpy.where(numpy.all(neighbors2==e,axis=1))[0], axis=0)
+#            matrix[(i,k),(j,l)] += self.count*matrix.max()
             d_prev = d
             d = scipy.spatial.distance.cdist(neighbors1, neighbors2)
             if d.size > 0:
@@ -168,12 +211,20 @@ class StepAndSlide:
                 A = steps[0][-1]
             if steps[1] != []:
                 B = steps[1][-1]
-            print "step: %s,%s,%d steps,%.2f"%(A,B,len(steps[0])+len(steps[1]),d)
+            print "iter: %d, step: %s,%s,%d steps,%.2f"%(self.count, A,B,len(steps[0])+len(steps[1]),d)
             slides = self.Slide(A,B)
-            if slides !=([], []):
-                A,B = slides[0][-1], slides[1][-1]
-            print "slide: %s,%s,%d slides,%.2f"%(A,B,len(slides[0])+len(slides[1]),d)
+#            if slides[0][-1] == A and slides[1][-1] == B: break
+            A_prev = A
+            B_prev = B
+            if slides[0] != []:
+                A = slides[0][-1]
+            if slides[1] != []:
+                B = slides[1][-1]
+            if A == A_prev and B == B_prev: break
+            print "iter: %d, slide: %s,%s,%d slides,%.2f"%(self.count, A,B,len(slides[0])+len(slides[1]),d)
             path1.extend(slides[0])
             path2.extend(slides[1])
+            self.path.extend(path1)
+            self.path.extend(path2)
             d = scipy.spatial.distance.euclidean(A, B)
         return path1, path2
