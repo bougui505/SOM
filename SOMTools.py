@@ -457,7 +457,7 @@ def uMovie(fileName = 'MapSnapshots.tar'):
   uMatrix = getUmatrix(map)
   plotMat(uMatrix, 'uMatrices/uMat_%0*d.png'%(4,c.next()))
 
-def detect_local_minima(arr):
+def detect_local_minima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
     """
     Takes an array and detects the troughs using the local maximum filter.
@@ -466,6 +466,9 @@ def detect_local_minima(arr):
     """
     # define an connected neighborhood
     # http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html#generate_binary_structure
+    if toricMap:
+        X,Y = arr.shape
+        arr = expandMatrix(arr)
     neighborhood = morphology.generate_binary_structure(len(arr.shape),2)
     # apply the local minimum filter; all locations of minimum value
     # in their neighborhood are set to 1
@@ -488,5 +491,7 @@ def detect_local_minima(arr):
     # we obtain the final mask, containing only peaks,
     # by removing the background from the local_min mask
     detected_minima = local_min - eroded_background
+    if toricMap:
+        detected_minima = detected_minima[X:2*X,Y:2*Y]
     return numpy.where(detected_minima)
 
