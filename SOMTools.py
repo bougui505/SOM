@@ -17,7 +17,7 @@ import os
 import scipy.ndimage.morphology as morphology
 import scipy.ndimage.filters as filters
 
-def plot3Dmat(mat):
+def plot3Dmat(mat, contourScale = True):
  from mpl_toolkits.mplot3d import Axes3D
  from matplotlib import cm
  from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -30,6 +30,8 @@ def plot3Dmat(mat):
  Z = mat
  surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, linewidth=0., cmap=cm.jet, alpha=0.75)
  cset = ax.contour(X, Y, Z, zdir='z', offset=mat.min(), cmap=cm.gray)
+ if contourScale:
+  fig.colorbar(cset)
  cset = ax.contour(X, Y, Z, zdir='x', offset=0, cmap=cm.gray)
  cset = ax.contour(X, Y, Z, zdir='y', offset=y, cmap=cm.gray)
 # surf = ax.contour(X, Y, Z, cmap=cm.hot)
