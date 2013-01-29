@@ -17,6 +17,26 @@ import os
 import scipy.ndimage.morphology as morphology
 import scipy.ndimage.filters as filters
 
+def plot3Dmat(mat):
+ from mpl_toolkits.mplot3d import Axes3D
+ from matplotlib import cm
+ from matplotlib.ticker import LinearLocator, FormatStrFormatter
+ import matplotlib.pyplot as plt
+ import numpy as np
+ fig = plt.figure()
+ ax = fig.gca(projection='3d')
+ x,y = mat.shape
+ X, Y = np.meshgrid(np.arange(x), np.arange(y))
+ Z = mat
+ surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, linewidth=0., cmap=cm.jet, alpha=0.75)
+ cset = ax.contour(X, Y, Z, zdir='z', offset=mat.min(), cmap=cm.gray)
+ cset = ax.contour(X, Y, Z, zdir='x', offset=0, cmap=cm.gray)
+ cset = ax.contour(X, Y, Z, zdir='y', offset=y, cmap=cm.gray)
+# surf = ax.contour(X, Y, Z, cmap=cm.hot)
+# surf = ax.contourf(X, Y, Z, cmap=cm.hot)
+ fig.colorbar(surf)
+ plt.show()
+
 def readRestraints(fileName='restraintsList'):
  f = open(fileName)
  restraints = []
