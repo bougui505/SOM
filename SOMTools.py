@@ -16,6 +16,7 @@ import tarfile
 import os
 import scipy.ndimage.morphology as morphology
 import scipy.ndimage.filters as filters
+import scipy.misc
 
 def plot3Dmat(mat, contourScale = True, rstride=1, cstride=1):
  from mpl_toolkits.mplot3d import Axes3D
@@ -559,3 +560,27 @@ def detect_local_maxima(arr, toricMap=False):
     if toricMap:
         detected_maxima = detected_maxima[X:2*X,Y:2*Y]
     return numpy.where(detected_maxima)
+
+def getSaddlepoints(matrix):
+    i,j = detect_local_minima(matrix, toricMap=True)
+    localMinimaIndex = map(lambda x,y: (x,y), i,j)
+    n = len(localMinimaIndex)
+    floods = []
+    for startingPoint in localMinimaIndex:
+        outPath, clusterPathMat, grads = minPath(matrix, startingPoint = startingPoint)
+        floods.append(outPath)
+    saddlePointsIndex = []
+    c = 0
+    nComb = scipy.misc.comb(n,2,exact=1)
+    for i in range(n-1):
+        for j in range(i+1,n):
+            c+=1
+            sys.stdout.write('Searching for saddle points: %d/%d'%(c,nComb))
+            sys.stdout.write('\r')
+            sys.stdout.flush()
+            saddlePointsIndex.append(tuple(numpy.array(floods[i])[numpy.argsort(map(lambda x: floods[i].index(x), set(floods[i]) & set(floods[j])))][0]))
+    saddlePoints = numpy.zeros_like(matrix, dtype=bool)
+    for e in saddlePointsIndex:
+        i,j = e
+        saddlePoints[i,j] = True
+    return saddlePoints
