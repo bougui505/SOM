@@ -240,11 +240,16 @@ def cmap_discretize(cmap, N):
  # Return colormap object.
  return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
 
-def minPath(matrix, gradThreshold):
+def minPath(matrix, gradThreshold=None, startingPoint = None):
+ if gradThreshold == None:
+  gradThreshold = numpy.mean(matrix)
  if type(matrix) == numpy.ma.core.MaskedArray:
   matrix = matrix.filled()
  X,Y = matrix.shape
- iStart,jStart = scipy.ndimage.measurements.minimum_position(matrix)
+ if startingPoint == None:
+  iStart,jStart = scipy.ndimage.measurements.minimum_position(matrix)
+ else:
+  iStart,jStart = startingPoint
  i,j = iStart,jStart
  outPath = [(iStart,jStart)]
  path = [(iStart,jStart)]
@@ -281,7 +286,7 @@ def minPath(matrix, gradThreshold):
    zScore = (grad - numpy.mean(grads))/numpy.std(grads)
    zScores.append(zScore)
    grads.append(grad)
-   sys.stdout.write('path: grad=%10.2f ; reverse: %10.0f; clusters #: %10.0f'%(grad,r,cIndex))
+   sys.stdout.write('flood: grad=%10.2f ; reverse: %10.0f; clusters #: %10.0f'%(grad,r,cIndex))
    sys.stdout.write('\r')
    sys.stdout.flush()
    if grad > gradThreshold:
