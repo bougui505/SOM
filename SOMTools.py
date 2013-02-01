@@ -561,26 +561,48 @@ def detect_local_maxima(arr, toricMap=False):
         detected_maxima = detected_maxima[X:2*X,Y:2*Y]
     return numpy.where(detected_maxima)
 
-def getSaddlepoints(matrix):
+def getSaddlepoints(matrix, startingPoints = None):
     i,j = detect_local_minima(matrix, toricMap=True)
-    localMinimaIndex = map(lambda x,y: (x,y), i,j)
+    if startingPoints == None:
+        localMinimaIndex = map(lambda x,y: (x,y), i,j)
+    else:
+        localMinimaIndex = startingPoints
     n = len(localMinimaIndex)
     floods = []
     for startingPoint in localMinimaIndex:
         outPath, clusterPathMat, grads = minPath(matrix, startingPoint = startingPoint)
         floods.append(outPath)
     saddlePointsIndex = []
-    c = 0
     nComb = scipy.misc.comb(n,2,exact=1)
+    def interFloods(a,b):
+        for j1 in range(len(a)):
+            e = a[j1]
+            try:
+                i1 = b.index(e)
+                break
+            except:
+                continue
+        for j2 in range(len(b)):
+            e = b[j2]
+            try:
+                i2 = a.index(e)
+                break
+            except:
+                continue
+        if i1 < i2:
+            return a[j1]
+        else:
+            return b[j2]
+    c = 0
     for i in range(n-1):
         for j in range(i+1,n):
             c+=1
             sys.stdout.write('Searching for saddle points: %d/%d'%(c,nComb))
             sys.stdout.write('\r')
             sys.stdout.flush()
-            saddlePointsIndex.append(tuple(numpy.array(floods[i])[numpy.argsort(map(lambda x: floods[i].index(x), set(floods[i]) & set(floods[j])))][0]))
+            saddlePointsIndex.append(interFloods(floods[i], floods[j]))
     saddlePoints = numpy.zeros_like(matrix, dtype=bool)
     for e in saddlePointsIndex:
         i,j = e
         saddlePoints[i,j] = True
-    return saddlePoints
+    return floods, saddlePoints
