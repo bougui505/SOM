@@ -565,17 +565,24 @@ def detect_local_maxima(arr, toricMap=False):
         detected_maxima = detected_maxima[X:2*X,Y:2*Y]
     return numpy.where(detected_maxima)
 
-def getBassins(matrix):
-    i,j = detect_local_minima(matrix, toricMap=True)
-    localMinimaIndex = map(lambda x,y: (x,y), i,j)
-    n = len(localMinimaIndex)
-    floods = []
-    for startingPoint in localMinimaIndex:
-        outPath, clusterPathMat, grad = minPath(matrix, startingPoint = startingPoint)
-        floods.append(outPath)
-    grads = []
-    for flood in floods:
-        potential = matrix[(numpy.array(flood)[:,0], numpy.array(flood)[:,1])]
-        grad = numpy.array(zip(-potential,potential[1:])).sum(axis=1)
-        grads.append(grad)
-    return localMinimaIndex, floods, grads, matrix_filtered
+def getBassins(matrix, gaussian_filter_sigma=0.):
+    matrix = expandMatrix(matrix)
+    neighborhood = morphology.generate_binary_structure(len(matrix.shape),2)
+    # apply the local minimum filter; all locations of minimum value
+    # in their neighborhood are set to 1
+    # http://www.scipy.org/doc/api_docs/SciPy.ndimage.filters.html#minimum_filter
+    matrix = filters.minimum_filter(matrix, footprint=neighborhood)
+    matrix = condenseMatrix(matrix)
+    outPath, clusterPathMat, grad = minPath(matrix)
+    flood = numpy.asarray(outPath)
+    potential = []
+    for e in flood:
+        i,j = e
+        potential.append(matrix[i,j])
+    potential = numpy.asarray(potential)
+    potential = scipy.ndimage.filters.gaussian_filter(potential, gaussian_filter_sigma)
+    derivative = lambda x: numpy.array(zip(-x,x[1:])).sum(axis=1)
+    signproduct = lambda x: numpy.array(zip(x,x[1:])).prod(axis=1)
+    potential_prime = derivative(potential)
+    extrema = flood[2:][numpy.where(signproduct(potential_prime)<0)[0],:]
+    return extrema
