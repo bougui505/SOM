@@ -485,7 +485,7 @@ def uMovie(fileName = 'MapSnapshots.tar'):
   uMatrix = getUmatrix(map)
   plotMat(uMatrix, 'uMatrices/uMat_%0*d.png'%(4,c.next()))
 
-def detect_local_minima(arr, toricMap=False):
+def detect_local_minima(arr, toricMap=False, getFilteredArray=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
     """
     Takes an array and detects the troughs using the local maximum filter.
@@ -501,7 +501,8 @@ def detect_local_minima(arr, toricMap=False):
     # apply the local minimum filter; all locations of minimum value
     # in their neighborhood are set to 1
     # http://www.scipy.org/doc/api_docs/SciPy.ndimage.filters.html#minimum_filter
-    local_min = (filters.minimum_filter(arr, footprint=neighborhood)==arr)
+    arr_filtered = filters.minimum_filter(arr, footprint=neighborhood)
+    local_min = (arr_filtered==arr)
     # local_min is a mask that contains the peaks we are
     # looking for, but also the background.
     # In order to isolate the peaks we must remove the background from the mask.
@@ -521,7 +522,10 @@ def detect_local_minima(arr, toricMap=False):
     detected_minima = local_min - eroded_background
     if toricMap:
         detected_minima = detected_minima[X:2*X,Y:2*Y]
-    return numpy.where(detected_minima)
+    if not getFilteredArray:
+        return numpy.where(detected_minima)
+    else:
+        return numpy.where(detected_minima), condenseMatrix(arr_filtered)
 
 def detect_local_maxima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
@@ -561,48 +565,17 @@ def detect_local_maxima(arr, toricMap=False):
         detected_maxima = detected_maxima[X:2*X,Y:2*Y]
     return numpy.where(detected_maxima)
 
-def getSaddlepoints(matrix, startingPoints = None):
+def getBassins(matrix):
     i,j = detect_local_minima(matrix, toricMap=True)
-    if startingPoints == None:
-        localMinimaIndex = map(lambda x,y: (x,y), i,j)
-    else:
-        localMinimaIndex = startingPoints
+    localMinimaIndex = map(lambda x,y: (x,y), i,j)
     n = len(localMinimaIndex)
     floods = []
     for startingPoint in localMinimaIndex:
-        outPath, clusterPathMat, grads = minPath(matrix, startingPoint = startingPoint)
+        outPath, clusterPathMat, grad = minPath(matrix, startingPoint = startingPoint)
         floods.append(outPath)
-    saddlePointsIndex = []
-    nComb = scipy.misc.comb(n,2,exact=1)
-    def interFloods(a,b):
-        for j1 in range(len(a)):
-            e = a[j1]
-            try:
-                i1 = b.index(e)
-                break
-            except:
-                continue
-        for j2 in range(len(b)):
-            e = b[j2]
-            try:
-                i2 = a.index(e)
-                break
-            except:
-                continue
-        if i1 < i2:
-            return a[j1]
-        else:
-            return b[j2]
-    c = 0
-    for i in range(n-1):
-        for j in range(i+1,n):
-            c+=1
-            sys.stdout.write('Searching for saddle points: %d/%d'%(c,nComb))
-            sys.stdout.write('\r')
-            sys.stdout.flush()
-            saddlePointsIndex.append(interFloods(floods[i], floods[j]))
-    saddlePoints = numpy.zeros_like(matrix, dtype=bool)
-    for e in saddlePointsIndex:
-        i,j = e
-        saddlePoints[i,j] = True
-    return floods, saddlePoints
+    grads = []
+    for flood in floods:
+        potential = matrix[(numpy.array(flood)[:,0], numpy.array(flood)[:,1])]
+        grad = numpy.array(zip(-potential,potential[1:])).sum(axis=1)
+        grads.append(grad)
+    return localMinimaIndex, floods, grads, matrix_filtered
