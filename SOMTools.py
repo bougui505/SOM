@@ -569,7 +569,11 @@ def detect_local_maxima(arr, toricMap=False):
         detected_maxima = detected_maxima[X:2*X,Y:2*Y]
     return numpy.where(detected_maxima)
 
-def getBassins(matrix, gaussian_filter_sigma=0.):
+def getSaddlePoints(matrix, gaussian_filter_sigma=0., low=None, high=None):
+    if low == None:
+        low = matrix.min()
+    if high == None:
+        high = matrix.max()
     matrix = expandMatrix(matrix)
     neighborhood = morphology.generate_binary_structure(len(matrix.shape),2)
     # apply the local minimum filter; all locations of minimum value
@@ -588,5 +592,10 @@ def getBassins(matrix, gaussian_filter_sigma=0.):
     derivative = lambda x: numpy.array(zip(-x,x[1:])).sum(axis=1)
     signproduct = lambda x: numpy.array(zip(x,x[1:])).prod(axis=1)
     potential_prime = derivative(potential)
-    extrema = flood[2:][numpy.where(signproduct(potential_prime)<0)[0],:]
-    return extrema
+    signproducts = numpy.sign(signproduct(potential_prime))
+    extrema = flood[2:][numpy.where(signproducts<0)[0],:]
+    bassinlimits = derivative(signproducts)
+    saddlePoints = numpy.asarray(outPath[3:])[bassinlimits==-2]
+    saddlePointValues = numpy.asarray(map(lambda x: matrix[x[0],x[1]], saddlePoints))
+    saddlePoints = saddlePoints[numpy.logical_and(saddlePointValues>=low, saddlePointValues<=high),:]
+    return saddlePoints
