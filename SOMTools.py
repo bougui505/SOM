@@ -425,6 +425,10 @@ def continuousMap(clusters):
  for j in range(clusters.shape[1]):
   if clusters[0,j] != 0 and clusters[-1,j] != 0:
    clusters[clusters == clusters[-1,j]] = clusters[0,j]
+ c = 1
+ for e in numpy.unique(clusters)[1:]:
+  clusters[clusters==e] = c
+  c+=1
  return clusters
 
 def uDensity(bmuDensity,uMatrix,nslice = 100,clip=True):
