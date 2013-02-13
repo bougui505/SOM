@@ -599,3 +599,48 @@ def getSaddlePoints(matrix, gaussian_filter_sigma=0., low=None, high=None):
     saddlePointValues = numpy.asarray(map(lambda x: matrix[x[0],x[1]], saddlePoints))
     saddlePoints = saddlePoints[numpy.logical_and(saddlePointValues>=low, saddlePointValues<=high),:]
     return saddlePoints
+
+def getVectorField(Map, sign=False):
+ X,Y,cardinal = Map.shape
+ uMatrix = getUmatrix(Map)
+ uMatrix_ravel = uMatrix.flatten()
+ distanceMatrix = scipy.spatial.distance.squareform(scipy.spatial.distance.pdist(Map.reshape(X*Y,cardinal)))
+ vectorsField = numpy.zeros((X,Y,2))
+ vectors_unit = [(-1/numpy.sqrt(2),-1/numpy.sqrt(2)),(-1,0),(-1/numpy.sqrt(2),1/numpy.sqrt(2)),(0,-1),(0,1),(1/numpy.sqrt(2),-1/numpy.sqrt(2)),(1,0),(1/numpy.sqrt(2),1/numpy.sqrt(2))]
+ for i in range(X):
+  for j in range(Y):
+   iRef = numpy.ravel_multi_index((i%X,j%Y),(X,Y))
+   jRef1 = numpy.ravel_multi_index(((i-1)%X,(j-1)%Y),(X,Y))
+   jRef2 = numpy.ravel_multi_index(((i-1)%X,(j)%Y),(X,Y))
+   jRef3 = numpy.ravel_multi_index(((i-1)%X,(j+1)%Y),(X,Y))
+   jRef4 = numpy.ravel_multi_index(((i)%X,(j-1)%Y),(X,Y))
+   jRef5 = numpy.ravel_multi_index(((i)%X,(j+1)%Y),(X,Y))
+   jRef6 = numpy.ravel_multi_index(((i+1)%X,(j-1)%Y),(X,Y))
+   jRef7 = numpy.ravel_multi_index(((i+1)%X,(j)%Y),(X,Y))
+   jRef8 = numpy.ravel_multi_index(((i+1)%X,(j+1)%Y),(X,Y))
+   norms = [distanceMatrix[iRef,jRef1], distanceMatrix[iRef,jRef2], distanceMatrix[iRef,jRef3], distanceMatrix[iRef,jRef4], distanceMatrix[iRef,jRef5], distanceMatrix[iRef,jRef6], distanceMatrix[iRef,jRef7], distanceMatrix[iRef,jRef8]]
+   if sign:
+    signs = [numpy.sign(uMatrix_ravel[iRef]-uMatrix_ravel[e]) for e in [jRef1,jRef2,jRef3,jRef4,jRef5,jRef6,jRef7,jRef8]]
+    norms = numpy.array(signs)*numpy.array(norms)
+   vectors = numpy.atleast_2d(norms).T*numpy.array(vectors_unit)
+   vectorsField[i,j] = vectors.sum(axis=0)
+ vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
+ return vectorsField
+
+def getPathMap(bmus,smap):
+    uMatrix = getUmatrix(smap)
+    X,Y,cardinal = smap.shape
+    bmuLinks = numpy.array( zip( bmus,bmus[1:],bmus[1:]+numpy.array([X,0]),bmus[1:]+numpy.array([0,Y]),bmus[1:]+numpy.array([X,Y]),bmus[1:]+numpy.array([-X,0]),bmus[1:]+numpy.array([0,-Y]),bmus[1:]+numpy.array([-X,Y]),bmus[1:]+numpy.array([X,-Y]),bmus[1:]+numpy.array([-X,Y]) ))
+    getMinDistIndex = lambda x: x[1:][scipy.spatial.distance.cdist(numpy.atleast_2d(x[0]),x[1:]).argmin()] # To take into account periodicity
+    bmuLinks = numpy.array(map(getMinDistIndex, bmuLinks))
+    vectors = bmuLinks - bmus[:bmuLinks.shape[0]]
+    n = vectors.shape[0]
+    vectorsMap = numpy.zeros((X,Y,2))
+    normsMap = numpy.zeros((X,Y))
+    for k in range(n):
+        i,j = bmus[k]
+        vectorsMap[i,j]+=vectors[k]
+        normsMap[i,j]+=1
+    vectorsMap = numpy.atleast_3d(normsMap)*(vectorsMap / numpy.atleast_3d(numpy.sqrt((vectorsMap**2).sum(axis=2))))
+    matplotlib.pyplot.quiver(vectorsMap[:,:,1],vectorsMap[:,:,0],uMatrix, units='xy', pivot='tail')
+    return vectorsMap
