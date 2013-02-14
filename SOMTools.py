@@ -642,5 +642,14 @@ def getPathMap(bmus,smap):
         vectorsMap[i,j]+=vectors[k]
         normsMap[i,j]+=1
     vectorsMap = numpy.atleast_3d(normsMap)*(vectorsMap / numpy.atleast_3d(numpy.sqrt((vectorsMap**2).sum(axis=2))))
-    matplotlib.pyplot.quiver(vectorsMap[:,:,1],vectorsMap[:,:,0],uMatrix, units='xy', pivot='tail')
+    coords = numpy.zeros((X*Y,4))
+    c = 0
+    for i in range(X):
+        for j in range(Y):
+            u,v = vectorsMap[i,j]
+            coords[c] = [i,j,u,v]
+            c+=1
+    numpy.savetxt('vectorsField.txt', coords, fmt='%d %d %.2f %.2f')
+#    matplotlib.pyplot.quiver(vectorsMap[:,:,1],vectorsMap[:,:,0],uMatrix, units='xy', pivot='tail')
+    matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot='tail')
     return vectorsMap
