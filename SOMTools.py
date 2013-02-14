@@ -627,8 +627,7 @@ def getVectorField(Map, sign=False):
  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
  return vectorsField
 
-def getPathMap(bmus,smap):
-    uMatrix = getUmatrix(smap)
+def getPathMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=None):
     X,Y,cardinal = smap.shape
     bmuLinks = numpy.array( zip( bmus,bmus[1:],bmus[1:]+numpy.array([X,0]),bmus[1:]+numpy.array([0,Y]),bmus[1:]+numpy.array([X,Y]),bmus[1:]+numpy.array([-X,0]),bmus[1:]+numpy.array([0,-Y]),bmus[1:]+numpy.array([-X,Y]),bmus[1:]+numpy.array([X,-Y]),bmus[1:]+numpy.array([-X,Y]) ))
     getMinDistIndex = lambda x: x[1:][scipy.spatial.distance.cdist(numpy.atleast_2d(x[0]),x[1:]).argmin()] # To take into account periodicity
@@ -637,10 +636,14 @@ def getPathMap(bmus,smap):
     n = vectors.shape[0]
     vectorsMap = numpy.zeros((X,Y,2))
     normsMap = numpy.zeros((X,Y))
+    counterMap = numpy.zeros((X,Y), dtype=int)
+    c = 1
     for k in range(n):
         i,j = bmus[k]
         vectorsMap[i,j]+=vectors[k]
         normsMap[i,j]+=1
+        counterMap[i,j] = c
+        c+=1
     vectorsMap = numpy.atleast_3d(normsMap)*(vectorsMap / numpy.atleast_3d(numpy.sqrt((vectorsMap**2).sum(axis=2))))
     coords = numpy.zeros((X*Y,4))
     c = 0
@@ -651,5 +654,17 @@ def getPathMap(bmus,smap):
             c+=1
     numpy.savetxt('vectorsField.txt', coords, fmt='%d %d %.2f %.2f')
 #    matplotlib.pyplot.quiver(vectorsMap[:,:,1],vectorsMap[:,:,0],uMatrix, units='xy', pivot='tail')
-    matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot='tail')
+    matplotlib.pyplot.axis([-X/20,X+X/20,-Y/20,Y+Y/20])
+    if colorByUmatrix and not colorByPhysicalTime:
+        uMatrix = getUmatrix(smap)
+        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot='tail')
+    if colorByPhysicalTime:
+        if timeStep ==None:
+            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap, units='xy', pivot='tail')
+        else:
+            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap*timeStep, units='xy', pivot='tail')
+    matplotlib.pyplot.quiverkey(vectorsMapPlot, 0.9, 0.01, 50, 'flow: %d'%(50), coordinates = 'axes')
+    cb = matplotlib.pyplot.colorbar()
+    if colorByPhysicalTime and timeStep != None:
+        cb.set_label('Physical time in ns')
     return vectorsMap
