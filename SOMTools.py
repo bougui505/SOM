@@ -640,11 +640,10 @@ def getPathMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=
     c = 1
     for k in range(n):
         i,j = bmus[k]
-        vectorsMap[i,j]+=vectors[k]
+        vectorsMap[i,j]+=vectors[k]/numpy.linalg.norm(vectors[k])
         normsMap[i,j]+=1
         counterMap[i,j] = c
         c+=1
-    vectorsMap = numpy.atleast_3d(normsMap)*(vectorsMap / numpy.atleast_3d(numpy.sqrt((vectorsMap**2).sum(axis=2))))
     coords = numpy.zeros((X*Y,4))
     c = 0
     for i in range(X):
@@ -653,7 +652,6 @@ def getPathMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=
             coords[c] = [i,j,u,v]
             c+=1
     numpy.savetxt('vectorsField.txt', coords, fmt='%d %d %.2f %.2f')
-#    matplotlib.pyplot.quiver(vectorsMap[:,:,1],vectorsMap[:,:,0],uMatrix, units='xy', pivot='tail')
     matplotlib.pyplot.axis([-X/20,X+X/20,-Y/20,Y+Y/20])
     if colorByUmatrix and not colorByPhysicalTime:
         uMatrix = getUmatrix(smap)
@@ -667,4 +665,6 @@ def getPathMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=
     cb = matplotlib.pyplot.colorbar()
     if colorByPhysicalTime and timeStep != None:
         cb.set_label('Physical time in ns')
+    zeroFlow = numpy.where(normsMap==0)
+    matplotlib.pyplot.plot(zeroFlow[0], zeroFlow[1], 'ro')
     return vectorsMap
