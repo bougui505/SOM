@@ -627,7 +627,7 @@ def getVectorField(Map, sign=False):
  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
  return vectorsField
 
-def getPathMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=None, inFlow = False, colorbar = True):
+def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False,timeStep=None, inFlow = False, colorbar = True):
     X,Y,cardinal = smap.shape
     pivot = 'tail'
     if inFlow:
