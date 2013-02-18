@@ -679,5 +679,5 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
     if colorByPhysicalTime and timeStep != None:
         cb.set_label('Physical time in ns')
     zeroFlow = numpy.where(normsMap==0)
-    matplotlib.pyplot.plot(zeroFlow[0], zeroFlow[1], 'ro')
+    matplotlib.pyplot.plot(zeroFlow[0], zeroFlow[1], linestyle='.', markerfacecolor='black', marker='o')
     return vectorsMap
