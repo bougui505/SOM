@@ -627,7 +627,7 @@ def getVectorField(Map, sign=False):
  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
  return vectorsField
 
-def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByDensity=False, normByDensity=False,timeStep=None, inFlow = False, colorbar = True):
+def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByDensity=False, normByDensity=False,timeStep=None, inFlow = False, colorbar = True, colormap=None):
     X,Y,cardinal = smap.shape
     pivot = 'tail'
     if inFlow:
@@ -665,14 +665,14 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
     matplotlib.pyplot.axis([-X/20,X+X/20,-Y/20,Y+Y/20])
     if colorByUmatrix and not colorByPhysicalTime and not colorByDensity:
         uMatrix = getUmatrix(smap)
-        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot=pivot)
+        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot=pivot, cmap=colormap)
     if colorByPhysicalTime:
         if timeStep ==None:
-            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap, units='xy', pivot=pivot)
+            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap, units='xy', pivot=pivot, cmap=colormap)
         else:
-            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap*timeStep, units='xy', pivot=pivot)
+            vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap*timeStep, units='xy', pivot=pivot, cmap=colormap)
     if colorByDensity:
-        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], normsMap, units='xy', pivot=pivot)
+        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], normsMap, units='xy', pivot=pivot, cmap=colormap)
     matplotlib.pyplot.quiverkey(vectorsMapPlot, 0.9, 0.01, quiverkeyLength, 'flow: %d'%(quiverkeyLength), coordinates = 'axes')
     if colorbar:
         cb = matplotlib.pyplot.colorbar()
@@ -680,4 +680,4 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
         cb.set_label('Physical time in ns')
     zeroFlow = numpy.where(normsMap==0)
     matplotlib.pyplot.plot(zeroFlow[0], zeroFlow[1], linestyle='.', markerfacecolor='black', marker='o')
-    return vectorsMap
+    return vectorsMap, normsMap
