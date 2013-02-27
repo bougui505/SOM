@@ -600,7 +600,7 @@ def getSaddlePoints(matrix, gaussian_filter_sigma=0., low=None, high=None):
     saddlePoints = saddlePoints[numpy.logical_and(saddlePointValues>=low, saddlePointValues<=high),:]
     return saddlePoints
 
-def getVectorField(Map, sign=False):
+def getVectorField(Map, sign=True):
  X,Y,cardinal = Map.shape
  uMatrix = getUmatrix(Map)
  uMatrix_ravel = uMatrix.flatten()
