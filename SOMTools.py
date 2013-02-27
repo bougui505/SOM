@@ -627,7 +627,7 @@ def getVectorField(Map, sign=False):
  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
  return vectorsField
 
-def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByDensity=False, normByDensity=False,timeStep=None, inFlow = False, colorbar = True, colormap=None):
+def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByDensity=False, normByDensity=False,timeStep=None, inFlow = False, colorbar = True, colormap=None, colorMatrix=None):
     X,Y,cardinal = smap.shape
     pivot = 'tail'
     if inFlow:
@@ -663,7 +663,7 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
             c+=1
     numpy.savetxt('vectorsField.txt', coords, fmt='%d %d %.2f %.2f')
     matplotlib.pyplot.axis([-X/20,X+X/20,-Y/20,Y+Y/20])
-    if colorByUmatrix and not colorByPhysicalTime and not colorByDensity:
+    if colorByUmatrix and not colorByPhysicalTime and not colorByDensity and colorMatrix == None:
         uMatrix = getUmatrix(smap)
         vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], uMatrix, units='xy', pivot=pivot, cmap=colormap)
     if colorByPhysicalTime:
@@ -673,6 +673,8 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
             vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], counterMap*timeStep, units='xy', pivot=pivot, cmap=colormap)
     if colorByDensity:
         vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], normsMap, units='xy', pivot=pivot, cmap=colormap)
+    if colorMatrix != None:
+        vectorsMapPlot = matplotlib.pyplot.quiver(coords[:,0], coords[:,1], coords[:,2], coords[:,3], colorMatrix, units='xy', pivot=pivot, cmap=colormap)
     matplotlib.pyplot.quiverkey(vectorsMapPlot, 0.9, 0.01, quiverkeyLength, 'flow: %d'%(quiverkeyLength), coordinates = 'axes')
     if colorbar:
         cb = matplotlib.pyplot.colorbar()
