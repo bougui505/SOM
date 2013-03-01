@@ -600,7 +600,7 @@ def getSaddlePoints(matrix, gaussian_filter_sigma=0., low=None, high=None):
     saddlePoints = saddlePoints[numpy.logical_and(saddlePointValues>=low, saddlePointValues<=high),:]
     return saddlePoints
 
-def getVectorField(Map, sign=True):
+def getVectorField(Map, sign=True, colorMatrix=None):
  X,Y,cardinal = Map.shape
  uMatrix = getUmatrix(Map)
  uMatrix_ravel = uMatrix.flatten()
@@ -624,7 +624,10 @@ def getVectorField(Map, sign=True):
     norms = numpy.array(signs)*numpy.array(norms)
    vectors = numpy.atleast_2d(norms).T*numpy.array(vectors_unit)
    vectorsField[i,j] = vectors.sum(axis=0)
- vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
+ if colorMatrix == None:
+  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], uMatrix, units='xy', pivot='tail')
+ else:
+  vectorsFieldPlot = matplotlib.pyplot.quiver(vectorsField[:,:,1], vectorsField[:,:,0], colorMatrix, units='xy', pivot='tail')
  return vectorsField
 
 def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByDensity=False, normByDensity=False,timeStep=None, inFlow = False, colorbar = True, colormap=None, colorMatrix=None):
