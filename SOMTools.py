@@ -686,3 +686,60 @@ def getFlowMap(bmus,smap,colorByUmatrix=True,colorByPhysicalTime=False, colorByD
     zeroFlow = numpy.where(normsMap==0)
     matplotlib.pyplot.plot(zeroFlow[0], zeroFlow[1], linestyle='.', markerfacecolor='black', marker='o')
     return vectorsMap, normsMap
+
+def getNeighbors(pos,shape):
+    X,Y = shape
+    i,j = pos
+    neighbors = []
+    for k in range(i-1,i+2):
+        for l in range(j-1,j+2):
+            if k != i and l != j:
+                neighbors.append((k%X,l%Y))
+    return neighbors
+
+def metropolis_acceptance(matrix, pos1, pos2, k, T):
+    p_pos2 = numpy.exp( -matrix[pos2] / (k*T) )
+    p_pos1 = numpy.exp( -matrix[pos1] / (k*T) )
+    acceptance = min( [ 1, p_pos2 / p_pos1  ] )
+    return numpy.random.rand() < acceptance
+
+def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None):
+    if k == None:
+        k = matrix.mean() / (numpy.log(2)*298.0) # acceptance of 0.5 for the mean energy at 298 K
+    X,Y = matrix.shape
+    if stop == None:
+        target = matrix.min()
+        stop = scipy.ndimage.minimum_position(matrix)
+        print 'Minimal value for (%d,%d) position'%stop
+    else:
+        target = matrix[stop]
+    minpos = numpy.asarray(numpy.where(expandMatrix(matrix) == target)).T
+    grid = numpy.ones_like(expandMatrix(matrix))
+    for e in minpos:
+        i,j = e
+        grid[i,j] = 0
+    grid = condenseMatrix(scipy.ndimage.morphology.distance_transform_edt(grid))
+    def getSortedNeighbors(pos):
+        neighbors = numpy.asarray(getNeighbors(pos, (X,Y)))
+        return neighbors[numpy.argsort(grid[neighbors[:,0], neighbors[:,1]])] # sorted neighbors according the grid
+    pos = start
+    neighbors = getSortedNeighbors(pos)
+    path = []
+    energies = []
+    pathMat = numpy.zeros((X,Y), dtype='bool')
+    path.append(pos)
+    pathMat[pos] = True
+    energies.append(matrix[pos])
+    for i in range(nstep):
+        for pos2 in neighbors:
+            pos2 = tuple(pos2)
+            isAccepted = metropolis_acceptance(matrix, pos, pos2, k, T)
+            if isAccepted:
+                pos = pos2
+                break
+        if pos not in path:
+            path.append(pos)
+            energies.append(matrix[pos])
+            pathMat[pos] = True
+        neighbors = getSortedNeighbors(pos)
+    return path, pathMat, energies, grid
