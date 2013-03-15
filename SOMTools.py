@@ -241,7 +241,9 @@ def cmap_discretize(cmap, N):
  # Return colormap object.
  return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
 
-def minPath(matrix, gradThreshold=None, startingPoint = None):
+def minPath(matrix, gradThreshold=None, startingPoint = None, nsteps=None):
+ if nsteps == None:
+  nsteps = matrix.size
  if gradThreshold == None:
   gradThreshold = numpy.mean(matrix)
  if type(matrix) == numpy.ma.core.MaskedArray:
@@ -267,6 +269,8 @@ def minPath(matrix, gradThreshold=None, startingPoint = None):
  cIndex = 1
  while (i,j) != maxPosition or start:
   c = ic.next()
+  if c > nsteps:
+   break
   start = False
   labels = numpy.zeros(matrix.shape, dtype=int)
   for x in [i-1,i,i+1]:
