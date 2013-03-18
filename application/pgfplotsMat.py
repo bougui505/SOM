@@ -21,7 +21,6 @@ if options.namesFileName != None:
  plotNames = True
  namesFileName = options.namesFileName
  names = numpy.load(namesFileName)
- names = numpy.unique(names)
  bmuCoordinates = numpy.load(options.bmuCoordsFileName)
 
 x_offset = options.offset[0]
