@@ -82,7 +82,7 @@ for i in range(X):
     bmuIndex = bmuIndex[0]
     name = names[bmuIndex]
   if not numpy.isnan(value):
-   outFile.write("(%s,%s) [%.3f]\n"%(i,j,value))
+   outFile.write("(%s,%s) [%e]\n"%(i,j,value))
    if plotNames and plotNames2:
     outNames.append("\\node[color=orange] at (axis cs:%s,%s) {%s};\n"%(i,j, name))
 outFile.write("};\n")
