@@ -12,8 +12,9 @@ configFileName = sys.argv[1]
 Config = ConfigParser.ConfigParser()
 Config.read(configFileName)
 
-ligCharges = numpy.load(Config.get('pc', 'charges'))
-ligAtomIds = numpy.load(Config.get('pc', 'atomIds'))
+params = numpy.load(Config.get('pc', 'params'))
+ligCharges = params['charges']
+ligAtomIds = params['atomIds']
 coordMat = numpy.load(Config.get('pc','coordMat'))
 align = Config.getboolean('pc', 'align')
 residueDescription = Config.getboolean('pc', 'residue')
