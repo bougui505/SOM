@@ -757,3 +757,65 @@ def histeq(im,nbr_bins=256):
     #use linear interpolation of cdf to find new pixel values
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
+
+def contourSOM(M):
+	m = numpy.empty(M.shape, M.dtype)
+	m[:] = M[:]
+	incr=1
+	modulo=m.shape[0]
+	modularg=modulo*3
+
+	outmatrix=expandMatrix(m)
+
+	#initialize starting point
+	u,v=numpy.where(m==m.min())
+	mmax=int(m.max()) + 1
+	points=[]
+	points.append((int(u[0])+modulo,int(v[0])+modulo))
+
+	waterlevel=int(m.min()+incr)
+	outmatrix[outmatrix<100000]=0
+
+	##############
+	def getneighbours(points):
+	 for p in points:
+	   for x in range (p[0]-1,p[0]+2):
+	     for y in range (p[1]-1,p[1]+2):
+	       neighbours.append((x,y))
+	 return neighbours
+	############
+	def arrange(outmatrix):
+	  a=outmatrix[:,(outmatrix!=0).any(axis=0)]
+	  c=a[(a!=0).any(axis=1),:]
+	  #c=numpy.ma.masked_array(b,b==0)
+	  return c
+	######
+	count=0
+	while len(points) < m.size:
+	 count=count+1
+	 #getting neighbours
+	 neighbours = []
+	 neighbours = getneighbours(points)
+	 neighbours = list(set(neighbours)-set(points))
+	 #comparing each neighbour to waterlevel 
+	 progress=0
+	 for x in neighbours:
+	  if m[x[0]%modulo,x[1]%modulo] < waterlevel:
+	   outmatrix[x[0]%modularg][x[1]%modularg]=m[x[0]%modulo][x[1]%modulo]
+	   points.append(x)
+	   m[x[0]%modulo,x[1]%modulo]=1000
+	   progress=1
+
+	 #incrementing waterlevel if water do not spread
+	 if progress == 0:
+	   old=waterlevel
+	   waterlevel=waterlevel+incr
+	   print ("%d/%d"%( waterlevel, mmax))
+
+	#####
+	out=arrange(outmatrix)
+	
+	#plotMat(numpy.ma.masked_array(out,out==0), 'contourSOM.pdf', contour=False)
+	return numpy.ma.masked_array(out,out==0)
+
+
