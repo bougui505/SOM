@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy
-import RandomArray
 import re
 import math
 import matplotlib.pyplot
@@ -94,9 +93,9 @@ class SOM:
      vShape = numpy.array(self.inputvectors[0]).shape
      for e in vShape:
       somShape.append(e)
-     self.M = RandomArray.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
+     self.M = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
      for e in zip(mininpvalue[1:],maxinpvalue[1:]):
-      self.M = numpy.concatenate( (self.M,RandomArray.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+      self.M = numpy.concatenate( (self.M,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
     else:
      inputarray=numpy.asarray(self.inputvectors)
      inputmean=inputarray.mean(axis=0)
