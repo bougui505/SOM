@@ -761,7 +761,8 @@ def histeq(im,nbr_bins=256):
 def contourSOM(M):
 	m = numpy.empty(M.shape, M.dtype)
 	m[:] = M[:]
-	incr=1
+	inclist=numpy.unique(M)
+	indice=0
 	modulo=m.shape[0]
 	modularg=modulo*3
 
@@ -773,8 +774,8 @@ def contourSOM(M):
 	points=[]
 	points.append((int(u[0])+modulo,int(v[0])+modulo))
 
-	waterlevel=int(m.min()+incr)
-	outmatrix[outmatrix<100000]=0
+	waterlevel=inclist[indice]
+	outmatrix[outmatrix<numpy.inf]=0
 
 	##############
 	def getneighbours(points):
@@ -791,7 +792,7 @@ def contourSOM(M):
 	  return c
 	######
 	count=0
-	while len(points) < m.size:
+	while indice < len(inclist)-1:
 	 count=count+1
 	 #getting neighbours
 	 neighbours = []
@@ -803,13 +804,17 @@ def contourSOM(M):
 	  if m[x[0]%modulo,x[1]%modulo] < waterlevel:
 	   outmatrix[x[0]%modularg][x[1]%modularg]=m[x[0]%modulo][x[1]%modulo]
 	   points.append(x)
-	   m[x[0]%modulo,x[1]%modulo]=1000
+	   m[x[0]%modulo,x[1]%modulo]=numpy.inf
 	   progress=1
 
 	 #incrementing waterlevel if water do not spread
 	 if progress == 0:
 	   old=waterlevel
-	   waterlevel=waterlevel+incr
+	   indice+=1
+	   #try:
+	   waterlevel=inclist[indice]
+	   #except IndexError:
+           #  break
 	   print ("%d/%d"%( waterlevel, mmax))
 
 	#####
