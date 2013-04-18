@@ -115,10 +115,10 @@ class Structure(object):
   return self.atoms.__getitem__(item)
 
 class Trajectory(object):
- def __init__(self, dcdfile, struct, selection=None, selectionmask=None, verbose=False, nframe=0):
-  self.file=dcdfile
-  self.verbose=verbose
-  self.selectDict={
+ def __init__(self, dcdfile=None, struct=None, array=None, selection=None, selectionmask=None, verbose=False, nframe=0):
+  self.file = dcdfile
+  self.verbose = verbose
+  self.selectDict = {
       None:    (None,'atomname'),
       "all":   (None,'atomname'),
       "bb":    (['N','CA','C','O'],'atomname'),
@@ -127,19 +127,24 @@ class Trajectory(object):
       "trace": (['CA'],'atomname')
     }
   self.sel,self.selfield=selection if hasattr(selection,"__getitem__") else self.selectDict[selection]
-  if hasattr(struct,"atoms"):
-   self.struct=struct
-  else:
-   self.struct=Structure(struct if hasattr(struct,"read") else open(struct,'r'))
+  if not struct is None:
+   if hasattr(struct,"atoms"):
+    self.struct=struct
+   else:
+    self.struct=Structure(struct if hasattr(struct,"read") else open(struct,'r'))
+   self.indices = self.struct.getSelectionIndices(self.sel,self.selfield) if selectionmask is None else selectionmask
+   self.natom=self.indices.sum()
   self.array=None
   self.mean=None
   self.covariance=None
   self.correlation=None
-  self.indices=self.struct.getSelectionIndices(self.sel,self.selfield) if selectionmask is None else selectionmask
-  self.natom=self.indices.sum()
   self.nframe=0
   self.header={}
-  self.load(nframe=nframe,verbose=verbose)
+  if not array is None:
+   self.array = array
+   self.nframe, self.natom = self.array.shape[0], self.array.shape[1]/3
+  elif not self.file is None:
+   self.load(nframe=nframe,verbose=verbose)
 
  def load(self,nframe=0,verbose=False):
   """
