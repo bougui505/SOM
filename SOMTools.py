@@ -707,7 +707,8 @@ def metropolis_acceptance(matrix, pos1, pos2, k, T):
     acceptance = min( [ 1, p_pos2 / p_pos1  ] )
     return numpy.random.rand() < acceptance
 
-def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None):
+def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, y_offset=None, mask=None):
+    matrix,x_offset,y_offset,mask = contourSOM(matrix, x_offset, y_offset, mask)
     if k == None:
         k = matrix.mean() / (numpy.log(2)*298.0) # acceptance of 0.5 for the mean energy at 298 K
     X,Y = matrix.shape
@@ -717,12 +718,12 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None):
         print 'Minimal value for (%d,%d) position'%stop
     else:
         target = matrix[stop]
-    minpos = numpy.asarray(numpy.where(expandMatrix(matrix) == target)).T
-    grid = numpy.ones_like(expandMatrix(matrix))
+    minpos = numpy.asarray(numpy.where(matrix == target)).T
+    grid = numpy.ones_like(matrix)
     for e in minpos:
         i,j = e
         grid[i,j] = 0
-    grid = condenseMatrix(scipy.ndimage.morphology.distance_transform_edt(grid))
+    grid = scipy.ndimage.morphology.distance_transform_edt(grid)
     def getSortedNeighbors(pos):
         neighbors = numpy.asarray(getNeighbors(pos, (X,Y)))
         return neighbors[numpy.argsort(grid[neighbors[:,0], neighbors[:,1]])] # sorted neighbors according the grid
@@ -746,7 +747,7 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None):
             energies.append(matrix[pos])
             pathMat[pos] = True
         neighbors = getSortedNeighbors(pos)
-    return path, pathMat, energies, grid
+    return matrix, path, pathMat, energies, grid
 
 def histeq(im,nbr_bins=256):
     """Histogram equalization with Python and NumPy """
@@ -820,16 +821,20 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None):
            waterlevel=inclist[indice]
            #except IndexError:
                #  break
-           print ("%d/%d"%( waterlevel, mmax))
+           sys.stdout.write("Flooding: %d/%d"%( waterlevel, mmax))
+           sys.stdout.write('\r')
+           sys.stdout.flush()
 
         #####
         out,x_offset,y_offset=arrange(outmatrix)
         mask = out==0
+        a = expandMatrix(M)[x_offset]
+        out = a[:,y_offset]
         #plotMat(numpy.ma.masked_array(out,out==0), 'contourSOM.pdf', contour=False)
-        return numpy.ma.masked_array(out,mask),x_offset,y_offset,mask
+        return out,x_offset,y_offset,mask
     else:
         a = outmatrix[x_offset]
         out = a[:,y_offset]
-        return numpy.ma.masked_array(out,mask)
+        return out,x_offset,y_offset,mask
 
 
