@@ -149,7 +149,7 @@ class Trajectory(object):
   self.header['desc'] = ('dcd IO.py'+'\x00'*71,)
   self.header['consts'] = (self.nframe,1,1,self.nframe,0,0,0,1,0,1017614563,0,0,0,0,0,0,0,0,0,35)
   self.header['natom'] = self.natom
-  elif not self.file is None:
+  if array is None and not self.file is None:
    self.load(nframe=nframe,verbose=verbose)
 
  def load(self,nframe=0,verbose=False):
