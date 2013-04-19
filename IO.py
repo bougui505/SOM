@@ -127,6 +127,7 @@ class Trajectory(object):
       "trace": (['CA'],'atomname')
     }
   self.sel,self.selfield=selection if hasattr(selection,"__getitem__") else self.selectDict[selection]
+  self.natom = 0
   if not struct is None:
    if hasattr(struct,"atoms"):
     self.struct=struct
@@ -139,10 +140,15 @@ class Trajectory(object):
   self.covariance=None
   self.correlation=None
   self.nframe=0
-  self.header={}
+  self.header={'long': False, }
   if not array is None:
    self.array = array
    self.nframe, self.natom = self.array.shape[0], self.array.shape[1]/3
+  self.header['flag'] = 'CORD'
+  self.header['descn'] = 1
+  self.header['desc'] = ('dcd IO.py'+'\x00'*71,)
+  self.header['consts'] = (self.nframe,1,1,self.nframe,0,0,0,1,0,1017614563,0,0,0,0,0,0,0,0,0,35)
+  self.header['natom'] = self.natom
   elif not self.file is None:
    self.load(nframe=nframe,verbose=verbose)
 
