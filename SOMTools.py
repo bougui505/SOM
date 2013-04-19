@@ -792,6 +792,8 @@ def contourSOM(M):
 	  return c
 	######
 	count=0
+	## fill initial point
+	outmatrix[u+m.shape[0],v+m.shape[1]]=m.min()
 	while indice < len(inclist)-1:
 	 count=count+1
 	 #getting neighbours
