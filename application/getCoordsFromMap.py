@@ -5,6 +5,7 @@ import SOMTools
 import numpy
 import os
 import pickle
+import IO
 
 def getCoordFromNeuron(n):
     naa = n.size/9
@@ -47,7 +48,8 @@ else:
         for j in range(smap.shape[1]):
             outPath.append((i,j))
 traj = []
-for i in range(len(outPath)):
+nframes = len(outPath)
+for i in range(nframes):
     w,v,coords = getCoordFromNeuron(smap[outPath[i]])
     if i == 0:
         vref = v
@@ -63,3 +65,4 @@ for i in range(len(outPath)):
     traj.append(coords)
     print "%d/%d %d"%(i+1,len(outPath),numpy.max(chiralities))
 traj = numpy.asarray(traj)
+numpy.save('SOM_traj', traj)
