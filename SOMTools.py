@@ -697,7 +697,7 @@ def getNeighbors(pos,shape):
     neighbors = []
     for k in range(i-1,i+2):
         for l in range(j-1,j+2):
-            if k != i and l != j:
+            if k != i or l != j:
                 neighbors.append((k%X,l%Y))
     return neighbors
 
@@ -710,7 +710,7 @@ def metropolis_acceptance(matrix, pos1, pos2, k, T):
 def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, y_offset=None, mask=None):
     matrix,x_offset,y_offset,mask = contourSOM(matrix, x_offset, y_offset, mask)
     if k == None:
-        k = matrix.mean() / (numpy.log(2)*298.0) # acceptance of 0.5 for the mean energy at 298 K
+        k = numpy.median(matrix) / (numpy.log(100)*298.0) # acceptance of 0.01 for the median energy at 298 K
     X,Y = matrix.shape
     if stop == None:
         target = matrix.min()
@@ -720,15 +720,14 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, 
         target = matrix[stop]
     minpos = numpy.asarray(numpy.where(matrix == target)).T
     grid = numpy.ones_like(matrix)
+    k_grid = numpy.median(grid) / (numpy.log(100)*T) # acceptance of 0.01 for the median energy at 298 K
     for e in minpos:
         i,j = e
         grid[i,j] = 0
     grid = scipy.ndimage.morphology.distance_transform_edt(grid)
-    def getSortedNeighbors(pos):
-        neighbors = numpy.asarray(getNeighbors(pos, (X,Y)))
-        return neighbors[numpy.argsort(grid[neighbors[:,0], neighbors[:,1]])] # sorted neighbors according the grid
     pos = start
-    neighbors = getSortedNeighbors(pos)
+    neighbors = getNeighbors(pos, (X,Y))
+    numpy.random.shuffle(neighbors)
     path = []
     energies = []
     pathMat = numpy.zeros((X,Y), dtype='bool')
@@ -738,15 +737,20 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, 
     for i in range(nstep):
         for pos2 in neighbors:
             pos2 = tuple(pos2)
-            isAccepted = metropolis_acceptance(matrix, pos, pos2, k, T)
+            isAccepted = metropolis_acceptance(grid, pos, pos2, k_grid, T)
             if isAccepted:
-                pos = pos2
-                break
+                isAccepted = metropolis_acceptance(matrix, pos, pos2, k, T)
+                if isAccepted:
+                    pos = pos2
+                    break
         if pos not in path:
             path.append(pos)
             energies.append(matrix[pos])
             pathMat[pos] = True
-        neighbors = getSortedNeighbors(pos)
+        if pos == stop:
+            break
+        neighbors = getNeighbors(pos, (X,Y))
+        numpy.random.shuffle(neighbors)
     return matrix, path, pathMat, energies, grid
 
 def histeq(im,nbr_bins=256):
