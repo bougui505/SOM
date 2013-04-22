@@ -402,11 +402,18 @@ def xyzMap(matrix, outfilename, spacing=1, center=(0.,0.,0.)):
  outfile.close()
 
 def expandMatrix(matrix):
- n,p=matrix.shape
- outMatrix = numpy.zeros((3*n,3*p))
- for i in range(3):
-  for j in range(3):
-   outMatrix[i*n:(i+1)*n,j*p:(j+1)*p] = matrix
+ if len(matrix.shape) == 2:
+  n,p=matrix.shape
+  outMatrix = numpy.zeros((3*n,3*p))
+  for i in range(3):
+   for j in range(3):
+    outMatrix[i*n:(i+1)*n,j*p:(j+1)*p] = matrix
+ elif len(matrix.shape) == 3:
+  n,p,k=matrix.shape
+  outMatrix = numpy.zeros((3*n,3*p,k))
+  for i in range(3):
+   for j in range(3):
+    outMatrix[i*n:(i+1)*n,j*p:(j+1)*p] = matrix
  return outMatrix
 
 def condenseMatrix(matrix):
@@ -716,9 +723,11 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, 
         target = matrix.min()
         stop = scipy.ndimage.minimum_position(matrix)
         print 'Minimal value for (%d,%d) position'%stop
+        minpos = numpy.asarray(numpy.where(matrix == target)).T
     else:
-        target = matrix[stop]
-    minpos = numpy.asarray(numpy.where(matrix == target)).T
+        minpos = numpy.asarray(stop)
+        minpos.resize((1,2))
+    print minpos
     grid = numpy.ones_like(matrix)
     k_grid = numpy.median(grid) / (numpy.log(100)*T) # acceptance of 0.01 for the median energy at 298 K
     for e in minpos:
