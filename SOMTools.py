@@ -772,10 +772,13 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def contourSOM(M, x_offset=None, y_offset=None, mask=None):
+def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
     m = numpy.empty(M.shape, M.dtype)
     m[:] = M[:]
     inclist=numpy.unique(M)
+    if maxlevel == None:
+        maxlevel = inclist[-1]
+    inclist = inclist[inclist<=maxlevel]
     indice=0
     modulo=m.shape[0]
     modularg=modulo*3
@@ -803,10 +806,10 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None):
 #      offset = -numpy.logical_or((outmatrix==0).all(axis=1),(outmatrix==0).all(axis=0))
           x_offset = -(outmatrix==0).all(axis=1)
           y_offset = -(outmatrix==0).all(axis=0)
-          a=outmatrix[x_offset]
-          c = a[:,y_offset]
-          #c=numpy.ma.masked_array(b,b==0)
-          return c, x_offset, y_offset
+          mask = outmatrix == 0
+          a = mask[x_offset]
+          mask = a[:,y_offset]
+          return mask, x_offset, y_offset
         ######
         count=0
         ## fill initial point
@@ -839,8 +842,7 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None):
            sys.stdout.flush()
 
         #####
-        out,x_offset,y_offset=arrange(outmatrix)
-        mask = out==0
+        mask,x_offset,y_offset=arrange(outmatrix)
         a = expandMatrix(M)[x_offset]
         out = a[:,y_offset]
         #plotMat(numpy.ma.masked_array(out,out==0), 'contourSOM.pdf', contour=False)
