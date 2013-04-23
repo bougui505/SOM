@@ -479,6 +479,12 @@ def getBMU(som, vector):
  bmuCoordinates = numpy.unravel_index(numpy.argmin(dMap), (som.X, som.Y))
  return bmuCoordinates
 
+def getBMUfromMap(smap, vector):
+ X,Y,cardinal = smap.shape
+ dMap = scipy.spatial.distance.cdist(smap.reshape(X*Y,cardinal), numpy.atleast_2d(vector)).flatten()
+ bmuCoordinates = numpy.unravel_index(numpy.argmin(dMap), (X, Y))
+ return bmuCoordinates
+
 def getBmuProb(som, vector):
  t = som.iterations[1]
  dMap = scipy.spatial.distance.cdist(som.Map.reshape(som.X*som.Y,som.cardinal), numpy.atleast_2d(vector)).flatten()
