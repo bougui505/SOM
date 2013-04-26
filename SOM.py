@@ -25,10 +25,13 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+ def __init__(self, inputvectors, trainingsel, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
+  self.selection = trainingsel
+  self.selectcardinal = self.selection.sum()
+  self.followers = inputvectors[:,1-trainingsel]
   self.inputnames = inputnames
   self.autoParam = autoParam
   self.sort2ndPhase = sort2ndPhase
@@ -89,13 +92,15 @@ class SOM:
      print "Map initialization..."
      maxinpvalue = self.inputvectors.max(axis=0)
      mininpvalue = self.inputvectors.min(axis=0)
-     somShape = [self.X, self.Y]
-     vShape = numpy.array(self.inputvectors[0]).shape
-     for e in vShape:
-      somShape.append(e)
-     self.M = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
-     for e in zip(mininpvalue[1:],maxinpvalue[1:]):
-      self.M = numpy.concatenate( (self.M,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+     self.M = numpy.empty((self.X,self.Y,self.cardinal))
+     e_c = 0
+     n_e_c = self.cardinal
+     for e in zip(mininpvalue,maxinpvalue):
+      sys.stdout.write('%d/%d'%(e_c+1,n_e_c))
+      sys.stdout.write('\r')
+      sys.stdout.flush()
+      self.M[:,:,e_c] = numpy.random.uniform(e[0],e[1],(self.X,self.Y))
+      e_c+=1
     else:
      inputarray=numpy.asarray(self.inputvectors)
      inputmean=inputarray.mean(axis=0)
@@ -196,7 +201,7 @@ class SOM:
   """
    Find the Best Matching Unit for the input vector number k
   """
-  return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric).argmin(), (self.X,self.Y))
+  return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k, self.selection], (1,self.selectcardinal)), numpy.reshape(Map[:,:,self.selection], (self.X*self.Y,self.selectcardinal)), self.metric).argmin(), (self.X,self.Y))
   
  def defaultDist(self, vector, Map, distKW):
   X,Y,cardinal=distKW['X'],distKW['Y'],distKW['cardinal']
@@ -261,7 +266,7 @@ class SOM:
    self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
- def learn(self, jobIndex='', nSnapshots = 50):
+ def learn(self, jobIndex=''):
   if self.autoParam:
    self.epsilon_values = []
   Map = self.M
@@ -279,7 +284,6 @@ class SOM:
    pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
    pbar.start()
    ###
-   snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
     if self.sort2ndPhase and tpn > 1:
      if len(kv) > 0:
@@ -302,13 +306,6 @@ class SOM:
       k = kv.pop()
       if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
-    if t in snapshots:
-     snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
-     numpy.save(snapFileName, Map)
-     tar = tarfile.open('MapSnapshots.tar', 'a')
-     tar.add(snapFileName)
-     tar.close()
-     os.remove(snapFileName)
     pbar.update(t)
    pbar.finish()
   self.Map = Map
