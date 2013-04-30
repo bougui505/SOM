@@ -401,18 +401,18 @@ def xyzMap(matrix, outfilename, spacing=1, center=(0.,0.,0.)):
  outfile.truncate()
  outfile.close()
 
-def expandMatrix(matrix):
+def expandMatrix(matrix, expansionfactor = 3):
  if len(matrix.shape) == 2:
   n,p=matrix.shape
-  outMatrix = numpy.zeros((3*n,3*p))
-  for i in range(3):
-   for j in range(3):
+  outMatrix = numpy.zeros((expansionfactor*n,expansionfactor*p))
+  for i in range(expansionfactor):
+   for j in range(expansionfactor):
     outMatrix[i*n:(i+1)*n,j*p:(j+1)*p] = matrix
  elif len(matrix.shape) == 3:
   n,p,k=matrix.shape
-  outMatrix = numpy.zeros((3*n,3*p,k))
-  for i in range(3):
-   for j in range(3):
+  outMatrix = numpy.zeros((expansionfactor*n,expansionfactor*p,k))
+  for i in range(expansionfactor):
+   for j in range(expansionfactor):
     outMatrix[i*n:(i+1)*n,j*p:(j+1)*p] = matrix
  return outMatrix
 
