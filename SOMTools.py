@@ -789,13 +789,13 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
     modulo=m.shape[0]
     modularg=modulo*3
 
-    outmatrix=expandMatrix(m)
+    outmatrix=expandMatrix(m,5)
     if (x_offset, y_offset, mask) == (None,None,None):
         #initialize starting point
         u,v=numpy.where(m==m.min())
         mmax=int(m.max()) + 1
         points=[]
-        points.append((int(u[0])+modulo,int(v[0])+modulo))
+        points.append((int(u[0])+2*modulo,int(v[0])+2*modulo))
 
         waterlevel=inclist[indice]
         outmatrix[outmatrix<numpy.inf]=0
@@ -819,7 +819,7 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
         ######
         count=0
         ## fill initial point
-        outmatrix[u+m.shape[0],v+m.shape[1]]=m.min()
+        outmatrix[u+2*m.shape[0],v+2*m.shape[1]]=m.min()
         while indice < len(inclist)-1:
          count=count+1
          #getting neighbours
@@ -849,7 +849,7 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
 
         #####
         mask,x_offset,y_offset=arrange(outmatrix)
-        a = expandMatrix(M)[x_offset]
+        a = expandMatrix(M,5)[x_offset]
         out = a[:,y_offset]
         #plotMat(numpy.ma.masked_array(out,out==0), 'contourSOM.pdf', contour=False)
         return out,x_offset,y_offset,mask
