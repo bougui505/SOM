@@ -57,7 +57,7 @@ for i in range(nframes):
     v1 = v*(numpy.atleast_2d(numpy.sign(numpy.dot(vref.T,v).diagonal())))
     v2 = v
 #    vs = [ v, v*numpy.atleast_2d([-1,1,1]), v*numpy.atleast_2d([1,-1,1]), v*numpy.atleast_2d([1,1,-1]), v*numpy.atleast_2d([-1,-1,1]), v*numpy.atleast_2d([-1,1,-1]), v*numpy.atleast_2d([1,-1,-1]), v*numpy.atleast_2d([-1,-1,-1]) ]
-    coordsN = [ numpy.sqrt(w)*e for e in [v1,v2,-v1,-v2] ]
+    coordsN = [ numpy.sqrt(w)*e for e in [v1,v2,-v1,-v2] ] / numpy.sqrt(2)
     rmsds = [ ((e - coordsRef)**2).sum(axis=1).mean() for e in coordsN ]
     chiralities = [ numpy.sum(numpy.sign(getChiralities(e))) for e in coordsN ]
     print chiralities
