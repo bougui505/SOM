@@ -787,9 +787,9 @@ def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
     inclist = inclist[inclist<=maxlevel]
     indice=0
     modulo=m.shape[0]
-    modularg=modulo*3
 
     outmatrix=expandMatrix(m,5)
+    modularg=outmatrix.shape[0]
     if (x_offset, y_offset, mask) == (None,None,None):
         #initialize starting point
         u,v=numpy.where(m==m.min())
