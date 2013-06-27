@@ -795,6 +795,7 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
         circummat = numpy.zeros_like(matexpand)
         u,v = numpy.unravel_index(mat.argmin(), mat.shape)
         u,v = u+2*X, v+2*Y
+        circummat[u,v] = mat[u%X,v%Y]
         mat[u%X,v%Y] = numpy.inf
         bayou = [(u,v)]
         neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
