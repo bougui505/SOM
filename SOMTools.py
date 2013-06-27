@@ -17,6 +17,7 @@ import os
 import scipy.ndimage.morphology as morphology
 import scipy.ndimage.filters as filters
 import scipy.misc
+import copy
 
 def plot3Dmat(mat, contourScale = True, rstride=1, cstride=1):
  from mpl_toolkits.mplot3d import Axes3D
@@ -778,84 +779,62 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def contourSOM(M, x_offset=None, y_offset=None, mask=None, maxlevel=None):
-    m = numpy.empty(M.shape, M.dtype)
-    m[:] = M[:]
-    inclist=numpy.unique(M)
-    if maxlevel == None:
-        maxlevel = inclist[-1]
-    inclist = inclist[inclist<=maxlevel]
-    indice=0
-    modulo=m.shape[0]
-
-    outmatrix=expandMatrix(m,5)
-    modularg=outmatrix.shape[0]
+def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
+    def arrange(outmatrix):
+        x_offset = -(outmatrix==0).all(axis=1)
+        y_offset = -(outmatrix==0).all(axis=0)
+        mask = outmatrix == 0
+        a = mask[x_offset]
+        mask = a[:,y_offset]
+        return mask, x_offset, y_offset
+    mat = copy.deepcopy(inputmat)
+    X, Y = mat.shape
+    sortneighbors = lambda n: numpy.asarray(n)[numpy.asarray([mat[e[0]%X,e[1]%Y] for e in n]).argsort()]
+    matexpand = expandMatrix(mat,5)
     if (x_offset, y_offset, mask) == (None,None,None):
-        #initialize starting point
-        u,v=numpy.where(m==m.min())
-        mmax=int(m.max()) + 1
-        points=[]
-        points.append((int(u[0])+2*modulo,int(v[0])+2*modulo))
-
-        waterlevel=inclist[indice]
-        outmatrix[outmatrix<numpy.inf]=0
-
-        ##############
-        def getneighbours(points):
-         for p in points:
-           for x in range (p[0]-1,p[0]+2):
-             for y in range (p[1]-1,p[1]+2):
-               neighbours.append((x,y))
-         return neighbours
-        ############
-        def arrange(outmatrix):
-#      offset = -numpy.logical_or((outmatrix==0).all(axis=1),(outmatrix==0).all(axis=0))
-          x_offset = -(outmatrix==0).all(axis=1)
-          y_offset = -(outmatrix==0).all(axis=0)
-          mask = outmatrix == 0
-          a = mask[x_offset]
-          mask = a[:,y_offset]
-          return mask, x_offset, y_offset
-        ######
-        count=0
-        ## fill initial point
-        outmatrix[u+2*m.shape[0],v+2*m.shape[1]]=m.min()
-        while indice < len(inclist)-1:
-         count=count+1
-         #getting neighbours
-         neighbours = []
-         neighbours = getneighbours(points)
-         neighbours = list(set(neighbours)-set(points))
-         #comparing each neighbour to waterlevel 
-         progress=0
-         for x in neighbours:
-          if m[x[0]%modulo,x[1]%modulo] < waterlevel:
-           outmatrix[x[0]%modularg][x[1]%modularg]=m[x[0]%modulo][x[1]%modulo]
-           points.append(x)
-           m[x[0]%modulo,x[1]%modulo]=numpy.inf
-           progress=1
-
-         #incrementing waterlevel if water do not spread
-         if progress == 0:
-           old=waterlevel
-           indice+=1
-           #try:
-           waterlevel=inclist[indice]
-           #except IndexError:
-               #  break
-           sys.stdout.write("Flooding: %d/%d"%( waterlevel, mmax))
-           sys.stdout.write('\r')
-           sys.stdout.flush()
-
-        #####
-        mask,x_offset,y_offset=arrange(outmatrix)
-        a = expandMatrix(M,5)[x_offset]
+        circummat = numpy.zeros_like(matexpand)
+        u,v = numpy.unravel_index(mat.argmin(), mat.shape)
+        u,v = u+2*X, v+2*Y
+        mat[u%X,v%Y] = numpy.inf
+        bayou = [(u,v)]
+        neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
+                     for item in sublist]
+        i,j = sortneighbors(neighbors)[0]
+        count = 0
+        waterlevels = []
+        n = mat.size - 1
+        progress = 1
+        while count < n:
+            flooding = True
+            while flooding:
+                flooding = False
+                neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
+                             for item in sublist]
+                neighbors = list(set(neighbors) - set(bayou))
+                neighbors = sortneighbors(neighbors)
+                i,j = neighbors[0]
+                waterlevel = mat[i%X,j%Y]
+                for neighbor in neighbors:
+                    i, j = neighbor
+                    if mat[i%X,j%Y] <= waterlevel and count < mat.size:
+                        waterlevels.append(waterlevel)
+                        count += 1
+                        u, v = i, j
+                        bayou.append((u,v))
+                        if count % (n / 100) == 0:
+                            print "%d/100: flooding: %d/%d, %.2f, (%d, %d)"%(progress, count, n, waterlevel,u,v)
+                            progress += 1
+                        circummat[u,v] = mat[u%X,v%Y]
+                        mat[u%X,v%Y] = numpy.inf
+                        flooding = True
+                    else:
+                        break
+        mask, x_offset, y_offset = arrange(circummat)
+        a = circummat[x_offset]
         out = a[:,y_offset]
-        #plotMat(numpy.ma.masked_array(out,out==0), 'contourSOM.pdf', contour=False)
-        return out,x_offset,y_offset,mask
+        return out, x_offset, y_offset, mask, waterlevels
     else:
-        a = outmatrix[x_offset]
+        a = matexpand[x_offset]
         out = a[:,y_offset]
         return out,x_offset,y_offset,mask
-
 
