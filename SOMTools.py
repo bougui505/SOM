@@ -722,7 +722,7 @@ def metropolis_acceptance(matrix, pos1, pos2, k, T):
     return numpy.random.rand() < acceptance
 
 def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, y_offset=None, mask=None):
-    matrix,x_offset,y_offset,mask = contourSOM(matrix, x_offset, y_offset, mask)
+    #matrix,x_offset,y_offset,mask = contourSOM(matrix, x_offset, y_offset, mask)
     if k == None:
         k = numpy.median(matrix) / (numpy.log(100)*298.0) # acceptance of 0.01 for the median energy at 298 K
     X,Y = matrix.shape
@@ -788,10 +788,10 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
         mask = a[:,y_offset]
         return mask, x_offset, y_offset
     mat = copy.deepcopy(inputmat)
-    X, Y = mat.shape
-    sortneighbors = lambda n: numpy.asarray(n)[numpy.asarray([mat[e[0]%X,e[1]%Y] for e in n]).argsort()]
     matexpand = expandMatrix(mat,5)
     if (x_offset, y_offset, mask) == (None,None,None):
+        X, Y = mat.shape
+        sortneighbors = lambda n: numpy.asarray(n)[numpy.asarray([mat[e[0]%X,e[1]%Y] for e in n]).argsort()]
         circummat = numpy.zeros_like(matexpand)
         u,v = numpy.unravel_index(mat.argmin(), mat.shape)
         u,v = u+2*X, v+2*Y
