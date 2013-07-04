@@ -831,7 +831,7 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
         mask, x_offset, y_offset = arrange(circummat)
         a = circummat[x_offset]
         out = a[:,y_offset]
-        return out, x_offset, y_offset, mask, waterlevels
+        return out, x_offset, y_offset, mask, waterlevels, bayou
     else:
         a = matexpand[x_offset]
         out = a[:,y_offset]
