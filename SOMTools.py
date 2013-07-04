@@ -734,7 +734,7 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, 
     else:
         minpos = numpy.asarray(stop)
         minpos.resize((1,2))
-    print minpos
+    #print minpos
     grid = numpy.ones_like(matrix)
     k_grid = numpy.median(grid) / (numpy.log(100)*T) # acceptance of 0.01 for the median energy at 298 K
     for e in minpos:
@@ -804,7 +804,6 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
         count = 0
         waterlevels = []
         n = mat.size - 1
-        progress = 1
         while count < n:
             flooding = True
             while flooding:
@@ -823,8 +822,7 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
                         u, v = i, j
                         bayou.append((u,v))
                         if count % (n / 100) == 0:
-                            print "%d/100: flooding: %d/%d, %.2f, (%d, %d)"%(progress, count, n, waterlevel,u,v)
-                            progress += 1
+                            print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
                         circummat[u,v] = mat[u%X,v%Y]
                         mat[u%X,v%Y] = numpy.inf
                         flooding = True
