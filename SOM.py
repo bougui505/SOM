@@ -78,7 +78,10 @@ class SOM:
       try:
        self.iterations.append(int(line.split('=')[1]))
       except ValueError:
-       self.iterations.append(self.inputvectors.shape[0])
+       if i == 1:
+        self.iterations.append(self.inputvectors.shape[0])
+       else:
+        self.iterations.append(self.inputvectors.shape[0]*10)
    i=i+1
   # Vector simplification
   if simplify_vectors:
