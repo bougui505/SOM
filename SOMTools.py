@@ -779,7 +779,7 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
+def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=False):
     def arrange(outmatrix):
         x_offset = -(outmatrix==0).all(axis=1)
         y_offset = -(outmatrix==0).all(axis=0)
@@ -821,8 +821,9 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
                         count += 1
                         u, v = i, j
                         bayou.append((u,v))
-                        if count % (n / 100) == 0:
-                            print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
+                        if verbose:
+                            if count % (n / 100) == 0:
+                                print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
                         circummat[u,v] = mat[u%X,v%Y]
                         mat[u%X,v%Y] = numpy.inf
                         flooding = True
