@@ -263,7 +263,7 @@ class SOM:
    self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
- def learn(self, jobIndex='', nSnapshots = 50):
+ def learn(self, jobIndex=''):
   if self.autoParam:
    self.epsilon_values = []
   Map = self.M
@@ -281,7 +281,6 @@ class SOM:
    pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
    pbar.start()
    ###
-   snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
     if self.sort2ndPhase and tpn > 1:
      if len(kv) > 0:
@@ -304,13 +303,6 @@ class SOM:
       k = kv.pop()
       if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
-    if t in snapshots:
-     snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
-     numpy.save(snapFileName, Map)
-     tar = tarfile.open('MapSnapshots.tar', 'a')
-     tar.add(snapFileName)
-     tar.close()
-     os.remove(snapFileName)
     pbar.update(t)
    pbar.finish()
   self.Map = Map
