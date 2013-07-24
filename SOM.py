@@ -25,7 +25,9 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+ def __init__(self, inputvectors, inputnames=None, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+  if inputnames == None:
+   inputnames = range(inputvectors.shape[0])
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
