@@ -779,7 +779,7 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=False):
+def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None):
     def arrange(outmatrix):
         x_offset = -(outmatrix==0).all(axis=1)
         y_offset = -(outmatrix==0).all(axis=0)
@@ -787,6 +787,8 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
         a = mask[x_offset]
         mask = a[:,y_offset]
         return mask, x_offset, y_offset
+    if waterstop == None:
+        waterstop = inputmat.max()
     mat = copy.deepcopy(inputmat)
     matexpand = expandMatrix(mat,5)
     if (x_offset, y_offset, mask) == (None,None,None):
@@ -804,8 +806,11 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
         count = 0
         waterlevels = []
         n = mat.size - 1
+        stopflooding = False
         while count < n:
             flooding = True
+            if stopflooding:
+                break
             while flooding:
                 flooding = False
                 neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
@@ -814,6 +819,10 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
                 neighbors = sortneighbors(neighbors)
                 i,j = neighbors[0]
                 waterlevel = mat[i%X,j%Y]
+                if waterlevel > waterstop:
+                    flooding = False
+                    stopflooding = True
+                    break
                 for neighbor in neighbors:
                     i, j = neighbor
                     if mat[i%X,j%Y] <= waterlevel and count < mat.size:
@@ -841,9 +850,9 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
 
 class clusters:
 
-    def __init__(self, umatrix, bmus):
+    def __init__(self, umatrix, bmus, waterstop=None):
         self.umatrix = umatrix
-        self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix, verbose = True)
+        self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
 
     def getclusters(self, nclust):
