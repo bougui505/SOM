@@ -547,7 +547,10 @@ def detect_local_minima(arr, toricMap=False, getFilteredArray=False):
     if not getFilteredArray:
         return numpy.where(detected_minima)
     else:
-        return numpy.where(detected_minima), condenseMatrix(arr_filtered)
+        if toricMap:
+            return numpy.where(detected_minima), condenseMatrix(arr_filtered)
+        else:
+            return numpy.where(detected_minima), arr_filtered
 
 def detect_local_maxima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
