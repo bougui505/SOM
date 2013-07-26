@@ -855,19 +855,23 @@ class clusters:
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
 
-    def getclusters(self, nclust):
+    def getclusters(self, nclust = None):
         self.labels = numpy.zeros(self.bmus.shape[0])
         self.clustmat = numpy.zeros_like(self.umatrix, dtype='int')
         getderiv = lambda y: numpy.asarray(zip(y[1:], -y)).sum(axis=1)[:-1]
         deriv = getderiv(numpy.asarray(self.waterlevels))
-        limits = numpy.unique(deriv)[:nclust-1]
-        poss = [0]
-        for e in limits:
+        limits = numpy.unique(deriv)
+        if nclust != None:
+            self.limits = limits[limits<0][:nclust-1]
+        else:
+            self.limits = limits[limits<0]
+        self.localminima = [0]
+        for e in self.limits:
             pos = (deriv ==e).nonzero()[0][0]
-            poss.append(pos)
-        poss.append(len(self.flooding))
-        poss.sort()
-        bornes = zip(poss,poss[1:])
+            self.localminima.append(pos)
+        self.localminima.append(len(self.flooding))
+        self.localminima.sort()
+        bornes = zip(self.localminima,self.localminima[1:])
         for i, e in enumerate(self.bmus):
             label = 0
             for l1l2 in bornes:
