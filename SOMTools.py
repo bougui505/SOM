@@ -842,11 +842,13 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
 class clusters:
 
     def __init__(self, umatrix, bmus):
-        self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix)
+        self.umatrix = umatrix
+        self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix, verbose = True)
         self.bmus = bmus
 
     def getclusters(self, nclust):
         self.labels = numpy.zeros(self.bmus.shape[0])
+        self.clustmat = numpy.zeros_like(self.umatrix, dtype='int')
         getderiv = lambda y: numpy.asarray(zip(y[1:], -y)).sum(axis=1)[:-1]
         deriv = getderiv(numpy.asarray(self.waterlevels))
         limits = numpy.unique(deriv)[:nclust-1]
@@ -864,3 +866,7 @@ class clusters:
                 l1, l2 = l1l2
                 if tuple(e) in set(self.flooding[l1:l2]):
                     self.labels[i] = label 
+                for pos in self.flooding[l1:l2]:
+                    u,v = pos
+                    self.clustmat[u,v] = label
+        self.clustmat, self.x_offset, self.y_offset, self.mask = circumscribe(self.clustmat, self.x_offset, self.y_offset, self.mask)
