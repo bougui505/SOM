@@ -782,7 +782,7 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None):
+def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None, startingpoint = None, floodgate = False):
     def arrange(outmatrix):
         x_offset = -(outmatrix==0).all(axis=1)
         y_offset = -(outmatrix==0).all(axis=0)
@@ -793,13 +793,19 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
     if waterstop == None:
         waterstop = inputmat.max()
     mat = copy.deepcopy(inputmat)
-    matexpand = expandMatrix(mat,5)
+    if startingpoint == None:
+        matexpand = expandMatrix(mat,5)
+    else:
+        matexpand = mat
     if (x_offset, y_offset, mask) == (None,None,None):
         X, Y = mat.shape
         sortneighbors = lambda n: numpy.asarray(n)[numpy.asarray([mat[e[0]%X,e[1]%Y] for e in n]).argsort()]
         circummat = numpy.zeros_like(matexpand)
-        u,v = numpy.unravel_index(mat.argmin(), mat.shape)
-        u,v = u+2*X, v+2*Y
+        if startingpoint == None:
+            u,v = numpy.unravel_index(mat.argmin(), mat.shape)
+            u,v = u+2*X, v+2*Y
+        else:
+            u,v = startingpoint
         circummat[u,v] = mat[u%X,v%Y]
         mat[u%X,v%Y] = numpy.inf
         bayou = [(u,v)]
@@ -822,6 +828,10 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
                 neighbors = sortneighbors(neighbors)
                 i,j = neighbors[0]
                 waterlevel = mat[i%X,j%Y]
+                if len(waterlevels) > 0:
+                    if floodgate and waterlevel < waterlevels[-1]:
+                        stopflooding = True
+                        break
                 if waterlevel > waterstop:
                     flooding = False
                     stopflooding = True
@@ -841,11 +851,14 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
                         flooding = True
                     else:
                         break
-        mask, x_offset, y_offset = arrange(circummat)
-        a = matexpand[x_offset]
-        out = a[:,y_offset]
-        flooding = [(e[0]%X, e[1]%Y) for e in bayou]
-        return out, x_offset, y_offset, mask, waterlevels, flooding
+        if not floodgate:
+            mask, x_offset, y_offset = arrange(circummat)
+            a = matexpand[x_offset]
+            out = a[:,y_offset]
+            flooding = [(e[0]%X, e[1]%Y) for e in bayou]
+            return out, x_offset, y_offset, mask, waterlevels, flooding
+        else:
+            return circummat, circummat == 0
     else:
         a = matexpand[x_offset]
         out = a[:,y_offset]
@@ -859,30 +872,4 @@ class clusters:
         self.bmus = bmus
 
     def getclusters(self, nclust = None):
-        self.labels = numpy.zeros(self.bmus.shape[0])
-        self.clustmat = numpy.zeros_like(self.umatrix, dtype='int')
-        getderiv = lambda y: numpy.asarray(zip(y[1:], -y)).sum(axis=1)[:-1]
-        deriv = getderiv(numpy.asarray(self.waterlevels))
-        limits = numpy.unique(deriv)
-        if nclust != None:
-            self.limits = limits[limits<0][:nclust-1]
-        else:
-            self.limits = limits[limits<0]
-        self.localminima = [0]
-        for e in self.limits:
-            pos = (deriv ==e).nonzero()[0][0]
-            self.localminima.append(pos)
-        self.localminima.append(len(self.flooding))
-        self.localminima.sort()
-        bornes = zip(self.localminima,self.localminima[1:])
-        for i, e in enumerate(self.bmus):
-            label = 0
-            for l1l2 in bornes:
-                label += 1
-                l1, l2 = l1l2
-                if tuple(e) in set(self.flooding[l1:l2]):
-                    self.labels[i] = label 
-                for pos in self.flooding[l1:l2]:
-                    u,v = pos
-                    self.clustmat[u,v] = label
-        self.clustmat, self.x_offset, self.y_offset, self.mask = circumscribe(self.clustmat, self.x_offset, self.y_offset, self.mask)
+        localminima, filteredumat = SOMTools.detect_local_minima( ma.masked_array(clust.umat_cont, clust.mask), getFilteredArray=True)
