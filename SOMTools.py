@@ -830,6 +830,7 @@ def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None, verbose=Fals
                 waterlevel = mat[i%X,j%Y]
                 if len(waterlevels) > 0:
                     if floodgate and waterlevel < waterlevels[-1]:
+                        flooding = False
                         stopflooding = True
                         break
                 if waterlevel > waterstop:
@@ -871,5 +872,18 @@ class clusters:
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = circumscribe(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
 
-    def getclusters(self, nclust = None):
-        localminima, filteredumat = SOMTools.detect_local_minima( ma.masked_array(clust.umat_cont, clust.mask), getFilteredArray=True)
+    def getclusters(self):
+        localminima, filteredumat = detect_local_minima( numpy.ma.masked_array(self.umat_cont, self.mask), getFilteredArray=True)
+        i,j = self.umat_cont.shape
+        k = localminima[0].size
+        cmats = numpy.zeros((i,j,k), dtype='int')
+        for i, u in enumerate(localminima[0]):
+            v = localminima[1][i]
+            lake, masklake = circumscribe(filteredumat, startingpoint=(u,v), floodgate=True, verbose=False)
+            cmat = 1 - masklake
+            cmat[cmat==1] = i + 1
+            cmats[:,:,i] = cmat
+        cmat = cmats.sum(axis=2)
+        cmat = scipy.ndimage.measurements.label(cmat)[0]
+#        cmat = continuousMap(cmat)
+        return cmat
