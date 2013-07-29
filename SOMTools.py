@@ -880,10 +880,17 @@ class clusters:
         for i, u in enumerate(localminima[0]):
             v = localminima[1][i]
             lake, masklake = circumscribe(filteredumat, startingpoint=(u,v), floodgate=True, verbose=False)
-            cmat = 1 - masklake
-            cmat[cmat==1] = i + 1
-            cmats[:,:,i] = cmat
-        cmat = cmats.sum(axis=2)
-        cmat = scipy.ndimage.measurements.label(cmat)[0]
-#        cmat = continuousMap(cmat)
-        return cmat
+            self.cmat = 1 - masklake
+            self.cmat[self.cmat==1] = i + 1
+            cmats[:,:,i] = self.cmat
+        cmats = cmats[:,:,numpy.argsort(cmats.sum(axis=0).sum(axis=0))][:,:,::-1]
+        self.cmat = numpy.zeros((cmats.shape)[:2], dtype='int')
+        for m in cmats.T:
+            m = m.T
+            n, p = self.cmat.shape
+            for i in range(n):
+                for j in range(p):
+                    if self.cmat[i,j] == 0:
+                        self.cmat[i,j] = m[i,j]
+        self.cmat = continuousMap(self.cmat)
+        return self.cmat
