@@ -873,14 +873,20 @@ class clusters:
         self.bmus = bmus
 
     def getclusters(self):
-        localminima, filteredumat = detect_local_minima( numpy.ma.masked_array(self.umat_cont, self.mask), getFilteredArray=True)
+        self.localminima, self.filteredumat = detect_local_minima( numpy.ma.masked_array(self.umat_cont, self.mask), getFilteredArray=True)
+###Sort local minima
+        minimasorter = numpy.asarray([self.filteredumat[(u,self.localminima[1][i])] for i,u in enumerate(self.localminima[0])]).argsort()
+        self.localminima = list(self.localminima)
+        self.localminima[0], self.localminima[1] = self.localminima[0][minimasorter], self.localminima[1][minimasorter]
+###
         i,j = self.umat_cont.shape
-        k = localminima[0].size
+        k = self.localminima[0].size
         cmats = numpy.zeros((i,j,k), dtype='int')
-        for i, u in enumerate(localminima[0]):
-            v = localminima[1][i]
-            lake, masklake = circumscribe(filteredumat, startingpoint=(u,v), floodgate=True, verbose=False)
+        for i, u in enumerate(self.localminima[0]):
+            v = self.localminima[1][i]
+            lake, masklake = circumscribe(self.filteredumat, startingpoint=(u,v), floodgate=True, verbose=False)
             self.cmat = 1 - masklake
+            self.filteredumat[self.cmat==1] = numpy.inf
             self.cmat[self.cmat==1] = i + 1
             cmats[:,:,i] = self.cmat
         cmats = cmats[:,:,numpy.argsort(cmats.sum(axis=0).sum(axis=0))][:,:,::-1]
