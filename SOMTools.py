@@ -552,7 +552,7 @@ def detect_local_minima(arr, toricMap=False, getFilteredArray=False):
         else:
             return numpy.where(detected_minima), arr_filtered
 
-def detect_local_minima2(arr, toricMap=False, getFilteredArray=False):
+def detect_local_minima2(arr, toricMap=False):
     X,Y = arr.shape
     lminima = []
     for i in range(X):
@@ -564,7 +564,7 @@ def detect_local_minima2(arr, toricMap=False, getFilteredArray=False):
                 lminima.append((i,j))
     lminima = numpy.asarray(lminima)
     lminima = (lminima[:,0], lminima[:,1])
-    return lminima, arr
+    return lminima
 
 def detect_local_maxima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
@@ -887,7 +887,8 @@ class clusters:
         self.bmus = bmus
 
     def getclusters(self):
-        self.localminima, self.filteredumat = detect_local_minima( numpy.ma.masked_array(self.umat_cont, self.mask), getFilteredArray=True)
+        self.localminima = detect_local_minima2( numpy.ma.masked_array(self.umat_cont, self.mask))
+        self.filteredumat = copy.deepcopy(self.umat_cont)
 ###Sort local minima
         minimasorter = numpy.asarray([self.filteredumat[(u,self.localminima[1][i])] for i,u in enumerate(self.localminima[0])]).argsort()
         self.localminima = list(self.localminima)
@@ -913,9 +914,9 @@ class clusters:
                     if self.cmat[i,j] == 0:
                         self.cmat[i,j] = m[i,j]
         self.cmat = continuousMap(self.cmat)
-        self.labels = []
-        for e in self.bmus:
-            i,j = e
-            self.labels.append(self.cmat[i,j])
-        self.labels = numpy.asarray(self.labels)
+#        self.labels = []
+#        for e in self.bmus:
+#            i,j = e
+#            self.labels.append(self.cmat[i,j])
+#        self.labels = numpy.asarray(self.labels)
         return self.cmat
