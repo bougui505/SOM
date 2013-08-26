@@ -914,9 +914,9 @@ class clusters:
                     if self.cmat[i,j] == 0:
                         self.cmat[i,j] = m[i,j]
         self.cmat = continuousMap(self.cmat)
-#        self.labels = []
-#        for e in self.bmus:
-#            i,j = e
-#            self.labels.append(self.cmat[i,j])
-#        self.labels = numpy.asarray(self.labels)
+        self.labels = []
+        for e in self.bmus:
+            i,j = e
+            self.labels.append(self.cmat[i,j])
+        self.labels = numpy.asarray(self.labels)
         return self.cmat
