@@ -552,6 +552,20 @@ def detect_local_minima(arr, toricMap=False, getFilteredArray=False):
         else:
             return numpy.where(detected_minima), arr_filtered
 
+def detect_local_minima2(arr, toricMap=False, getFilteredArray=False):
+    X,Y = arr.shape
+    lminima = []
+    for i in range(X):
+        for j in range(Y):
+            pos = (i,j)
+            neighbors = getNeighbors(pos, (X,Y))
+            nvalues = numpy.asarray( [ arr[e[0],e[1]] for e in neighbors] )
+            if (arr[i,j] <= nvalues).all():
+                lminima.append((i,j))
+    lminima = numpy.asarray(lminima)
+    lminima = (lminima[:,0], lminima[:,1])
+    return lminima, arr
+
 def detect_local_maxima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
     """
