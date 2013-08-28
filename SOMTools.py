@@ -919,4 +919,8 @@ class clusters:
             i,j = e
             self.labels.append(self.cmat[i,j])
         self.labels = numpy.asarray(self.labels)
+        self.offsetmat = (((numpy.asarray(numpy.meshgrid(range(self.x_offset.size),range(self.y_offset.size))).T)[self.x_offset][:,self.y_offset]))
+        X,Y = self.umatrix.shape
+        self.offsetmat[:,:,0] = self.offsetmat[:,:,0]%X
+        self.offsetmat[:,:,1] = self.offsetmat[:,:,1]%Y
         return self.cmat
