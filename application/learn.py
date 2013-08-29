@@ -22,7 +22,6 @@ Config.read(configFileName)
 inputMatrixFileName = Config.get('learn', 'inputMatrixFileName')
 mapFileName = Config.get('learn', 'mapFileName')
 relearn = Config.getboolean('learn', 'relearn')
-nSnapshots = Config.getint('learn', 'nSnapshots')
 autoParam = Config.getboolean('learn', 'autoParam')
 sort2ndPhase = Config.getboolean('learn', 'sort2ndPhase')
 toricMap = Config.getboolean('learn', 'toricMap')
@@ -43,13 +42,13 @@ else:
 #Learning #############################################################################################################
 if glob.glob(mapFileName) == []:
  som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
- som.learn(nSnapshots = nSnapshots)
+ som.learn()
 else:
  mapFileName = glob.glob(mapFileName)[0]
  print "Map file: %s"%mapFileName
  som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = autoParam, sort2ndPhase=sort2ndPhase, toricMap=toricMap, randomInit=randomInit, autoSizeMap=autoSizeMap)
  if relearn:
-  som.learn(nSnapshots = nSnapshots)
+  som.learn()
 #######################################################################################################################
 
 #som = SOM.SOM(inputMatrix, range(inputMatrix.shape[0]), mapFileName=mapFileName, metric='euclidean', autoParam = False)
