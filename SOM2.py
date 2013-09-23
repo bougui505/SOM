@@ -4,7 +4,6 @@
 import os
 import struct
 import re
-import cav
 import sys
 
 import numpy
@@ -131,7 +130,7 @@ class SOM(object):
 		params.update(parameters) # TODO: put default learning parameters after update if not present
 		self.parameters = params
 		
-		show_umatrices = 'show_umatrices' in params # DEBUG
+		show_umatrices = 'show_umatrices' in params # DEBUG show_umatrices=(imshow,draw)
 		
 		numpy.random.seed(params['seed'])
 		# initialize SOM using given parameters (size, size of input vectors, choice of init mode)
