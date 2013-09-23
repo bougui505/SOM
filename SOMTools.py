@@ -914,13 +914,14 @@ class clusters:
                     if self.cmat[i,j] == 0:
                         self.cmat[i,j] = m[i,j]
         self.cmat = continuousMap(self.cmat)
-        self.labels = []
-        for e in self.bmus:
-            i,j = e
-            self.labels.append(self.cmat[i,j])
-        self.labels = numpy.asarray(self.labels)
         self.offsetmat = (((numpy.asarray(numpy.meshgrid(range(self.x_offset.size),range(self.y_offset.size))).T)[self.x_offset][:,self.y_offset]))
         X,Y = self.umatrix.shape
         self.offsetmat[:,:,0] = self.offsetmat[:,:,0]%X
         self.offsetmat[:,:,1] = self.offsetmat[:,:,1]%Y
+        self.labels = []
+        for e in self.bmus:
+            i,j = e
+            u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
+            self.labels.append(self.cmat[u,v])
+        self.labels = numpy.asarray(self.labels)
         return self.cmat
