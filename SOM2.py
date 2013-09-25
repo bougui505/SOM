@@ -12,6 +12,7 @@ from scipy.spatial.distance import cdist
 from scipy.ndimage.morphology import distance_transform_edt
 import itertools
 import bisect, copy
+import scipy.spatial
 
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
@@ -187,7 +188,18 @@ class SOM(object):
         else:
             mask = list(subpart.nonzero()[0])
             dist = cdist(smap[..., mask].reshape((s, mask.sum())), self.input_matrix[:, mask])
-        return numpy.unravel_index(dist.argmin(axis=0), parameters['shape'])
+        return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
+
+    def get_allbmus_kdtree(self, smap=None, **parameters): # Don't use this function for high dimension data: greater than 20 !!!
+        if smap is None:
+            smap = self.smap
+        try:
+            subpart = parameters['learning_subpart']
+        except KeyError:
+            subpart = None
+        s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
+        tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
+        return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
     
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params):
         toric, shape = params['toric'], params['shape']
