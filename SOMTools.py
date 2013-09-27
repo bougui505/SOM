@@ -922,6 +922,6 @@ class clusters:
         for e in self.bmus:
             i,j = e
             u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
-            self.labels.append(self.cmat[u,v])
+            self.labels.append(self.cmat[u,v].max())
         self.labels = numpy.asarray(self.labels)
         return self.cmat
