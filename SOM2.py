@@ -168,26 +168,99 @@ class SOM(object):
                         draw()
         self.smap = smap
         return self.smap
-    
+
+    def batchlearn(self, **parameters):
+        params = {
+            'shape': (50, 50),
+            'learning_subpart': None,
+            'metric': 'euclidean',
+            'phases': 2,
+            'learning_radius': [
+                lambda t, end_t, bmu: self._generic_learning_radius(t, end_t, 6.25, 3., 'exp'),
+                lambda t, end_t, bmu: self._generic_learning_radius(t, end_t, 4., 1., 'exp')
+                ],
+            'learning_function': [
+                lambda dist, rate, radius: self._generic_learning_function(dist, rate, radius, shape='exp'),
+                lambda dist, rate, radius: self._generic_learning_function(dist, rate, radius, shape='exp')
+                ],
+            'iterations': [
+                self.input_matrix.shape[0]/200,
+                self.input_matrix.shape[0]/100,
+                ],
+            'toric': True,
+            'random_init': True,
+            'n_cpu': 1,
+            'seed': None, # used to randomize the input vectors
+            'verbose': False
+            }
+        params.update(parameters) # TODO: put default learning parameters after update if not present
+        self.parameters = params
+        numpy.random.seed(params['seed'])
+        # initialize SOM using given parameters (size, size of input vectors, choice of init mode)
+        smap = self.map_init(self.input_matrix, params['shape'], params['random_init'])
+        data_len = smap.shape[-1]
+        nvec = self.input_matrix.shape[0]
+        shape, subpart, verbose, n_cpu = params['shape'], params['learning_subpart'], params['verbose'], params['n_cpu']
+        if subpart is None:
+            bmu_map = smap.view()
+            inp_mat = self.input_matrix.view()
+        else:
+            mask = list(subpart.nonzero()[0])
+            bmu_map = smap[..., mask]
+            inp_mat = self.input_matrix[:, mask]
+        for phase, end_t in enumerate(params['iterations']): # loop on phases
+            order = numpy.arange(nvec)
+            numpy.random.shuffle(order)
+#            order = order[:min(end_t, nvec)]
+            func = params['learning_function'][phase]
+            batch = nvec/end_t
+#            print batch, order.shape, order.min(), order.max()
+            t_prime = 0
+            end_t_prime = end_t * batch
+            for t in range(end_t): # loop on iterations
+                ind = order[t*batch:(t+1)*batch]
+                vectors = self.input_matrix[ind] # get the vectors
+                bmus = self.get_allbmus(smap=smap, vectors=vectors)
+#                print bmus.shape, vectors.shape
+                neighborhoods = numpy.zeros((shape[0],shape[1],1))
+                prods = numpy.zeros((shape[0],shape[1],data_len))
+                for i_bmu, bmu in enumerate(bmus):
+                    radius = params['learning_radius'][phase](t_prime, end_t_prime, smap[bmu])
+                    neighborhood = self.apply_learning(smap, vectors[i_bmu], bmu, radius, 1, func, params, batchlearn=True)
+                    neighborhoods += neighborhood
+                    prods += neighborhood*vectors[i_bmu]
+                    t_prime += 1
+                smap = prods / neighborhoods
+                if verbose and (t%(end_t/100) == 0):
+                    print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), t_prime, radius
+#                    if show_umatrices:
+#                        imshow, draw = params['show_umatrices']
+#                        imshow(self.umatrix(smap, toric=True), interpolation='nearest')
+#                        draw()
+        self.smap = smap
+        return self.smap
+
     def findbmu(self, smap, vector, n_cpu=1):
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
         d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
         return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
     
-    def get_allbmus(self, smap=None, **parameters):
+    def get_allbmus(self, smap=None, vectors=None, **parameters):
         if smap is None:
             smap = self.smap
+        if vectors is None:
+            vectors = self.input_matrix
         try:
             subpart = parameters['learning_subpart']
         except KeyError:
             subpart = None
         s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
         if subpart is None:
-            dist = cdist(smap.reshape((s, smap.shape[-1])), self.input_matrix)
+            dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
         else:
             mask = list(subpart.nonzero()[0])
-            dist = cdist(smap[..., mask].reshape((s, mask.sum())), self.input_matrix[:, mask])
+            dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
         return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
 
     def get_allbmus_kdtree(self, smap=None, **parameters): # Don't use this function for high dimension data: greater than 20 !!!
@@ -201,7 +274,7 @@ class SOM(object):
         tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
         return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
     
-    def apply_learning(self, smap, vector, bmu, radius, rate, func, params):
+    def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
         if toric:
             bigshape = tuple(map(lambda x: 3*x, shape))
@@ -218,8 +291,13 @@ class SOM(object):
             distance = distance_transform_edt(features)
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
         radmap = func(distance, rate, radius)
-        adjmap = (smap - vector) * radmap[..., None]
-        smap -= adjmap
+        if not batchlearn:
+            adjmap = (smap - vector) * radmap[..., None]
+            smap -= adjmap
+        else:
+            adjmap = radmap[..., None]
+            return adjmap
+
     
     def map_init(self, input_matrix, map_shape, random_init):
         nvec = input_matrix.shape[1]
