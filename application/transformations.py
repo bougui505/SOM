@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 # transformations.py
 
+"""
+author: Guillaume Bouvier
+email: guillaume.bouvier@ens-cachan.org
+creation date: 01 10 2013
+license: GNU GPL
+Please feel free to use and modify this, but keep the above information.
+Thanks!
+"""
+        
+
 # Copyright (c) 2006-2012, Christoph Gohlke
 # Copyright (c) 2006-2012, The Regents of the University of California
 # Produced at the Laboratory for Fluorescence Dynamics

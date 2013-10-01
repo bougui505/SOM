@@ -1,3 +1,13 @@
+
+"""
+author: Guillaume Bouvier
+email: guillaume.bouvier@ens-cachan.org
+creation date: 01 10 2013
+license: GNU GPL
+Please feel free to use and modify this, but keep the above information.
+Thanks!
+"""
+        
 import numpy
 bmuCoordinates = numpy.load('bmuCoordinates.npy')
 density = numpy.load('density.npy')
