@@ -170,13 +170,15 @@ class SOM(object):
             mask = list(subpart.nonzero()[0])
             bmu_map = smap[..., mask]
             inp_mat = self.input_matrix[:, mask]
+        if params['autoparam']:
+            self.rhoValue = numpy.zeros(nvec)
         for phase, end_t in enumerate(params['iterations']): # loop on phases
             order = numpy.arange(nvec)
             numpy.random.shuffle(order)
             order = order[:min(end_t, nvec)]
+            if params['autoparam'] and phase>0:
+                order = numpy.argsort(self.rhoValue)
             func = params['learning_function'][phase]
-            if params['autoparam']:
-                self.rhoValue = numpy.zeros(nvec)
             for t in range(end_t): # loop on iterations
                 i = order[t % len(order)]
                 vector = self.input_matrix[i] # get the vector
@@ -187,7 +189,7 @@ class SOM(object):
                 else:
                     eps = self.epsilon(i, bmu, smap)
                     radius = eps*params['learning_radius'][phase](0, end_t, vector, smap[bmu])
-                    rate = eps
+                    rate = eps*params['learning_rate'][phase](0, end_t, vector, smap[bmu])
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
                 if verbose and (t%100 == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
