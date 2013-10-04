@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 01 10 2013
+creation date: 2013 10 04
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -109,6 +109,16 @@ class SOM(object):
         if len(shape) == 3:
             return self._neighbor_dim3
         return self._neighbor_general
+
+    def rho(self, k,  BMUindices, Map):
+        i,j = BMUindices
+        rhoValue = max(scipy.spatial.distance.euclidean(self.input_matrix[k], Map[i,j]), self.rhoValue)
+        self.rhoValue = rhoValue
+        return rhoValue
+
+    def epsilon(self, k, BMUindices, Map):
+        i,j = BMUindices
+        return scipy.spatial.distance.euclidean(self.input_matrix[k], Map[i,j]) / self.rho(k, BMUindices, Map)
     
     def learn(self, **parameters):
         params = {
@@ -134,6 +144,7 @@ class SOM(object):
                 ],
             'toric': True,
             'random_init': True,
+            'autoparam' : False,
             'n_cpu': 1,
             'seed': None, # used to randomize the input vectors
             'verbose': False
@@ -163,12 +174,19 @@ class SOM(object):
             numpy.random.shuffle(order)
             order = order[:min(end_t, nvec)]
             func = params['learning_function'][phase]
+            if params['autoparam']:
+                self.rhoValue = 0
             for t in range(end_t): # loop on iterations
                 i = order[t % len(order)]
                 vector = self.input_matrix[i] # get the vector
                 bmu = self.findbmu(bmu_map, inp_mat[i], n_cpu=n_cpu) # find the bmu
-                radius = params['learning_radius'][phase](t, end_t, vector, smap[bmu]) # get the radius
-                rate = params['learning_rate'][phase](t, end_t, vector, smap[bmu]) # and rate
+                if not params['autoparam']:
+                    radius = params['learning_radius'][phase](t, end_t, vector, smap[bmu]) # get the radius
+                    rate = params['learning_rate'][phase](t, end_t, vector, smap[bmu]) # and rate
+                else:
+                    eps = self.epsilon(i, bmu, smap)
+                    radius = eps*params['learning_radius'][phase](0, end_t, vector, smap[bmu])
+                    rate = eps
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
                 if verbose and (t%100 == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
