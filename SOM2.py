@@ -112,8 +112,9 @@ class SOM(object):
 
     def rho(self, k,  BMUindices, Map):
         i,j = BMUindices
-        rhoValue = max(scipy.spatial.distance.euclidean(self.input_matrix[k], Map[i,j]), self.rhoValue)
-        self.rhoValue = rhoValue
+        rhoValue = self.rhoValue[k]
+        rhoValue = max(scipy.spatial.distance.euclidean(self.input_matrix[k], Map[i,j]), rhoValue)
+        self.rhoValue[k] = rhoValue
         return rhoValue
 
     def epsilon(self, k, BMUindices, Map):
@@ -175,7 +176,7 @@ class SOM(object):
             order = order[:min(end_t, nvec)]
             func = params['learning_function'][phase]
             if params['autoparam']:
-                self.rhoValue = 0
+                self.rhoValue = numpy.zeros(nvec)
             for t in range(end_t): # loop on iterations
                 i = order[t % len(order)]
                 vector = self.input_matrix[i] # get the vector
