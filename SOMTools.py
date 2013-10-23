@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 03
+creation date: 2013 10 23
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -806,3 +806,17 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
+def ddmap(mat):
+    """
+    Data driven colormapping from: http://graphics.tu-bs.de/publications/Eisemann11DDC/
+    """
+    scoresfrommap = numpy.unique(mat)
+    scoresfrommap = scoresfrommap[numpy.asarray(1-numpy.isnan(scoresfrommap), dtype=bool)]
+#plot(scoresfrommap)
+    v = numpy.asarray(zip(range(len(scoresfrommap)), scoresfrommap))
+    vdiag = v[-1] - v[0]
+    proj = numpy.asarray(map(lambda x: numpy.dot(x, vdiag) / numpy.linalg.norm(vdiag)**2, v))
+    dictproj = dict(zip(scoresfrommap, proj))
+    projmat = numpy.reshape(numpy.asarray([dictproj[e] if not numpy.isnan(e) else e for e in mat.flatten()]), mat.shape)
+    projmat = projmat * scoresfrommap.ptp() + scoresfrommap.min()
+    return projmat
