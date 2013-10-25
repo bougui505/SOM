@@ -191,12 +191,6 @@ class clusters:
         X,Y = self.umatrix.shape
         self.offsetmat[:,:,0] = self.offsetmat[:,:,0]%X
         self.offsetmat[:,:,1] = self.offsetmat[:,:,1]%Y
-        self.labels = []
-        for e in self.bmus:
-            i,j = e
-            u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
-            self.labels.append(self.cmat[u,v].max())
-        self.labels = numpy.asarray(self.labels)
 
         #fill up clusters
         smallclustmat = numpy.zeros_like(self.umatrix, dtype=int)
@@ -219,4 +213,12 @@ class clusters:
             erodedmap[emap==1] = emap[emap==1]
         self.cmat = self.flood(smallclustmat, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
         self.erodedmap = self.flood(erodedmap, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
+
+        #compute labels for bmu according to cmat
+        self.labels = []
+        for e in self.bmus:
+            i,j = e
+            u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
+            self.labels.append(self.cmat[u,v].max())
+        self.labels = numpy.asarray(self.labels)
         return self.cmat, self.erodedmap
