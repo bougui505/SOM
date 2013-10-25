@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 03
+creation date: 2013 10 25
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -11,13 +11,18 @@ Thanks!
 
 import copy
 import numpy
+import scipy.ndimage
+import SOMTools
+import SOM2
 
 class clusters:
 
-    def __init__(self, umatrix, bmus, waterstop=None):
+    def __init__(self, umatrix, bmus, smap, waterstop=None):
         self.umatrix = umatrix
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = self.flood(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
+        self.som = SOM2.SOM()
+        self.som.smap = smap
 
     def flood(self, inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None, startingpoint = None, floodgate = False):
         def arrange(outmatrix):
@@ -192,4 +197,26 @@ class clusters:
             u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
             self.labels.append(self.cmat[u,v].max())
         self.labels = numpy.asarray(self.labels)
-        return self.cmat
+
+        #fill up clusters
+        smallclustmat = numpy.zeros_like(self.umatrix, dtype=int)
+        for i in range(self.umat_cont.shape[0]):
+            for j in range(self.umat_cont.shape[1]):
+                if self.cmat[i,j] != 0:
+                    ip,jp = self.offsetmat[i,j]
+                    smallclustmat[ip,jp] = self.cmat[i,j]
+        smallclustmat = SOMTools.continuousMap(scipy.ndimage.label(smallclustmat!=0)[0])
+        clustmatori = copy.deepcopy(smallclustmat)
+        tofill = smallclustmat==0
+        fillupindex = self.som.get_allbmus(vectors=self.som.smap[tofill], smap=self.som.smap[smallclustmat!=0])
+        for k,e in enumerate(numpy.asarray(numpy.nonzero(tofill)).T):
+            i,j = e
+            c = clustmatori[clustmatori!=0][fillupindex[k]]
+            smallclustmat[i,j] = c
+        erodedmap = numpy.zeros_like(smallclustmat)
+        for e in numpy.unique(smallclustmat):
+            emap = SOMTools.condenseMatrix(scipy.ndimage.binary_erosion(SOMTools.expandMatrix(smallclustmat==e)))
+            erodedmap[emap==1] = emap[emap==1]
+        self.cmat = self.flood(smallclustmat, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
+        self.erodedmap = self.flood(erodedmap, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
+        return self.cmat, self.erodedmap
