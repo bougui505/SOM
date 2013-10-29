@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 25
+creation date: 2013 10 29
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -213,7 +213,8 @@ class clusters:
             erodedmap[emap==1] = emap[emap==1]
         self.cmat = self.flood(smallclustmat, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
         self.erodedmap = self.flood(erodedmap, x_offset=self.x_offset, y_offset=self.y_offset, mask=self.mask)[0]
-
+        self.cmat = numpy.int_(self.cmat)
+        self.erodedmap = numpy.int_(self.erodedmap)
         #compute labels for bmu according to cmat
         self.labels = []
         for e in self.bmus:
