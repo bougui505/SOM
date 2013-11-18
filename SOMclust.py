@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 29
+creation date: 2013 11 18
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -222,4 +222,9 @@ class clusters:
             u,v = numpy.nonzero(((self.offsetmat - numpy.asarray([i,j])[None, None, :]) == 0).all(axis=2))
             self.labels.append(self.cmat[u,v].max())
         self.labels = numpy.asarray(self.labels)
+        nl, nc = self.erodedmap.shape
+        for i in range(nl):
+            for j in range(nc):
+                if self.erodedmap[i,j] != 0:
+                    self.erodedmap[i,j] = self.cmat[i,j]
         return self.cmat, self.erodedmap
