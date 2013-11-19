@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 01 10 2013
+creation date: 2013 11 19
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -417,12 +417,14 @@ class Trajectory(object):
   return distmat
 
 
- def align(self,template="mean"):
+ def align(self,template="mean",templatestruct=None):
   """
   Align all the structures of the trajectory to a single template and center everything on 0,0,0
   This uses Kabsch algorithm (Kabsch, Wolfgang, A solution of the best rotation to relate two sets of vectors. 1976, Acta Crystallographica 32:922).
   """
-  if template == "mean":
+  if templatestruct != None:
+   tar=templatestruct
+  elif template == "mean":
    if self.mean is None:
     self.getMean()
    tar=self.mean
