@@ -424,6 +424,7 @@ class Trajectory(object):
   """
   if templatestruct != None:
    tar=templatestruct
+   template=None
   elif template == "mean":
    if self.mean is None:
     self.getMean()
