@@ -230,13 +230,15 @@ class clusters:
                     self.erodedmap[i,j] = self.cmat[i,j]
         return self.cmat, self.erodedmap
 
-    def plotclusters(self, color='m'):
+    def plotclusters(self, color='m', matrix = None, cmap=matplotlib.pyplot.cm.jet, vmin=None, vmax=None, interpolation='nearest'):
         cmat = copy.deepcopy(self.cmat)
         cmat[self.mask] = 0
         erodedmap = copy.deepcopy(self.erodedmap)
         erodedmap[self.mask] = 0
         fig = matplotlib.pyplot.figure()
-        matplotlib.pyplot.imshow(numpy.ma.masked_array(self.umat_cont,self.mask), interpolation='nearest')
+        if matrix == None:
+            matrix = self.umat_cont
+        matplotlib.pyplot.imshow(numpy.ma.masked_array(matrix,self.mask), interpolation=interpolation, cmap=cmap, vmin=vmin, vmax=vmax)
         matplotlib.pyplot.colorbar()
         for e in numpy.unique(cmat)[1:]:
             matplotlib.pyplot.contour(cmat==e, 1, colors=color)
