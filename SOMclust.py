@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 11 18
+creation date: 2013 11 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -14,6 +14,7 @@ import numpy
 import scipy.ndimage
 import SOMTools
 import SOM2
+import matplotlib
 
 class clusters:
 
@@ -228,3 +229,18 @@ class clusters:
                 if self.erodedmap[i,j] != 0:
                     self.erodedmap[i,j] = self.cmat[i,j]
         return self.cmat, self.erodedmap
+
+    def plotclusters(self, color='m'):
+        cmat = copy.deepcopy(self.cmat)
+        cmat[self.mask] = 0
+        erodedmap = copy.deepcopy(self.erodedmap)
+        erodedmap[self.mask] = 0
+        fig = matplotlib.pyplot.figure()
+        matplotlib.pyplot.imshow(numpy.ma.masked_array(self.umat_cont,self.mask), interpolation='nearest')
+        matplotlib.pyplot.colorbar()
+        for e in numpy.unique(cmat)[1:]:
+            matplotlib.pyplot.contour(cmat==e, 1, colors=color)
+            y,x = numpy.asarray(numpy.nonzero(erodedmap == e)).T.mean(axis=0)
+            if not numpy.isnan(x) and not numpy.isnan(y):
+                matplotlib.pyplot.text(x,y,e,color=color)
+        self.fig = fig
