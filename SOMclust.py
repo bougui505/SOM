@@ -244,7 +244,12 @@ class clusters:
         matplotlib.pyplot.colorbar()
         for e in numpy.unique(cmat)[1:]:
             matplotlib.pyplot.contour(cmat==e, 1, colors=color)
-            y,x = numpy.asarray(numpy.nonzero(erodedmap == e)).T.mean(axis=0)
+            labmat, nlabs = scipy.ndimage.label(erodedmap==e)
+            if nlabs > 1:
+                lab = numpy.argmax(numpy.histogram(labmat.flatten(), nlabs+1)[0][1:])+1
+            else:
+                lab = 1
+            y,x = numpy.asarray(numpy.nonzero(labmat==lab)).T.mean(axis=0)
             if not numpy.isnan(x) and not numpy.isnan(y):
                 matplotlib.pyplot.text(x,y,e,color=color)
         self.fig = fig
