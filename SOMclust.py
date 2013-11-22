@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 11 21
+creation date: 2013 11 22
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -238,6 +238,8 @@ class clusters:
         fig = matplotlib.pyplot.figure()
         if matrix == None:
             matrix = self.umat_cont
+        if self.mask.shape != matrix.shape:
+            matrix = self.flood(matrix, self.x_offset, self.y_offset, self.mask)[0]
         matplotlib.pyplot.imshow(numpy.ma.masked_array(matrix,self.mask), interpolation=interpolation, cmap=cmap, vmin=vmin, vmax=vmax)
         matplotlib.pyplot.colorbar()
         for e in numpy.unique(cmat)[1:]:
