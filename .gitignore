@@ -1,3 +1,5 @@
 *.pyc
 .trash
 *.swp
+test/MapSnapshots.tar
+test/map_50x50.dat

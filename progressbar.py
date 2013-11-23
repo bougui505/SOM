@@ -18,6 +18,16 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+"""
+author: Guillaume Bouvier
+email: guillaume.bouvier@ens-cachan.org
+creation date: 01 10 2013
+license: GNU GPL
+Please feel free to use and modify this, but keep the above information.
+Thanks!
+"""
+        
+
 
 """Text progressbar library for python.
 

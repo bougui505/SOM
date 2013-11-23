@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+"""
+author: Guillaume Bouvier
+email: guillaume.bouvier@ens-cachan.org
+creation date: 01 10 2013
+license: GNU GPL
+Please feel free to use and modify this, but keep the above information.
+Thanks!
+"""
+        
 import numpy
 import re
 import math
@@ -25,7 +35,9 @@ class SOM:
    Y                : integer, height of Kohonen map
    number_of_phases : integer, number of training phases
  """
- def __init__(self, inputvectors, inputnames, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+ def __init__(self, inputvectors, inputnames=None, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+  if inputnames == None:
+   inputnames = range(inputvectors.shape[0])
   self.metric = metric
   self.cardinal = len(inputvectors[0])
   self.inputvectors = inputvectors
@@ -76,7 +88,10 @@ class SOM:
       try:
        self.iterations.append(int(line.split('=')[1]))
       except ValueError:
-       self.iterations.append(self.inputvectors.shape[0])
+       if i == 1:
+        self.iterations.append(self.inputvectors.shape[0])
+       else:
+        self.iterations.append(self.inputvectors.shape[0]*10)
    i=i+1
   # Vector simplification
   if simplify_vectors:
@@ -261,7 +276,7 @@ class SOM:
    self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
   return self.adjustMap
  
- def learn(self, jobIndex='', nSnapshots = 50):
+ def learn(self, jobIndex=''):
   if self.autoParam:
    self.epsilon_values = []
   Map = self.M
@@ -279,7 +294,6 @@ class SOM:
    pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
    pbar.start()
    ###
-   snapshots = range(0, self.iterations[trainingPhase], self.iterations[trainingPhase]/nSnapshots)
    for t in range(self.iterations[trainingPhase]):
     if self.sort2ndPhase and tpn > 1:
      if len(kv) > 0:
@@ -302,13 +316,6 @@ class SOM:
       k = kv.pop()
       if firstpass==1: kdone.append(k)
     Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
-    if t in snapshots:
-     snapFileName = 'MapSnapshot_%s_%s.npy'%(trainingPhase,t)
-     numpy.save(snapFileName, Map)
-     tar = tarfile.open('MapSnapshots.tar', 'a')
-     tar.add(snapFileName)
-     tar.close()
-     os.remove(snapFileName)
     pbar.update(t)
    pbar.finish()
   self.Map = Map

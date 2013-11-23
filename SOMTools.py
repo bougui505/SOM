@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+
+"""
+author: Guillaume Bouvier
+email: guillaume.bouvier@ens-cachan.org
+creation date: 2013 10 23
+license: GNU GPL
+Please feel free to use and modify this, but keep the above information.
+Thanks!
+"""
+        
 import matplotlib.pyplot
 import IO
 import numpy
@@ -547,7 +557,24 @@ def detect_local_minima(arr, toricMap=False, getFilteredArray=False):
     if not getFilteredArray:
         return numpy.where(detected_minima)
     else:
-        return numpy.where(detected_minima), condenseMatrix(arr_filtered)
+        if toricMap:
+            return numpy.where(detected_minima), condenseMatrix(arr_filtered)
+        else:
+            return numpy.where(detected_minima), arr_filtered
+
+def detect_local_minima2(arr, toricMap=False):
+    X,Y = arr.shape
+    lminima = []
+    for i in range(X):
+        for j in range(Y):
+            pos = (i,j)
+            neighbors = getNeighbors(pos, (X,Y))
+            nvalues = numpy.asarray( [ arr[e[0],e[1]] for e in neighbors] )
+            if (arr[i,j] <= nvalues).all():
+                lminima.append((i,j))
+    lminima = numpy.asarray(lminima)
+    lminima = (lminima[:,0], lminima[:,1])
+    return lminima
 
 def detect_local_maxima(arr, toricMap=False):
     # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710
@@ -779,62 +806,17 @@ def histeq(im,nbr_bins=256):
     im2 = numpy.interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def circumscribe(inputmat, x_offset=None, y_offset=None, mask=None):
-    def arrange(outmatrix):
-        x_offset = -(outmatrix==0).all(axis=1)
-        y_offset = -(outmatrix==0).all(axis=0)
-        mask = outmatrix == 0
-        a = mask[x_offset]
-        mask = a[:,y_offset]
-        return mask, x_offset, y_offset
-    mat = copy.deepcopy(inputmat)
-    matexpand = expandMatrix(mat,5)
-    if (x_offset, y_offset, mask) == (None,None,None):
-        X, Y = mat.shape
-        sortneighbors = lambda n: numpy.asarray(n)[numpy.asarray([mat[e[0]%X,e[1]%Y] for e in n]).argsort()]
-        circummat = numpy.zeros_like(matexpand)
-        u,v = numpy.unravel_index(mat.argmin(), mat.shape)
-        u,v = u+2*X, v+2*Y
-        circummat[u,v] = mat[u%X,v%Y]
-        mat[u%X,v%Y] = numpy.inf
-        bayou = [(u,v)]
-        neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
-                     for item in sublist]
-        i,j = sortneighbors(neighbors)[0]
-        count = 0
-        waterlevels = []
-        n = mat.size - 1
-        while count < n:
-            flooding = True
-            while flooding:
-                flooding = False
-                neighbors = [item for sublist in [getNeighbors(e, matexpand.shape) for e in bayou]
-                             for item in sublist]
-                neighbors = list(set(neighbors) - set(bayou))
-                neighbors = sortneighbors(neighbors)
-                i,j = neighbors[0]
-                waterlevel = mat[i%X,j%Y]
-                for neighbor in neighbors:
-                    i, j = neighbor
-                    if mat[i%X,j%Y] <= waterlevel and count < mat.size:
-                        waterlevels.append(waterlevel)
-                        count += 1
-                        u, v = i, j
-                        bayou.append((u,v))
-                        if count % (n / 100) == 0:
-                            print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
-                        circummat[u,v] = mat[u%X,v%Y]
-                        mat[u%X,v%Y] = numpy.inf
-                        flooding = True
-                    else:
-                        break
-        mask, x_offset, y_offset = arrange(circummat)
-        a = matexpand[x_offset]
-        out = a[:,y_offset]
-        flooding = [(e[0]%X, e[1]%Y) for e in bayou]
-        return out, x_offset, y_offset, mask, waterlevels, flooding
-    else:
-        a = matexpand[x_offset]
-        out = a[:,y_offset]
-        return out,x_offset,y_offset,mask
-
+def ddmap(mat):
+    """
+    Data driven colormapping from: http://graphics.tu-bs.de/publications/Eisemann11DDC/
+    """
+    scoresfrommap = numpy.unique(mat)
+    scoresfrommap = scoresfrommap[numpy.asarray(1-numpy.isnan(scoresfrommap), dtype=bool)]
+#plot(scoresfrommap)
+    v = numpy.asarray(zip(range(len(scoresfrommap)), scoresfrommap))
+    vdiag = v[-1] - v[0]
+    proj = numpy.asarray(map(lambda x: numpy.dot(x, vdiag) / numpy.linalg.norm(vdiag)**2, v))
+    dictproj = dict(zip(scoresfrommap, proj))
+    projmat = numpy.reshape(numpy.asarray([dictproj[e] if not numpy.isnan(e) else e for e in mat.flatten()]), mat.shape)
+    projmat = projmat * scoresfrommap.ptp() + scoresfrommap.min()
+    return projmat
