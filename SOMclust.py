@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 11 22
+creation date: 2013 12 03
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -251,3 +251,32 @@ class clusters:
                     if not numpy.isnan(x) and not numpy.isnan(y):
                         matplotlib.pyplot.text(x,y,e,color=color)
         self.fig = fig
+
+    def get_bmus_clust(self, clust_nb):
+        """
+        # Get the coordinates for the bmus composing each cluster:
+        """
+        indexes = (self.cmat==clust_nb).nonzero()
+        index = numpy.empty((len(indexes[0]), 2),dtype="int")
+        for x,j in enumerate(indexes[0]):
+            index[x] = [ indexes[0][x], indexes[1][x] ]
+        return index
+
+    def get_bmus_clust_flooded(self, clustid):
+        """
+        Get the correct BMU coordinates for the bmus in a cluster clustid of the flooded map
+        """
+        bmus_clust = self.get_bmus_clust(clustid)
+        new_coors = numpy.zeros((len(bmus_clust),2),dtype="int")
+        for i,j in enumerate(bmus_clust):
+            new_coors[i] = self.offsetmat[j[0],j[1]]
+        return new_coors
+
+    def getAllBmus_flooded(self, bmus):
+        """
+        Get the correct BMU coordinates for all bmus
+        """
+        newCoords = numpy.zeros((len(bmus),2),dtype="int")
+        for i,j in enumerate(bmus):
+            newCoords[i] = self.offsetmat[j[0],j[1]]
+        return newCoords
