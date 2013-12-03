@@ -15,6 +15,7 @@ import scipy.ndimage
 import SOMTools
 import SOM2
 import matplotlib
+import IO
 
 class clusters:
 
@@ -280,3 +281,22 @@ class clusters:
         for i,j in enumerate(bmus):
             newCoords[i] = self.offsetmat[j[0],j[1]]
         return newCoords
+
+    def getTrajClust(self, traj, clustid, outputfilename='clust'):
+        """
+        Get the trajectory for a given clustid. The traj object is created from IO
+        """
+        selector = (self.labels == clustid)
+        trajid = traj.array[selector]
+        if len(traj.array.shape) == 2:
+            nframes, natoms3 = trajid.shape
+            natoms = natoms3 / 3
+            trajid.reshape(nframes, natoms, 3)
+        else:
+            nframes, natoms, dim = traj.array.shape
+        trajobj = IO.Trajectory()
+        trajobj.natom = natoms
+        trajobj.header['natom'] = natoms
+        trajobj.array = trajid.reshape(selector.sum(), natoms*3)
+        trajobj.write('%s%d.dcd'%(outputfilename, clustid))
+        return trajid
