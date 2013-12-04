@@ -16,6 +16,7 @@ import SOMTools
 import SOM2
 import matplotlib
 import IO
+import SOMgraph
 
 class clusters:
 
@@ -303,3 +304,12 @@ class clusters:
         trajobj.array = trajid.reshape(selector.sum(), natoms*3)
         trajobj.write('%s%d.dcd'%(outputfilename, clustid))
         return trajid
+
+    def getGraph(self):
+        smap_cont = self.flood(self.som.smap)[0]
+        self.graph = SOMgraph.graph(smap_cont)
+        self.graph.getgraph()
+
+    def getPath(self, start, end):
+        path = self.graph.shortestPath(start, end)
+        return path
