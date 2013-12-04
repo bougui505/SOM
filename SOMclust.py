@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 03
+creation date: 2013 12 04
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -20,6 +20,7 @@ import IO
 class clusters:
 
     def __init__(self, umatrix, bmus, smap, waterstop=None):
+        self.x_offset, self.y_offset, self.mask = (None, None, None)
         self.umatrix = umatrix
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = self.flood(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
@@ -27,6 +28,8 @@ class clusters:
         self.som.smap = smap
 
     def flood(self, inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None, startingpoint = None, floodgate = False):
+        if (x_offset, y_offset, mask) == (None,None,None) and not floodgate:
+            (x_offset, y_offset, mask) = (self.x_offset, self.y_offset, self.mask)
         def arrange(outmatrix):
             x_offset = -(outmatrix==0).all(axis=1)
             y_offset = -(outmatrix==0).all(axis=0)
