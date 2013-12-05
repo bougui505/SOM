@@ -23,16 +23,18 @@ class graph:
         self.graph = {}
         self.mask = mask
 
-    def updategraph(self, n1, n2, d):
+    def updategraph(self, n1, n2, d, graph=None):
         """
         update graph with node n1 and n2 and the distance d between n1 and n2
         """
+        if graph == None:
+            graph = self.graph
         i,j = n1
         u,v = n2
         try:
-            self.graph[(i,j)].update({(u,v):d})
+            graph[(i,j)].update({(u,v):d})
         except KeyError:
-            self.graph[(i,j)] = {(u,v):d}
+            graph[(i,j)] = {(u,v):d}
 
     def getgraph(self):
         if self.mask == None:
@@ -160,5 +162,4 @@ class graph:
         """
         if not hasattr(self, 'allPathDists'):
             pathes = self.getAllPathes()
-        else:
-            return self.allPathes[numpy.argmax(self.allPathDists)]
+        return self.allPathes[numpy.argmax(self.allPathDists)]
