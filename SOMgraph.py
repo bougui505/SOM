@@ -14,6 +14,7 @@ import numpy
 import scipy.spatial.distance
 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/117228
 from priodict import priorityDictionary
+import itertools
 
 class graph:
     def __init__(self, smap, mask = None):
@@ -135,3 +136,29 @@ class graph:
             d += self.graph[e[0]][e[1]]
         return d
 
+    def getAllPathes(self):
+        """
+        return all pathes for all combinations of local minima
+        """
+        pathes = []
+        pathdists = []
+        self.umat = SOMTools.getUmatrix(self.smap)
+        self.localminima = numpy.asarray(SOMTools.detect_local_minima(self.umat)).T
+        if self.mask != None:
+            self.localminima = numpy.asarray(filter(lambda e: not self.mask[e[0],e[1]], self.localminima))
+        for e in itertools.combinations(self.localminima, 2):
+            path = self.shortestPath(tuple(e[0]), tuple(e[1]))
+            pathes.append(path)
+            pathdists.append(self.getPathDist(path))
+        self.allPathes = pathes
+        self.allPathDists = pathdists
+        return pathes
+
+    def getLongestPath(self):
+        """
+        return the shortest path for the two most distant local minima
+        """
+        if not hasattr(self, 'allPathDists'):
+            pathes = self.getAllPathes()
+        else:
+            return self.allPathes[numpy.argmax(self.allPathDists)]
