@@ -16,10 +16,11 @@ import scipy.spatial.distance
 from priodict import priorityDictionary
 
 class graph:
-    def __init__(self, smap):
+    def __init__(self, smap, mask = None):
         self.smap = smap
         self.X,self.Y,self.dim = self.smap.shape
         self.graph = {}
+        self.mask = mask
 
     def updategraph(self, n1, n2, d):
         """
@@ -32,15 +33,15 @@ class graph:
         except KeyError:
             self.graph[(i,j)] = {(u,v):d}
 
-    def getgraph(self, mask = None):
-        if mask == None:
-            mask = numpy.zeros((self.X, self.Y), dtype='bool')
+    def getgraph(self):
+        if self.mask == None:
+            self.mask = numpy.zeros((self.X, self.Y), dtype='bool')
         for i in range(self.X):
             for j in range(self.Y):
-                if not mask[i,j]:
+                if not self.mask[i,j]:
                     neighbors = SOMTools.getNeighbors((i,j), (self.X,self.Y))
                     for u,v in neighbors:
-                        if not mask[u,v]:
+                        if not self.mask[u,v]:
                             d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
                             self.updategraph((i,j), (u,v), d)
 
