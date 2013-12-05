@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 04
+creation date: 2013 12 05
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -123,5 +123,14 @@ class graph:
             if end == start: break
             end = P[end]
         Path.reverse()
-        return numpy.asarray(Path)
+        return Path
+
+    def getPathDist(self, path):
+        """
+        return the distance for a given path in the graph. Path is a list of node
+        """
+        d = 0
+        for e in zip(path, path[1:]):
+            d += self.graph[e[0]][e[1]]
+        return d
 
