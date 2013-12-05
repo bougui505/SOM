@@ -146,12 +146,15 @@ class graph:
         pathdists = []
         self.umat = SOMTools.getUmatrix(self.smap)
         self.localminima = numpy.asarray(SOMTools.detect_local_minima(self.umat)).T
+        self.localminimagraph = {}
         if self.mask != None:
             self.localminima = numpy.asarray(filter(lambda e: not self.mask[e[0],e[1]], self.localminima))
         for e in itertools.combinations(self.localminima, 2):
             path = self.shortestPath(tuple(e[0]), tuple(e[1]))
             pathes.append(path)
-            pathdists.append(self.getPathDist(path))
+            pathd = self.getPathDist(path)
+            pathdists.append(pathd)
+            self.updategraph(tuple(e[0]), tuple(e[1]), pathd, graph=self.localminimagraph)
         self.allPathes = pathes
         self.allPathDists = pathdists
         return pathes
