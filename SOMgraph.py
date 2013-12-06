@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 05
+creation date: 2013 12 06
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -111,7 +111,7 @@ class graph:
                     P[w] = v
         return (D,P)
                 
-    def shortestPath(self, start, end):
+    def shortestPath(self, start, end, graph=None):
         """
         Find a single shortest path from the given start vertex
         to the given end vertex.
@@ -119,7 +119,10 @@ class graph:
         The output is a list of the vertices in order along
         the shortest path.
         """
-        G = self.graph
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
         D,P = self.Dijkstra(G,start,end)
         Path = []
         while 1:
