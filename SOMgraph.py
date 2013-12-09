@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 06
+creation date: 2013 12 09
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -169,3 +169,16 @@ class graph:
         if not hasattr(self, 'allPathDists'):
             pathes = self.getAllPathes()
         return self.allPathes[numpy.argmax(self.allPathDists)]
+
+    def has_edge(self, n1, n2, graph=None):
+        """
+        test the existence of a edge n1-n2 in a graph
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        if G.has_key(n1):
+            return G[n1].has_key(n2)
+        else:
+            return False
