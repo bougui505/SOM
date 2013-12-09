@@ -160,6 +160,7 @@ class graph:
             self.updategraph(tuple(e[0]), tuple(e[1]), pathd, graph=self.localminimagraph)
         self.allPathes = pathes
         self.allPathDists = pathdists
+        self.localminimagraph = self.symmetrize_edges(self.localminimagraph)
         return pathes
 
     def getLongestPath(self):
