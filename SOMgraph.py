@@ -182,3 +182,17 @@ class graph:
             return G[n1].has_key(n2)
         else:
             return False
+
+    def symmetrize_edges(self, graph=None):
+        """
+        symmetrize the edges of a graph: If an edge n1->n2 exists and n2->n1 does not. The function return a graph with symmetric edges n1<->n2
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        for n1 in G.keys():
+            for n2 in G[n1].keys():
+                if not self.has_edge(n2, n1, G):
+                    self.updategraph(n2, n1, G[n1][n2], G)
+        return G
