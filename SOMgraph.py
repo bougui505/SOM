@@ -251,3 +251,20 @@ class graph:
                 if n2 not in vertlist:
                     vertlist.append(n2)
         return vertlist
+
+    def get_smallest_edge(self, graph=None):
+        """
+        return the two vertices constituting the smallest vertex
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        min_d = numpy.inf
+        for n1 in G.keys():
+            for n2 in G[n1].keys():
+                if G[n1][n2] < min_d:
+                    min_d = G[n1][n2]
+                    min_n1 = n1
+                    min_n2 = n2
+        return min_n1, min_n2
