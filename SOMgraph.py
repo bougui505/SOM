@@ -234,3 +234,20 @@ class graph:
             for n2 in G[n1].keys():
                 nedges += 1
         return nedges
+
+    def get_vertices(self, graph=None):
+        """
+        return the list of vertices in a graph
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        vertlist = []
+        for n1 in G.keys():
+            if n1 not in vertlist:
+                vertlist.append(n1)
+            for n2 in G[n1].keys():
+                if n2 not in vertlist:
+                    vertlist.append(n2)
+        return vertlist
