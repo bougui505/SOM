@@ -168,13 +168,21 @@ class graph:
         self.localminimagraph = self.symmetrize_edges(self.localminimagraph)
         return pathes
 
-    def getLongestPath(self):
+    def getLongestPath(self, localmin=False):
         """
         return the shortest path for the two most distant local minima
+        If localmin is set to True the path goes through local minima
         """
         if not hasattr(self, 'allPathDists'):
             pathes = self.getAllPathes()
-        return self.allPathes[numpy.argmax(self.allPathDists)]
+        longestpath = self.allPathes[numpy.argmax(self.allPathDists)]
+        if not localmin:
+            return longestpath
+        else:
+            if not hasattr(self, 'mingraph'):
+                mingraph = self.clean_graph()
+            longestpath = self.shortestPath(longestpath[0], longestpath[-1], self.mingraph)
+            return longestpath
 
     def has_edge(self, n1, n2, graph=None):
         """
@@ -311,4 +319,5 @@ class graph:
                     i = len(mingraph)
                     n1 = n2
                     break
+        self.mingraph = mingraph
         return mingraph
