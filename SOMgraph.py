@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 09
+creation date: 2013 12 11
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -134,7 +134,8 @@ class graph:
 
     def getPathDist(self, path):
         """
-        return the distance for a given path in the graph. Path is a list of node
+        return the distance for a given path in the graph. Path is a list of
+        node
         """
         d = 0
         for e in zip(path, path[1:]):
@@ -186,7 +187,8 @@ class graph:
 
     def symmetrize_edges(self, graph=None):
         """
-        symmetrize the edges of a graph: If an edge n1->n2 exists and n2->n1 does not. The function return a graph with symmetric edges n1<->n2
+        symmetrize the edges of a graph: If an edge n1->n2 exists and n2->n1
+        does not. The function return a graph with symmetric edges n1<->n2
         """
         if graph == None:
             G = self.graph
