@@ -199,3 +199,17 @@ class graph:
                 if not self.has_edge(n2, n1, G):
                     self.updategraph(n2, n1, G[n1][n2], G)
         return G
+
+    def priorityGraph(self, graph):
+        """
+        return a priority graph. Each sub dictionnary of the graph is a
+        priority dictionnary as defined in priorityDictionary
+        """
+        G = graph
+        Gp = {}
+        for n1 in G.keys:
+            d = priorityDictionary()
+            for n2 in G[n1].keys:
+                d[n2] = G[n1][n2]
+            Gp[n1] = d
+        return Gp
