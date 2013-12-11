@@ -207,9 +207,9 @@ class graph:
         """
         G = graph
         Gp = {}
-        for n1 in G.keys:
+        for n1 in G.keys():
             d = priorityDictionary()
-            for n2 in G[n1].keys:
+            for n2 in G[n1].keys():
                 d[n2] = G[n1][n2]
             Gp[n1] = d
         return Gp
