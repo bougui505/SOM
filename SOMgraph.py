@@ -268,3 +268,47 @@ class graph:
                     min_n1 = n1
                     min_n2 = n2
         return min_n1, min_n2
+
+    def get_nearest(self, subgraph, graph=None):
+        """
+        return two vertices. One of the subgraph with the shortest distance
+        from the other one of the graph but not present in the subgraph
+        """
+        if graph == None:
+            G = self.priorityGraph(self.graph)
+        else:
+            G = self.priorityGraph(graph)
+        vertlist = self.get_vertices(subgraph)
+        connectgraph = {}
+        for n1 in vertlist:
+            for n2 in G[n1]:
+                if n2 not in vertlist:
+                    self.updategraph(n1, n2, G[n1][n2], connectgraph)
+        return self.get_smallest_edge(connectgraph)
+
+    def clean_graph(self, graph=None):
+        """
+        remove long range edges in a graph
+        """
+        if graph == None:
+            if not hasattr(self, 'localminimagraph'):
+                self.getAllPathes()
+            G = self.priorityGraph(self.localminimagraph)
+        else:
+            G = self.priorityGraph(graph)
+        mingraph = {}
+        n1 = tuple(self.getLongestPath()[0])
+        i = len(mingraph)
+        while i < len(self.localminima):
+            vertlist = self.get_vertices(mingraph)
+            nvert = len(vertlist)
+            maxedges = nvert*(nvert - 1)
+            if self.n_edges(mingraph) == maxedges and maxedges > 0:
+                n1 = self.get_nearest(mingraph, self.localminimagraph)[0]
+            for n2 in G[n1]:
+                if not self.has_edge(n1, n2, mingraph):
+                    self.updategraph(n1,n2, G[n1][n2], mingraph)
+                    i = len(mingraph)
+                    n1 = n2
+                    break
+        return mingraph
