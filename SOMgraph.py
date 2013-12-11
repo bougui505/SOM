@@ -17,10 +17,14 @@ from priodict import priorityDictionary
 import itertools
 
 class graph:
-    def __init__(self, smap, mask = None):
-        self.smap = smap
-        self.X,self.Y,self.dim = self.smap.shape
-        self.graph = {}
+    def __init__(self, smap = None, mask = None, graph = None):
+        if smap != None:
+            self.smap = smap
+            self.X,self.Y,self.dim = self.smap.shape
+        if graph == None:
+            self.graph = {}
+        else:
+            self.graph = graph
         self.mask = mask
 
     def updategraph(self, n1, n2, d, graph=None):
@@ -200,12 +204,15 @@ class graph:
                     self.updategraph(n2, n1, G[n1][n2], G)
         return G
 
-    def priorityGraph(self, graph):
+    def priorityGraph(self, graph=None):
         """
         return a priority graph. Each sub dictionnary of the graph is a
         priority dictionnary as defined in priorityDictionary
         """
-        G = graph
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
         Gp = {}
         for n1 in G.keys():
             d = priorityDictionary()
@@ -214,11 +221,14 @@ class graph:
             Gp[n1] = d
         return Gp
 
-    def n_edges(self, graph):
+    def n_edges(self, graph=None):
         """
         return the number of edges of a graph
         """
-        G =  graph
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
         nedges = 0
         for n1 in G.keys():
             for n2 in G[n1].keys():
