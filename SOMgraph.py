@@ -213,3 +213,14 @@ class graph:
                 d[n2] = G[n1][n2]
             Gp[n1] = d
         return Gp
+
+    def n_edges(self, graph):
+        """
+        return the number of edges of a graph
+        """
+        G =  graph
+        nedges = 0
+        for n1 in G.keys():
+            for n2 in G[n1].keys():
+                nedges += 1
+        return nedges
