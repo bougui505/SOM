@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 11
+creation date: 2013 12 12
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -212,6 +212,27 @@ class graph:
                     self.updategraph(n2, n1, G[n1][n2], G)
         return G
 
+    def delete_edge(self, n1, n2, graph):
+        """
+        delete an edge n1 -> n2 from a graph
+        """
+        del graph[n1][n2]
+
+    def unsymmetrize_edges(self, graph=None):
+        """
+        symmetrize the edges of a graph: If an edge n1->n2 exists and n2->n1
+        does not. The function return a graph with symmetric edges n1<->n2
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        for n1 in G.keys():
+            for n2 in G[n1].keys():
+                if self.has_edge(n2, n1, G):
+                    self.delete_edge(n2, n1, G)
+        return G
+
     def priorityGraph(self, graph=None):
         """
         return a priority graph. Each sub dictionnary of the graph is a
@@ -294,6 +315,27 @@ class graph:
                     self.updategraph(n1, n2, G[n1][n2], connectgraph)
         return self.get_smallest_edge(connectgraph)
 
+    def get_graph_iterator(self, graph=None):
+        """
+        get an iterator as defined in priodict for each vertex
+        """
+        if graph == None:
+            G = self.priorityGraph(self.graph)
+        else:
+            G = self.priorityGraph(graph)
+        for key in G.keys():
+            G[key] = G[key].__iter__()
+        return G
+
+    def plot_graph(self, graph, color='m'):
+        import matplotlib.pyplot
+        G = graph
+        for n1 in G.keys():
+            for n2 in G[n1].keys():
+                v = numpy.asarray((n1,n2))
+                matplotlib.pyplot.plot(v[:,1],v[:,0], color)
+
+
     def clean_graph(self, graph=None):
         """
         remove long range edges in a graph
@@ -304,20 +346,21 @@ class graph:
             G = self.priorityGraph(self.localminimagraph)
         else:
             G = self.priorityGraph(graph)
-        mingraph = {}
-        n1 = tuple(self.getLongestPath()[0])
-        i = len(mingraph)
-        while i < len(self.localminima):
-            vertlist = self.get_vertices(mingraph)
-            nvert = len(vertlist)
-            maxedges = nvert*(nvert - 1)
-            if self.n_edges(mingraph) == maxedges and maxedges > 0:
-                n1 = self.get_nearest(mingraph, self.localminimagraph)[0]
-            for n2 in G[n1]:
-                if not self.has_edge(n1, n2, mingraph):
-                    self.updategraph(n1,n2, G[n1][n2], mingraph)
-                    i = len(mingraph)
-                    n1 = n2
-                    break
-        self.mingraph = mingraph
-        return mingraph
+        Giter = self.get_graph_iterator(G)
+        start = tuple(self.getLongestPath()[0])
+        stop = tuple(self.getLongestPath()[-1])
+        n1 = tuple(start)
+        n2 = n1
+        subgraph = {}
+        while n2 != stop:
+            n2 = Giter[n1].next()
+            d12 = G[n1][n2]
+            self.updategraph(n1, n2, d12, subgraph)
+            n1 = n2
+#        i = len(mingraph)
+#        while i < len(self.localminima):
+#            n1, n2 = self.get_nearest(subgraph, G)
+#            d12 = G[n1][n2]
+#            self.updategraph(n1, n2, d12, subgraph)
+        self.mingraph = subgraph
+        return subgraph
