@@ -379,19 +379,15 @@ class graph:
         if graph == None:
             if not hasattr(self, 'localminimagraph'):
                 self.getAllPathes()
-            G = self.unsymmetrize_edges(self.priorityGraph(self.localminimagraph))
+            G = self.localminimagraph
         else:
-            G = self.unsymmetrize_edges(self.priorityGraph(graph))
-        Giter = self.get_graph_iterator(G)
-        start = tuple(self.getLongestPath()[0])
-        stop = tuple(self.getLongestPath()[-1])
-        n1 = tuple(start)
-        n2 = n1
-        subgraph = {}
-        while n2 != stop:
-            n2 = Giter[n1].next()
-            d12 = G[n1][n2]
-            self.updategraph(n1, n2, d12, subgraph)
-            n1 = n2
+            G = graph
+        ds = self.get_distances(G)
+        nvertmax = len(self.get_vertices(G))
+        for d in ds:
+            subgraph = self.select_edges(d, G)
+            nvert = len(self.get_vertices(subgraph))
+            if nvert == nvertmax:
+                break
         self.mingraph = subgraph
         return subgraph
