@@ -329,6 +329,28 @@ class graph:
                     self.updategraph(n1, n2, G[n1][n2], connectgraph)
         return self.get_smallest_edge(connectgraph)
 
+    def select_edges(self, threshold, graph=None):
+        """
+        return edges with distance less than threshold
+        """
+        if graph == None:
+            G = self.get_graph_iterator(self.graph)
+        else:
+            G = self.get_graph_iterator(graph)
+        outgraph = {}
+        for n1 in G.keys():
+            n2 = G[n1].next()
+            d = graph[n1][n2]
+            while d <= threshold:
+                self.updategraph(n1, n2, d, outgraph)
+                try:
+                    n2 = G[n1].next()
+                    d = graph[n1][n2]
+                except StopIteration:
+                    break
+        return outgraph
+
+
     def get_graph_iterator(self, graph=None):
         """
         get an iterator as defined in priodict for each vertex
