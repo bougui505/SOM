@@ -371,6 +371,23 @@ class graph:
                 v = numpy.asarray((n1,n2))
                 matplotlib.pyplot.plot(v[:,1],v[:,0], color)
 
+    def split_graph(self, graph):
+        """
+        split independant subgraph of a graph
+        """
+        G = self.get_graph_iterator(graph)
+        subgraph = {}
+        ispath = True
+        n1 = graph.keys()[0]
+        while ispath:
+            try:
+                n2 = G[n1].next()
+                self.updategraph(n1,n2,graph[n1][n2], subgraph)
+                print n1, n2
+                n1 = n2
+            except StopIteration:
+                ispath = False
+        return subgraph
 
     def clean_graph(self, graph=None):
         """
