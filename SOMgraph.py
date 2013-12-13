@@ -284,7 +284,7 @@ class graph:
 
     def get_distances(self, graph=None):
         """
-        return the list of distances in a graph
+        return the list of unique distances in a graph
         """
         if graph == None:
             G = self.graph
@@ -293,7 +293,7 @@ class graph:
         d = []
         for n1 in G.keys():
             d.extend(G[n1].values())
-        return d
+        return numpy.unique(d)
 
     def get_smallest_edge(self, graph=None):
         """
