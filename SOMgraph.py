@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 12
+creation date: 2013 12 13
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -21,6 +21,7 @@ class graph:
         if smap != None:
             self.smap = smap
             self.X,self.Y,self.dim = self.smap.shape
+            self.umat = SOMTools.getUmatrix(self.smap)
         if graph == None:
             self.graph = {}
         else:
@@ -49,7 +50,8 @@ class graph:
                     neighbors = SOMTools.getNeighbors((i,j), (self.X,self.Y))
                     for u,v in neighbors:
                         if not self.mask[u,v]:
-                            d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
+#                            d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
+                            d = self.umat[u,v]
                             self.updategraph((i,j), (u,v), d)
 
 
@@ -152,7 +154,6 @@ class graph:
         """
         pathes = []
         pathdists = []
-        self.umat = SOMTools.getUmatrix(self.smap)
         self.localminima = numpy.asarray(SOMTools.detect_local_minima(self.umat)).T
         self.localminimagraph = {}
         if self.mask != None:
@@ -281,6 +282,19 @@ class graph:
                     vertlist.append(n2)
         return vertlist
 
+    def get_distances(self, graph=None):
+        """
+        return the list of distances in a graph
+        """
+        if graph == None:
+            G = self.graph
+        else:
+            G = graph
+        d = []
+        for n1 in G.keys():
+            d.extend(G[n1].values())
+        return d
+
     def get_smallest_edge(self, graph=None):
         """
         return the two vertices constituting the smallest vertex
@@ -343,9 +357,9 @@ class graph:
         if graph == None:
             if not hasattr(self, 'localminimagraph'):
                 self.getAllPathes()
-            G = self.priorityGraph(self.localminimagraph)
+            G = self.unsymmetrize_edges(self.priorityGraph(self.localminimagraph))
         else:
-            G = self.priorityGraph(graph)
+            G = self.unsymmetrize_edges(self.priorityGraph(graph))
         Giter = self.get_graph_iterator(G)
         start = tuple(self.getLongestPath()[0])
         stop = tuple(self.getLongestPath()[-1])
@@ -357,10 +371,5 @@ class graph:
             d12 = G[n1][n2]
             self.updategraph(n1, n2, d12, subgraph)
             n1 = n2
-#        i = len(mingraph)
-#        while i < len(self.localminima):
-#            n1, n2 = self.get_nearest(subgraph, G)
-#            d12 = G[n1][n2]
-#            self.updategraph(n1, n2, d12, subgraph)
         self.mingraph = subgraph
         return subgraph
