@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 13
+creation date: 2013 12 16
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -370,24 +370,6 @@ class graph:
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
                 matplotlib.pyplot.plot(v[:,1],v[:,0], color)
-
-    def split_graph(self, graph):
-        """
-        split independant subgraph of a graph
-        """
-        G = self.get_graph_iterator(graph)
-        subgraph = {}
-        ispath = True
-        n1 = graph.keys()[0]
-        while ispath:
-            try:
-                n2 = G[n1].next()
-                self.updategraph(n1,n2,graph[n1][n2], subgraph)
-                print n1, n2
-                n1 = n2
-            except StopIteration:
-                ispath = False
-        return subgraph
 
     def clean_graph(self, graph=None):
         """
