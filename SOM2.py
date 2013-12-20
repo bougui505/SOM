@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 04
+creation date: 2013 12 20
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -24,11 +24,26 @@ import itertools
 import bisect, copy
 import scipy.spatial
 
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+if run_from_ipython():
+    from IPython.display import clear_output
+
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
     """
     def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
+        try:
+            __IPYTHON__
+            self.ipython = True
+        except NameError:
+            self.ipython = False
     
     def _generic_learning_rate(self, t, end_t, alpha_begin, alpha_end, shape='exp'):
         if shape == 'exp':
@@ -192,6 +207,8 @@ class SOM(object):
                     rate = eps*params['learning_rate'][phase](0, end_t, vector, smap[bmu])
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
                 if verbose and (t%100 == 0):
+                    if self.ipython:
+                        clear_output()
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
                     if show_umatrices:
                         imshow, draw = params['show_umatrices']
@@ -264,6 +281,8 @@ class SOM(object):
                 smap = prods / neighborhoods
                 if verbose and (t%(end_t/100) == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), t_prime, radius
+                    if self.ipython:
+                        clear_output()
 #                    if show_umatrices:
 #                        imshow, draw = params['show_umatrices']
 #                        imshow(self.umatrix(smap, toric=True), interpolation='nearest')
