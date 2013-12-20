@@ -293,6 +293,9 @@ class SOM(object):
         return self.smap
 
     def findbmu(self, smap, vector, n_cpu=1):
+        if numpy.ma.isMaskedArray(vector):
+            smap = smap[:,:,numpy.asarray(1-vector.mask, dtype=bool)]
+            vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
         d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
@@ -303,17 +306,20 @@ class SOM(object):
             smap = self.smap
         if vectors is None:
             vectors = self.input_matrix
-        try:
-            subpart = parameters['learning_subpart']
-        except KeyError:
-            subpart = None
-        s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-        if subpart is None:
-            dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
+        if numpy.ma.isMaskedArray(vectors):
+            print "get_allbmus not yet implemented for masked input array !!! Use findbmu with a loop instead"
         else:
-            mask = list(subpart.nonzero()[0])
-            dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
-        return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
+            try:
+                subpart = parameters['learning_subpart']
+            except KeyError:
+                subpart = None
+            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
+            if subpart is None:
+                dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
+            else:
+                mask = list(subpart.nonzero()[0])
+                dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
+            return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
 
     def get_allbmus_kdtree(self, smap=None, **parameters): # Don't use this function for high dimension data: greater than 20 !!!
         if smap is None:
@@ -322,12 +328,17 @@ class SOM(object):
             subpart = parameters['learning_subpart']
         except KeyError:
             subpart = None
-        s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-        tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
-        return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
+        if numpy.ma.isMaskedArray(self.input_matrix):
+            print "get_allbmus_kdtree not yet implemented for masked input array !!! Use findbmu with a loop instead"
+        else:
+            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
+            tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
+            return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
     
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
+        if numpy.ma.isMaskedArray(vector):
+            vector = vector.filled(0)
         if toric:
             bigshape = tuple(map(lambda x: 3*x, shape))
             midselect = tuple([ slice(s, 2*s) for s in shape ])
