@@ -206,10 +206,12 @@ class SOM(object):
                     radius = eps*params['learning_radius'][phase](0, end_t, vector, smap[bmu])
                     rate = eps*params['learning_rate'][phase](0, end_t, vector, smap[bmu])
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
-                if verbose and (t%100 == 0):
+                if verbose:
                     if self.ipython:
                         clear_output()
-                    print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
+                        print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
+                    elif (t%100 == 0):
+                        print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
                     if show_umatrices:
                         imshow, draw = params['show_umatrices']
                         imshow(self.umatrix(smap, toric=True), interpolation='nearest')

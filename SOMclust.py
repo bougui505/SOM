@@ -108,9 +108,10 @@ class clusters:
                             u, v = i, j
                             bayou.append((u,v))
                             if verbose:
-                                if count % (n / 100) == 0:
-                                    if self.ipython:
-                                        clear_output()
+                                if self.ipython:
+                                    clear_output()
+                                    print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
+                                elif count % (n / 100) == 0:
                                     print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
                             circummat[u,v] = mat[u%X,v%Y]
                             mat[u%X,v%Y] = numpy.inf
