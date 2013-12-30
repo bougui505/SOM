@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 16
+creation date: 2013 12 30
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -154,7 +154,7 @@ class graph:
         """
         pathes = []
         pathdists = []
-        self.localminima = numpy.asarray(SOMTools.detect_local_minima(self.umat)).T
+        self.localminima = numpy.asarray(SOMTools.detect_local_minima2(self.umat)).T
         self.localminimagraph = {}
         if self.mask != None:
             self.localminima = numpy.asarray(filter(lambda e: not self.mask[e[0],e[1]], self.localminima))
