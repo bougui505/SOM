@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 20
+creation date: 2013 12 31
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -292,14 +292,19 @@ class SOM(object):
         self.smap = smap
         return self.smap
 
-    def findbmu(self, smap, vector, n_cpu=1):
+    def findbmu(self, smap, vector, n_cpu=1, returndist=False):
         if numpy.ma.isMaskedArray(vector):
             smap = smap[:,:,numpy.asarray(1-vector.mask, dtype=bool)]
             vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
         d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
-        return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
+        if returndist:
+            r = list(numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1])))
+            r.append(d.min())
+            return tuple(r)
+        else:
+            return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
     
     def get_allbmus(self, smap=None, vectors=None, **parameters):
         if smap is None:
