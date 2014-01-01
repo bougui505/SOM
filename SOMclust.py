@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 20
+creation date: 2014 01 01
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -301,7 +301,7 @@ class clusters:
         """
         newCoords = numpy.zeros((len(bmus),2),dtype="int")
         for i,j in enumerate(bmus):
-            newCoords[i] = self.offsetmat[j[0],j[1]]
+            newCoords[i] = numpy.asarray(numpy.where(numpy.logical_and((self.offsetmat == j).all(axis=2), 1-self.mask))).T[0]
         return newCoords
 
     def getTrajClust(self, traj, clustid, outputfilename='clust'):
