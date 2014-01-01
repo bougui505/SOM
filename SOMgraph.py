@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 30
+creation date: 2014 01 01
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -50,8 +50,8 @@ class graph:
                     neighbors = SOMTools.getNeighbors((i,j), (self.X,self.Y))
                     for u,v in neighbors:
                         if not self.mask[u,v]:
-#                            d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
-                            d = self.umat[u,v]
+                            d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
+#                            d = self.umat[u,v]
                             self.updategraph((i,j), (u,v), d)
 
 
