@@ -328,32 +328,6 @@ class graph:
                 self.updategraph(v1, v2, graph2[v1][v2], mgraph)
         return mgraph
 
-
-
-    def connectgraph(self, subgraph, graph=None):
-        """
-        connect two graphes
-        """
-        if graph == None:
-            G = self.priorityGraph(self.graph)
-        else:
-            G = self.priorityGraph(graph)
-        vertlist = self.get_vertices(subgraph)
-        connectgraph = {}
-        for n1 in vertlist:
-            for n2 in G[n1]:
-                if n2 not in vertlist:
-                    self.updategraph(n1, n2, G[n1][n2], connectgraph)
-        return connectgraph
-
-    def get_nearest(self, subgraph, graph=None):
-        """
-        return two vertices. One of the subgraph with the shortest distance
-        from the other one of the graph but not present in the subgraph
-        """
-        connectgraph = self.connectgraph(subgraph, graph)
-        return self.get_smallest_edge(connectgraph)
-
     def select_edges(self, threshold, graph=None, min_d=None):
         """
         return edges with distance less than threshold and more than min_d if
@@ -454,7 +428,6 @@ class graph:
         for n1 in verts1:
             for n2 in verts2:
                 d = self.localminimagraph[n1][n2]
-                print n1, n2, d, dmin
                 if d < dmin:
                     n1min, n2min, dmin = n1, n2, d
         return n1min, n2min, dmin
@@ -487,6 +460,22 @@ class graph:
                 nvert_prev = nvert
             if nvert == nvertmax:
                 break
+        subgraph = self.symmetrize_edges(subgraph)
+        splitgraph = self.splitgraph(subgraph)
+        ngraph = len(splitgraph)
+        while ngraph != 1:
+            for i in range(ngraph):
+                dmin = numpy.inf
+                for j in range(ngraph):
+                    if i != j:
+                        g1 = splitgraph[i]
+                        g2 = splitgraph[j]
+                        n1, n2, d = self.get_graph_distance(g1,g2)
+                        if d < dmin:
+                            n1min, n2min, dmin = n1, n2, d
+                self.updategraph(n1min, n2min, dmin, subgraph)
+            splitgraph = self.splitgraph(subgraph)
+            ngraph = len(splitgraph)
         subgraph = self.symmetrize_edges(subgraph)
         self.mingraph = subgraph
         return subgraph
