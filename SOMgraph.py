@@ -388,13 +388,23 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m'):
+    def plot_graph(self, graph, color='m', plotkeys=False):
         import matplotlib.pyplot
         G = graph
+        if plotkeys:
+            plottedkeys = []
         for n1 in G.keys():
+            if plotkeys:
+                if n1 not in plottedkeys:
+                    plottedkeys.append(n1)
+                    matplotlib.pyplot.annotate(n1, list(n1)[::-1])
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
                 matplotlib.pyplot.plot(v[:,1],v[:,0], color)
+                if plotkeys:
+                    if n2 not in plottedkeys:
+                        plottedkeys.append(n2)
+                        matplotlib.pyplot.annotate(n2, list(n2)[::-1])
 
     def clean_graph(self, graph=None):
         """
