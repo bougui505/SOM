@@ -17,11 +17,14 @@ from priodict import priorityDictionary
 import itertools
 
 class graph:
-    def __init__(self, smap = None, mask = None, graph = None):
+    def __init__(self, smap = None, mask = None, graph = None, umat = None):
         if smap != None:
             self.smap = smap
             self.X,self.Y,self.dim = self.smap.shape
-            self.umat = SOMTools.getUmatrix(self.smap)
+            if umat == None:
+                self.umat = SOMTools.getUmatrix(self.smap)
+            else:
+                self.umat = umat
         if graph == None:
             self.graph = {}
         else:
@@ -406,6 +409,38 @@ class graph:
                         plottedkeys.append(n2)
                         matplotlib.pyplot.annotate(n2, list(n2)[::-1])
 
+    def splitgraph(self, graph):
+        """
+        split a graph in not connected subgraphes
+        """
+        G = graph
+        verts = self.get_vertices(G)
+        n1 = verts[0]
+        n1s = []
+        visited = []
+        n1s.append(n1)
+        visited.append(n1)
+        subgraph = {}
+        subgraphes = []
+        while 1:
+            for n2 in G[n1]:
+                d = G[n1][n2]
+                self.updategraph(n1, n2, d, subgraph)
+                if G.has_key(n2):
+                    if n2 not in visited:
+                        n1s.append(n2)
+                        visited.append(n2)
+            if len(n1s) == 0:
+                subgraphes.append(subgraph)
+                subgraph = {}
+                verts = list(set(verts) - set(visited))
+                if len(verts) == 0:
+                    break
+                n1 = verts[0]
+            else:
+                n1 = n1s.pop()
+        return subgraphes
+
     def clean_graph(self, graph=None):
         """
         remove long range edges in a graph
@@ -433,5 +468,6 @@ class graph:
                 nvert_prev = nvert
             if nvert == nvertmax:
                 break
+        subgraph = self.symmetrize_edges(subgraph)
         self.mingraph = subgraph
         return subgraph
