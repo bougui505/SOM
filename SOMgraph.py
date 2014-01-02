@@ -365,7 +365,11 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m', plotkeys=False):
+    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False):
+        """
+        plot the graph with matplotlib.pyplot. If plotpath is True plot the
+        shortest path for edges
+        """
         import matplotlib.pyplot
         G = graph
         if plotkeys:
@@ -377,7 +381,11 @@ class graph:
                     matplotlib.pyplot.annotate(n1, list(n1)[::-1])
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
-                matplotlib.pyplot.plot(v[:,1],v[:,0], color)
+                if plotpath:
+                    path = numpy.asarray(self.shortestPath(n1, n2, graph=None))
+                    matplotlib.pyplot.plot(path[:,1],path[:,0], color)
+                else:
+                    matplotlib.pyplot.plot(v[:,1],v[:,0], color)
                 if plotkeys:
                     if n2 not in plottedkeys:
                         plottedkeys.append(n2)
