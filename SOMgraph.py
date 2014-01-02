@@ -441,6 +441,25 @@ class graph:
                 n1 = n1s.pop()
         return subgraphes
 
+    def get_graph_distance(self, graph1, graph2):
+        """
+        return the distance between two graphes. The distance is the smallest
+        distance between two nodes of each graph
+        """
+        if not hasattr(self, 'localminimagraph'):
+            self.getAllPathes()
+        verts1 = self.get_vertices(graph1)
+        verts2 = self.get_vertices(graph2)
+        dmin = numpy.inf
+        for n1 in verts1:
+            for n2 in verts2:
+                d = self.localminimagraph[n1][n2]
+                print n1, n2, d, dmin
+                if d < dmin:
+                    n1min, n2min, dmin = n1, n2, d
+        return n1min, n2min, dmin
+
+
     def clean_graph(self, graph=None):
         """
         remove long range edges in a graph
