@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 01
+creation date: 2014 01 02
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -329,19 +329,22 @@ class graph:
                     self.updategraph(n1, n2, G[n1][n2], connectgraph)
         return self.get_smallest_edge(connectgraph)
 
-    def select_edges(self, threshold, graph=None):
+    def select_edges(self, threshold, graph=None, min_d=None):
         """
-        return edges with distance less than threshold
+        return edges with distance less than threshold and more than min_d if
+        min_d is not None.
         """
         if graph == None:
             G = self.get_graph_iterator(self.graph)
         else:
             G = self.get_graph_iterator(graph)
+        if min_d == None:
+            min_d = -numpy.inf
         outgraph = {}
         for n1 in G.keys():
             n2 = G[n1].next()
             d = graph[n1][n2]
-            while d <= threshold:
+            while d <= threshold and d >= min_d:
                 self.updategraph(n1, n2, d, outgraph)
                 try:
                     n2 = G[n1].next()
