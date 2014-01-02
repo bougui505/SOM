@@ -161,7 +161,7 @@ class graph:
         self.localminimagraph = {}
         if self.mask != None:
             self.localminima = numpy.asarray(filter(lambda e: not self.mask[e[0],e[1]], self.localminima))
-        for e in itertools.combinations(self.localminima, 2):
+        for e in itertools.permutations(self.localminima, 2):
             path = self.shortestPath(tuple(e[0]), tuple(e[1]))
             pathes.append(path)
             pathd = self.getPathDist(path)
@@ -427,7 +427,10 @@ class graph:
         dmin = numpy.inf
         for n1 in verts1:
             for n2 in verts2:
-                d = self.localminimagraph[n1][n2]
+                try:
+                    d = self.localminimagraph[n1][n2]
+                except KeyError:
+                    raise KeyError("Undefined edge %s -> %s"%(n1,n2))
                 if d < dmin:
                     n1min, n2min, dmin = n1, n2, d
         return n1min, n2min, dmin
@@ -474,8 +477,8 @@ class graph:
                         if d < dmin:
                             n1min, n2min, dmin = n1, n2, d
                 self.updategraph(n1min, n2min, dmin, subgraph)
+            subgraph = self.symmetrize_edges(subgraph)
             splitgraph = self.splitgraph(subgraph)
             ngraph = len(splitgraph)
-        subgraph = self.symmetrize_edges(subgraph)
         self.mingraph = subgraph
         return subgraph
