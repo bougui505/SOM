@@ -312,10 +312,24 @@ class graph:
                     min_n2 = n2
         return min_n1, min_n2
 
-    def get_nearest(self, subgraph, graph=None):
+    def mergegraph(self, graph1, graph2):
         """
-        return two vertices. One of the subgraph with the shortest distance
-        from the other one of the graph but not present in the subgraph
+        merge two graphes
+        """
+        mgraph = {}
+        for v1 in graph1.keys():
+            for v2 in graph1[v1].keys():
+                self.updategraph(v1, v2, graph1[v1][v2], mgraph)
+        for v1 in graph2.keys():
+            for v2 in graph2[v1].keys():
+                self.updategraph(v1, v2, graph2[v1][v2], mgraph)
+        return mgraph
+
+
+
+    def connectgraph(self, subgraph, graph=None):
+        """
+        connect two graphes
         """
         if graph == None:
             G = self.priorityGraph(self.graph)
@@ -327,6 +341,14 @@ class graph:
             for n2 in G[n1]:
                 if n2 not in vertlist:
                     self.updategraph(n1, n2, G[n1][n2], connectgraph)
+        return connectgraph
+
+    def get_nearest(self, subgraph, graph=None):
+        """
+        return two vertices. One of the subgraph with the shortest distance
+        from the other one of the graph but not present in the subgraph
+        """
+        connectgraph = self.connectgraph(subgraph, graph)
         return self.get_smallest_edge(connectgraph)
 
     def select_edges(self, threshold, graph=None, min_d=None):
@@ -386,9 +408,19 @@ class graph:
             G = graph
         ds = self.get_distances(G)
         nvertmax = len(self.get_vertices(G))
+        nvert_prev = -1
+        min_d = -numpy.inf
+        subgraph_prev = {}
         for d in ds:
-            subgraph = self.select_edges(d, G)
+            subgraph = self.select_edges(d, G, min_d=min_d)
             nvert = len(self.get_vertices(subgraph))
+            if nvert == nvert_prev:
+                subgraph = subgraph_prev
+                min_d = d
+            else:
+                subgraph = self.mergegraph(subgraph_prev, subgraph)
+                subgraph_prev = subgraph
+                nvert_prev = nvert
             if nvert == nvertmax:
                 break
         self.mingraph = subgraph
