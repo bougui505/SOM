@@ -503,21 +503,29 @@ class graph:
                 A[i,j] = graph[n1][n2]
         return A, vertdict
 
-    def fruchterman_reingold(self, A, dim=2, pos=None, fixed=None, iterations=50):
+    def fruchterman_reingold(self, graph, dim=2, pos=None, fixed=None, iterations=50):
         """
         Position nodes in adjacency matrix A using Fruchterman-Reingold
         Entry point for NetworkX graph is fruchterman_reingold_layout()
+        fixed is a boolean array to indicate fixed nodes
         function from networkx: http://networkx.github.io/
         """
+        
+        A, vertdict = self.adjacency_matrix(graph) # get adjacency matrix and dictionnary of vertices
+
         try:
             nnodes,_=A.shape
         except AttributeError:
             raise AttributeError(
                 "fruchterman_reingold() takes an adjacency matrix as input")
 
-        A=numpy.asarray(A) # make sure we have an array instead of a matrix
-
-        if pos==None:
+        returngraph = False
+        if (numpy.asarray([type(e) for e in vertdict.keys()]) == type((0,))).all(): # If the vertices of a graph are positions,
+            pos = numpy.zeros((len(vertdict.keys()), dim), dtype=float)
+            for n in vertdict.keys():
+                pos[vertdict[n]] = n # read the initial positions from the graph
+            returngraph = True # and return a graph at the end, with the new positions
+        elif pos==None:
             # random initial positions
             pos=numpy.asarray(numpy.random.random((nnodes,dim)),dtype=A.dtype)
         else:
@@ -558,4 +566,14 @@ class graph:
             pos+=delta_pos
             # cool temperature
             t-=dt
-        return pos
+        if returngraph:
+            outgraph = {}
+            for n1 in graph.keys():
+                for n2 in graph[n1].keys():
+                    nn1 = tuple(pos[vertdict[n1]]) # new node 1
+                    nn2 = tuple(pos[vertdict[n2]]) # new node 2
+                    d = graph[n1][n2]
+                    self.updategraph(nn1, nn2, d, graph=outgraph)
+            return outgraph
+        else:
+            return pos
