@@ -545,7 +545,8 @@ class graph:
             pos=pos.astype(A.dtype)
 
         # optimal distance between nodes
-        k=numpy.sqrt(1.0/nnodes)
+        area = numpy.sqrt((pos.ptp(axis=0)**2).sum())
+        k=numpy.sqrt(area/nnodes)
         # the initial "temperature"  is about .1 of domain area (=1x1)
         # this is the largest step allowed in the dynamics.
         t=0.1
