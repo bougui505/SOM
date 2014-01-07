@@ -507,8 +507,8 @@ class graph:
         """
         Position nodes in adjacency matrix A using Fruchterman-Reingold
         Entry point for NetworkX graph is fruchterman_reingold_layout()
-        fixed is a boolean array to indicate fixed nodes
-        function from networkx: http://networkx.github.io/
+        fixed is a list of vertices to keep fixed
+        function adapted from networkx: http://networkx.github.io/
         """
         
         A, vertdict = self.adjacency_matrix(graph) # get adjacency matrix and dictionnary of vertices
@@ -518,6 +518,13 @@ class graph:
         except AttributeError:
             raise AttributeError(
                 "fruchterman_reingold() takes an adjacency matrix as input")
+
+        if fixed != None:
+            select = numpy.zeros(len(vertdict.keys()), dtype=bool)
+            for n in vertdict.keys():
+                if n in fixed:
+                    select[vertdict[n]] = True
+            fixed = select
 
         returngraph = False
         if (numpy.asarray([type(e) for e in vertdict.keys()]) == type((0,))).all(): # If the vertices of a graph are positions,
