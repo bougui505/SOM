@@ -516,6 +516,7 @@ class graph:
         """
         
         A, vertdict = self.adjacency_matrix(graph) # get adjacency matrix and dictionnary of vertices
+        A = numpy.asarray(A!=0, dtype=float)
 
         try:
             nnodes,_=A.shape
