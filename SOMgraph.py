@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 02
+creation date: 2014 01 07
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -490,3 +490,72 @@ class graph:
             ngraph = len(splitgraph)
         self.mingraph = subgraph
         return subgraph
+
+    def adjacency_matrix(self, graph):
+        verts = self.get_vertices(graph)
+        vertdict = {}
+        for i, vert in enumerate(verts):
+            vertdict[vert] = i
+        A = numpy.zeros((len(verts), len(verts)))
+        for n1 in graph.keys():
+            for n2 in graph[n1].keys():
+                i,j = vertdict[n1], vertdict[n2]
+                A[i,j] = graph[n1][n2]
+        return A, vertdict
+
+    def fruchterman_reingold(self, A, dim=2, pos=None, fixed=None, iterations=50):
+        """
+        Position nodes in adjacency matrix A using Fruchterman-Reingold
+        Entry point for NetworkX graph is fruchterman_reingold_layout()
+        function from networkx: http://networkx.github.io/
+        """
+        try:
+            nnodes,_=A.shape
+        except AttributeError:
+            raise AttributeError(
+                "fruchterman_reingold() takes an adjacency matrix as input")
+
+        A=numpy.asarray(A) # make sure we have an array instead of a matrix
+
+        if pos==None:
+            # random initial positions
+            pos=numpy.asarray(numpy.random.random((nnodes,dim)),dtype=A.dtype)
+        else:
+            # make sure positions are of same type as matrix
+            pos=pos.astype(A.dtype)
+
+        # optimal distance between nodes
+        k=numpy.sqrt(1.0/nnodes)
+        # the initial "temperature"  is about .1 of domain area (=1x1)
+        # this is the largest step allowed in the dynamics.
+        t=0.1
+        # simple cooling scheme.
+        # linearly step down by dt on each iteration so last iteration is size dt.
+        dt=t/float(iterations+1)
+        delta = numpy.zeros((pos.shape[0],pos.shape[0],pos.shape[1]),dtype=A.dtype)
+        # the inscrutable (but fast) version
+        # this is still O(V^2)
+        # could use multilevel methods to speed this up significantly
+        for iteration in range(iterations):
+            # matrix of difference between points
+            for i in range(pos.shape[1]):
+                delta[:,:,i]= pos[:,i,None]-pos[:,i]
+            # distance between points
+            distance=numpy.sqrt((delta**2).sum(axis=-1))
+            # enforce minimum distance of 0.01
+            distance=numpy.where(distance<0.01,0.01,distance)
+            # displacement "force"
+            displacement=numpy.transpose(numpy.transpose(delta)*\
+                                      (k*k/distance**2-A*distance/k))\
+                                      .sum(axis=1)
+            # update positions
+            length=numpy.sqrt((displacement**2).sum(axis=1))
+            length=numpy.where(length<0.01,0.1,length)
+            delta_pos=numpy.transpose(numpy.transpose(displacement)*t/length)
+            if fixed is not None:
+                # don't change positions of fixed nodes
+                delta_pos[fixed]=0.0
+            pos+=delta_pos
+            # cool temperature
+            t-=dt
+        return pos
