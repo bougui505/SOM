@@ -365,7 +365,7 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False):
+    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False):
         """
         plot the graph with matplotlib.pyplot. If plotpath is True plot the
         shortest path for edges
@@ -379,6 +379,8 @@ class graph:
                 if n1 not in plottedkeys:
                     plottedkeys.append(n1)
                     matplotlib.pyplot.annotate(n1, list(n1)[::-1])
+            if plotnode:
+                matplotlib.pyplot.scatter(n1[1], n1[0], color=color)
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
                 if plotpath:
@@ -390,6 +392,8 @@ class graph:
                     if n2 not in plottedkeys:
                         plottedkeys.append(n2)
                         matplotlib.pyplot.annotate(n2, list(n2)[::-1])
+                if plotnode:
+                    matplotlib.pyplot.scatter(n2[1], n2[0], color=color)
 
     def splitgraph(self, graph):
         """
