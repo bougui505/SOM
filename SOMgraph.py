@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 07
+creation date: 2014 01 08
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -545,7 +545,7 @@ class graph:
             pos=pos.astype(A.dtype)
 
         # optimal distance between nodes
-        area = numpy.sqrt((pos.ptp(axis=0)**2).sum())
+        area = pos.ptp(axis=0).prod()
         k=numpy.sqrt(area/nnodes)
         # the initial "temperature"  is about .1 of domain area (=1x1)
         # this is the largest step allowed in the dynamics.
