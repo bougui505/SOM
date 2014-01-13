@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 08
+creation date: 2014 01 13
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -365,12 +365,17 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False):
+    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False, plotUmat = False, contour=50):
         """
         plot the graph with matplotlib.pyplot. If plotpath is True plot the
-        shortest path for edges
+        shortest path for edges.
+        If plotUmat is True, plot the U-matrix True with contour the number of
+        contours to plot
         """
         import matplotlib.pyplot
+        if plotUmat:
+            matplotlib.pyplot.contour(numpy.ma.masked_array(self.umat, self.mask), contour)
+            matplotlib.pyplot.colorbar()
         G = graph
         if plotkeys:
             plottedkeys = []
@@ -394,6 +399,7 @@ class graph:
                         matplotlib.pyplot.annotate(n2, list(n2)[::-1])
                 if plotnode:
                     matplotlib.pyplot.scatter(n2[1], n2[0], color=color)
+        matplotlib.pyplot.axis('off')
 
     def splitgraph(self, graph):
         """
