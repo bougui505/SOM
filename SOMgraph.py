@@ -498,6 +498,14 @@ class graph:
             subgraph = self.symmetrize_edges(subgraph)
             splitgraph = self.splitgraph(subgraph)
             ngraph = len(splitgraph)
+        vertlist = self.get_vertices(subgraph)
+        nvert = len(vertlist)
+        if nvert != self.localminima.shape[0]:
+            notvisited = set(self.get_vertices(self.localminimagraph)) - set(vertlist)
+            for vert in list(notvisited):
+                g1 = {vert:{}}
+                n1, n2, d = self.get_graph_distance(g1,subgraph)
+                self.updategraph(n1, n2, d, subgraph)
         self.mingraph = subgraph
         return subgraph
 
