@@ -16,8 +16,23 @@ import scipy.spatial.distance
 from priodict import priorityDictionary
 import itertools
 
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+if run_from_ipython():
+    from IPython.display import clear_output
+
 class graph:
     def __init__(self, smap = None, mask = None, graph = None, umat = None):
+        try:
+            __IPYTHON__
+            self.ipython = True
+        except NameError:
+            self.ipython = False
         if smap != None:
             self.smap = smap
             self.X,self.Y,self.dim = self.smap.shape
@@ -452,6 +467,31 @@ class graph:
                 if d < dmin:
                     n1min, n2min, dmin = n1, n2, d
         return n1min, n2min, dmin
+
+    def get_cluster(self):
+        """
+        return a cluster mat from graphes
+        """
+        if not hasattr(self, 'localminimagraph'):
+            self.getAllPathes()
+        x,y,z = self.smap.shape
+        # compute cluster matrix cmat
+        self.cmat = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]]).argmin(axis=1).reshape(x,y)
+        vertlist = self.get_vertices(self.graph)
+        notvisited = set(vertlist) - set(self.get_vertices(self.localminimagraph))
+        nnodes = len(notvisited)
+        dmin = numpy.inf
+        clustgraph = {}
+        for i, n1 in enumerate(list(notvisited)):
+            print 'clustgraph: %.4f'%(float(i+1)/nnodes)
+            if self.ipython:
+                clear_output()
+            n2 = self.localminima[self.cmat[n1]]
+            n1, n2 = tuple(n1), tuple(n2)
+            d = self.getPathDist(self.shortestPath(n1, n2))
+            self.updategraph(n1, n2, d, clustgraph)
+        self.clustgraph = clustgraph
+        return clustgraph
 
 
     def clean_graph(self, graph=None):
