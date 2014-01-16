@@ -380,7 +380,7 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False, plotUmat = False, contour=50, linewidth=1):
+    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False, plotUmat = False, contour=50, linewidth=1, plotclusters=False):
         """
         plot the graph with matplotlib.pyplot. If plotpath is True plot the
         shortest path for edges.
@@ -414,6 +414,11 @@ class graph:
                         matplotlib.pyplot.annotate(n2, list(n2)[::-1])
                 if plotnode:
                     matplotlib.pyplot.scatter(n2[1], n2[0], color=color)
+        if plotclusters:
+            if not hasattr(self, 'cmat'):
+                self.get_cluster()
+            for e in numpy.unique(self.cmat)[1:]:
+                matplotlib.pyplot.contour(numpy.ma.masked_array(self.cmat==e, self.mask), 1, colors='m')
         matplotlib.pyplot.axis('off')
 
     def splitgraph(self, graph):
