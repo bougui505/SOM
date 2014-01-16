@@ -365,7 +365,7 @@ class graph:
             G[key] = G[key].__iter__()
         return G
 
-    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False, plotUmat = False, contour=50):
+    def plot_graph(self, graph, color='m', plotkeys=False, plotpath=False, plotnode=False, plotUmat = False, contour=50, linewidth=1):
         """
         plot the graph with matplotlib.pyplot. If plotpath is True plot the
         shortest path for edges.
@@ -390,9 +390,9 @@ class graph:
                 v = numpy.asarray((n1,n2))
                 if plotpath:
                     path = numpy.asarray(self.shortestPath(n1, n2, graph=None))
-                    matplotlib.pyplot.plot(path[:,1],path[:,0], color)
+                    matplotlib.pyplot.plot(path[:,1],path[:,0], color, linewidth=linewidth)
                 else:
-                    matplotlib.pyplot.plot(v[:,1],v[:,0], color)
+                    matplotlib.pyplot.plot(v[:,1],v[:,0], color, linewidth=linewidth)
                 if plotkeys:
                     if n2 not in plottedkeys:
                         plottedkeys.append(n2)
