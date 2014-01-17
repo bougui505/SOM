@@ -484,7 +484,7 @@ class graph:
         d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]])
         cmat = numpy.zeros_like(d, dtype=int)
         for i, r in enumerate(d):
-            cmat[i] = numpy.unique(r, return_index=True)[1]
+            cmat[i] = numpy.argsort(r)
         cmat = cmat.reshape((x,y,d.shape[1]))
 
         vertlist = self.get_vertices(self.graph)
@@ -505,7 +505,7 @@ class graph:
                     dmin = d
                     n1min = n1
                     n2min = n2
-                    cid = cmat[n1][j]
+                    cid = cmat[n1][j] + 1
             self.updategraph(n1min, n2min, dmin, clustgraph)
             self.cmat[n1] = cid
         self.clustgraph = clustgraph
