@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 10 04
+creation date: 2013 12 31
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -24,11 +24,26 @@ import itertools
 import bisect, copy
 import scipy.spatial
 
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+if run_from_ipython():
+    from IPython.display import clear_output
+
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
     """
     def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
+        try:
+            __IPYTHON__
+            self.ipython = True
+        except NameError:
+            self.ipython = False
     
     def _generic_learning_rate(self, t, end_t, alpha_begin, alpha_end, shape='exp'):
         if shape == 'exp':
@@ -191,8 +206,12 @@ class SOM(object):
                     radius = eps*params['learning_radius'][phase](0, end_t, vector, smap[bmu])
                     rate = eps*params['learning_rate'][phase](0, end_t, vector, smap[bmu])
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
-                if verbose and (t%100 == 0):
-                    print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
+                if verbose:
+                    if self.ipython:
+                        clear_output()
+                        print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
+                    elif (t%100 == 0):
+                        print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
                     if show_umatrices:
                         imshow, draw = params['show_umatrices']
                         imshow(self.umatrix(smap, toric=True), interpolation='nearest')
@@ -264,6 +283,8 @@ class SOM(object):
                 smap = prods / neighborhoods
                 if verbose and (t%(end_t/100) == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), t_prime, radius
+                    if self.ipython:
+                        clear_output()
 #                    if show_umatrices:
 #                        imshow, draw = params['show_umatrices']
 #                        imshow(self.umatrix(smap, toric=True), interpolation='nearest')
@@ -271,28 +292,39 @@ class SOM(object):
         self.smap = smap
         return self.smap
 
-    def findbmu(self, smap, vector, n_cpu=1):
+    def findbmu(self, smap, vector, n_cpu=1, returndist=False):
+        if numpy.ma.isMaskedArray(vector):
+            smap = smap[:,:,numpy.asarray(1-vector.mask, dtype=bool)]
+            vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
         d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
-        return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
+        if returndist:
+            r = list(numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1])))
+            r.append(d.min())
+            return tuple(r)
+        else:
+            return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
     
     def get_allbmus(self, smap=None, vectors=None, **parameters):
         if smap is None:
             smap = self.smap
         if vectors is None:
             vectors = self.input_matrix
-        try:
-            subpart = parameters['learning_subpart']
-        except KeyError:
-            subpart = None
-        s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-        if subpart is None:
-            dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
+        if numpy.ma.isMaskedArray(vectors):
+            print "get_allbmus not yet implemented for masked input array !!! Use findbmu with a loop instead"
         else:
-            mask = list(subpart.nonzero()[0])
-            dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
-        return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
+            try:
+                subpart = parameters['learning_subpart']
+            except KeyError:
+                subpart = None
+            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
+            if subpart is None:
+                dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
+            else:
+                mask = list(subpart.nonzero()[0])
+                dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
+            return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
 
     def get_allbmus_kdtree(self, smap=None, **parameters): # Don't use this function for high dimension data: greater than 20 !!!
         if smap is None:
@@ -301,12 +333,17 @@ class SOM(object):
             subpart = parameters['learning_subpart']
         except KeyError:
             subpart = None
-        s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-        tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
-        return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
+        if numpy.ma.isMaskedArray(self.input_matrix):
+            print "get_allbmus_kdtree not yet implemented for masked input array !!! Use findbmu with a loop instead"
+        else:
+            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
+            tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
+            return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
     
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
+        if numpy.ma.isMaskedArray(vector):
+            vector = vector.filled(0)
         if toric:
             bigshape = tuple(map(lambda x: 3*x, shape))
             midselect = tuple([ slice(s, 2*s) for s in shape ])

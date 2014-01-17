@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 03
+creation date: 2014 01 01
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -16,10 +16,27 @@ import SOMTools
 import SOM2
 import matplotlib
 import IO
+import SOMgraph
+
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+if run_from_ipython():
+    from IPython.display import clear_output
 
 class clusters:
 
     def __init__(self, umatrix, bmus, smap, waterstop=None):
+        try:
+            __IPYTHON__
+            self.ipython = True
+        except NameError:
+            self.ipython = False
+        self.x_offset, self.y_offset, self.mask = (None, None, None)
         self.umatrix = umatrix
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = self.flood(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
@@ -27,6 +44,8 @@ class clusters:
         self.som.smap = smap
 
     def flood(self, inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None, startingpoint = None, floodgate = False):
+        if (x_offset, y_offset, mask) == (None,None,None) and not floodgate:
+            (x_offset, y_offset, mask) = (self.x_offset, self.y_offset, self.mask)
         def arrange(outmatrix):
             x_offset = -(outmatrix==0).all(axis=1)
             y_offset = -(outmatrix==0).all(axis=0)
@@ -89,7 +108,10 @@ class clusters:
                             u, v = i, j
                             bayou.append((u,v))
                             if verbose:
-                                if count % (n / 100) == 0:
+                                if self.ipython:
+                                    clear_output()
+                                    print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
+                                elif count % (n / 100) == 0:
                                     print "%.2f/100: flooding: %d/%d, %.2f, (%d, %d)"%(count / (n/100.), count, n, waterlevel,u,v)
                             circummat[u,v] = mat[u%X,v%Y]
                             mat[u%X,v%Y] = numpy.inf
@@ -279,7 +301,7 @@ class clusters:
         """
         newCoords = numpy.zeros((len(bmus),2),dtype="int")
         for i,j in enumerate(bmus):
-            newCoords[i] = self.offsetmat[j[0],j[1]]
+            newCoords[i] = numpy.asarray(numpy.where(numpy.logical_and((self.offsetmat == j).all(axis=2), 1-self.mask))).T[0]
         return newCoords
 
     def getTrajClust(self, traj, clustid, outputfilename='clust'):
@@ -300,3 +322,12 @@ class clusters:
         trajobj.array = trajid.reshape(selector.sum(), natoms*3)
         trajobj.write('%s%d.dcd'%(outputfilename, clustid))
         return trajid
+
+    def getGraph(self):
+        smap_cont = self.flood(self.som.smap)[0]
+        self.graph = SOMgraph.graph(smap_cont)
+        self.graph.getgraph()
+
+    def getPath(self, start, end):
+        path = self.graph.shortestPath(start, end)
+        return path
