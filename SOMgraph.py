@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 13
+creation date: 2014 01 17
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -418,7 +418,7 @@ class graph:
             if not hasattr(self, 'cmat'):
                 self.get_cluster()
             for e in numpy.unique(self.cmat)[1:]:
-                matplotlib.pyplot.contour(numpy.ma.masked_array(self.cmat==e, self.mask), 1, colors='m')
+                matplotlib.pyplot.contour(self.cmat==e, 1, colors='m')
         matplotlib.pyplot.axis('off')
 
     def splitgraph(self, graph):
@@ -481,20 +481,33 @@ class graph:
             self.getAllPathes()
         x,y,z = self.smap.shape
         # compute cluster matrix cmat
-        self.cmat = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]]).argmin(axis=1).reshape(x,y)
+        d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]])
+        cmat = numpy.zeros_like(d, dtype=int)
+        for i, r in enumerate(d):
+            cmat[i] = numpy.unique(r, return_index=True)[1]
+        cmat = cmat.reshape((x,y,d.shape[1]))
+
         vertlist = self.get_vertices(self.graph)
-        notvisited = set(vertlist) - set(self.get_vertices(self.localminimagraph))
-        nnodes = len(notvisited)
+        nnodes = len(vertlist)
         dmin = numpy.inf
         clustgraph = {}
-        for i, n1 in enumerate(list(notvisited)):
+        self.cmat = numpy.zeros((x,y), dtype=int)
+        for i, n1 in enumerate(vertlist):
             print 'clustgraph: %.4f'%(float(i+1)/nnodes)
             if self.ipython:
                 clear_output()
-            n2 = self.localminima[self.cmat[n1]]
-            n1, n2 = tuple(n1), tuple(n2)
-            d = self.getPathDist(self.shortestPath(n1, n2))
-            self.updategraph(n1, n2, d, clustgraph)
+            n2s = self.localminima[cmat[n1]]
+            dmin = numpy.inf
+            for j, n2 in enumerate(n2s[:3]):
+                n1, n2 = tuple(n1), tuple(n2)
+                d = self.getPathDist(self.shortestPath(n1, n2))
+                if d < dmin:
+                    dmin = d
+                    n1min = n1
+                    n2min = n2
+                    cid = cmat[n1][j]
+            self.updategraph(n1min, n2min, dmin, clustgraph)
+            self.cmat[n1] = cid
         self.clustgraph = clustgraph
         return clustgraph
 
