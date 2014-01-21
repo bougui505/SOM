@@ -509,15 +509,19 @@ class graph:
         newgraph = self.connect_graphes(newgraph)
         return newgraph
 
-    def get_cluster(self):
+    def get_cluster(self, graph=None):
         """
         return a cluster mat from graphes
         """
-        if not hasattr(self, 'localminimagraph'):
-            self.getAllPathes()
+        if graph == None:
+            if not hasattr(self, 'localminimagraph'):
+                self.getAllPathes()
+            localminima = self.localminima
+        else:
+            localminima = numpy.asarray(self.get_vertices(graph))
         x,y,z = self.smap.shape
         # compute cluster matrix cmat
-        d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]])
+        d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in localminima.T]])
         cmat = numpy.zeros_like(d, dtype=int)
         for i, r in enumerate(d):
             cmat[i] = numpy.argsort(r)
@@ -532,7 +536,7 @@ class graph:
             print 'clustgraph: %.4f'%(float(i+1)/nnodes)
             if self.ipython:
                 clear_output()
-            n2s = self.localminima[cmat[n1]]
+            n2s = localminima[cmat[n1]]
             dmin = numpy.inf
             for j, n2 in enumerate(n2s[:3]):
                 n1, n2 = tuple(n1), tuple(n2)
