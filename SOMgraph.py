@@ -496,6 +496,19 @@ class graph:
             ngraph = len(splitgraph)
         return subgraph
 
+    def prune(self, graph, threshold):
+        """
+        apply distance threshold to graph. Keep only distance more than threshold
+        """
+        newgraph = {}
+        for n1 in graph:
+            for n2 in graph[n1]:
+                d = graph[n1][n2]
+                if d > threshold:
+                    self.updategraph(n1, n2, d, newgraph)
+        newgraph = self.connect_graphes(newgraph)
+        return newgraph
+
     def get_cluster(self):
         """
         return a cluster mat from graphes
