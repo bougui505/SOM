@@ -473,6 +473,29 @@ class graph:
                     n1min, n2min, dmin = n1, n2, d
         return n1min, n2min, dmin
 
+    def connect_graphes(self, subgraph):
+        """
+        Connect sub graphes of a graph
+        """
+        subgraph = self.symmetrize_edges(subgraph)
+        splitgraph = self.splitgraph(subgraph)
+        ngraph = len(splitgraph)
+        while ngraph != 1:
+            for i in range(ngraph):
+                dmin = numpy.inf
+                for j in range(ngraph):
+                    if i != j:
+                        g1 = splitgraph[i]
+                        g2 = splitgraph[j]
+                        n1, n2, d = self.get_graph_distance(g1,g2)
+                        if d < dmin:
+                            n1min, n2min, dmin = n1, n2, d
+                self.updategraph(n1min, n2min, dmin, subgraph)
+            subgraph = self.symmetrize_edges(subgraph)
+            splitgraph = self.splitgraph(subgraph)
+            ngraph = len(splitgraph)
+        return subgraph
+
     def get_cluster(self):
         """
         return a cluster mat from graphes
@@ -539,23 +562,7 @@ class graph:
                 nvert_prev = nvert
             if nvert == nvertmax:
                 break
-        subgraph = self.symmetrize_edges(subgraph)
-        splitgraph = self.splitgraph(subgraph)
-        ngraph = len(splitgraph)
-        while ngraph != 1:
-            for i in range(ngraph):
-                dmin = numpy.inf
-                for j in range(ngraph):
-                    if i != j:
-                        g1 = splitgraph[i]
-                        g2 = splitgraph[j]
-                        n1, n2, d = self.get_graph_distance(g1,g2)
-                        if d < dmin:
-                            n1min, n2min, dmin = n1, n2, d
-                self.updategraph(n1min, n2min, dmin, subgraph)
-            subgraph = self.symmetrize_edges(subgraph)
-            splitgraph = self.splitgraph(subgraph)
-            ngraph = len(splitgraph)
+        subgraph = self.connect_graphes(subgraph)
         vertlist = self.get_vertices(subgraph)
         nvert = len(vertlist)
         if nvert != self.localminima.shape[0]:
