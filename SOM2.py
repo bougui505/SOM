@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 31
+creation date: 2014 01 29
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -396,6 +396,27 @@ class SOM(object):
             #print neighbors
             umatrix[point] = cdist(smap[neighbors], neuron[None]).mean()
         return umatrix
+
+    def getmatindex(self):
+        """
+        return a masked array with the same shape than U-matrix. Each element
+        gives the index of the input matrix of the best matching input vector.
+        """
+        print "computing distances and bmus"
+        bmudists = numpy.asarray([self.findbmu(self.smap, e, returndist=True) for e in self.input_matrix])
+        X,Y,Z = self.smap.shape
+        indexmap = -numpy.ones((X,Y), dtype=int)
+        for i in range(X):
+            for j in range(Y):
+                indices = numpy.nonzero((bmudists[:,:2] == (i,j)).all(axis=1))[0]
+                if len(indices) > 0:
+                    distances = bmudists[:,2][indices]
+                    minindex = numpy.argmin(distances)
+                    index = indices[minindex]
+                    indexmap[i,j] = index
+        mask = indexmap == -1
+        self.indexmap = numpy.ma.masked_array(indexmap, mask)
+        return self.indexmap
     
     def cluster_umatrix(self, umatrix, connectivity=2, gradient_connectivity=None, verbose=False):
         """Do a hierarchical clustering of the given umatrix.
