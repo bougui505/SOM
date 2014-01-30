@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 17
+creation date: 2014 01 30
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -400,7 +400,7 @@ class graph:
                     plottedkeys.append(n1)
                     matplotlib.pyplot.annotate(n1, list(n1)[::-1])
             if plotnode:
-                matplotlib.pyplot.scatter(n1[1], n1[0], color=color)
+                matplotlib.pyplot.scatter(n1[1], n1[0], color=color, linewidths=linewidth)
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
                 if plotpath:
