@@ -71,6 +71,11 @@ class graph:
                             d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
 #                            d = self.umat[u,v]
                             self.updategraph((i,j), (u,v), d)
+        subgraphes = self.splitgraph(self.graph)
+        if len(subgraphes) > 1:
+            print "Warning: the main graph is splitted in %d graphes"%len(subgraphes)
+            self.graph = subgraphes[numpy.argmax([len(e) for e in subgraphes])]
+            print "Keep only the main graph of size %d"%len(self.graph)
 
 
     def Dijkstra(self, G, start, end=None):
