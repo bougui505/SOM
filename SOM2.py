@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 02 24
+creation date: 2014 02 25
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -32,7 +32,10 @@ def run_from_ipython():
         return False
 
 if run_from_ipython():
-    from IPython.display import clear_output
+    try:
+        from IPython.display import clear_output
+    except ImportError:
+        pass
 
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
@@ -212,7 +215,10 @@ class SOM(object):
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
                 if verbose:
                     if self.ipython:
-                        clear_output()
+                        try:
+                            clear_output()
+                        except NameError:
+                            self.ipython = False
                         print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
                     elif (t%100 == 0):
                         print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
@@ -287,8 +293,10 @@ class SOM(object):
                 smap = prods / neighborhoods
                 if verbose and (t%(end_t/100) == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), t_prime, radius
-                    if self.ipython:
+                    try:
                         clear_output()
+                    except NameError:
+                        self.ipython = False
 #                    if show_umatrices:
 #                        imshow, draw = params['show_umatrices']
 #                        imshow(self.umatrix(smap, toric=True), interpolation='nearest')
