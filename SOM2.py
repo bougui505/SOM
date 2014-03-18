@@ -47,6 +47,10 @@ class SOM(object):
             self.ipython = True
         except NameError:
             self.ipython = False
+        self.iscomplex = False
+        if self.input_matrix.dtype == numpy.asarray(numpy.complex(1,1)).dtype:
+            self.iscomplex = True
+            print "The input vectors are composed of complex numbers"
     
     def _generic_learning_rate(self, t, end_t, alpha_begin, alpha_end, shape='exp'):
         if shape == 'exp':
@@ -306,7 +310,10 @@ class SOM(object):
             vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
-        d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
+        if not self.iscomplex:
+            d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
+        else:
+            d = numpy.sqrt( ( numpy.abs( smap.reshape((neurons, shape[-1])) - vector[None] )**2 ).sum(axis=1) )
         if returndist:
             r = list(numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1])))
             r.append(d.min())
@@ -320,7 +327,9 @@ class SOM(object):
         if vectors is None:
             vectors = self.input_matrix
         if numpy.ma.isMaskedArray(vectors):
-            print "get_allbmus not yet implemented for masked input array !!! Use findbmu with a loop instead"
+            raise NotImplementedError("get_allbmus not yet implemented for masked input array !!! Use findbmu with a loop instead")
+        if self.iscomplex:
+            raise NotImplementedError("get_allbmus not yet implemented for complex input array !!! Use findbmu with a loop instead")
         else:
             try:
                 subpart = parameters['learning_subpart']
@@ -342,7 +351,9 @@ class SOM(object):
         except KeyError:
             subpart = None
         if numpy.ma.isMaskedArray(self.input_matrix):
-            print "get_allbmus_kdtree not yet implemented for masked input array !!! Use findbmu with a loop instead"
+            raise NotImplementedError("get_allbmus_kdtree not yet implemented for masked input array !!! Use findbmu with a loop instead")
+        if self.iscomplex:
+            raise NotImplementedError("get_allbmus not yet implemented for complex input array !!! Use findbmu with a loop instead")
         else:
             s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
             tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
@@ -378,13 +389,24 @@ class SOM(object):
     def map_init(self, input_matrix, map_shape, random_init):
         nvec = input_matrix.shape[1]
         shape = list(map_shape)+[nvec]
-        smap = numpy.empty(tuple(shape))
+        if self.iscomplex:
+            smap = numpy.empty(tuple(shape), dtype=complex)
+        else:
+            smap = numpy.empty(tuple(shape))
         if random_init:
             mmin = numpy.min(input_matrix, axis=0)
             mmax = numpy.max(input_matrix, axis=0)
+            if self.iscomplex:
+                realmmin = numpy.real(mmin)
+                imagmmin = numpy.imag(mmin)
+                realmmax = numpy.real(mmax)
+                imagmmax = numpy.imag(mmax)
             #smallshape = tuple([1]*len(map_shape)+[nvec])
             for i in range(nvec):
-                smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
+                if not self.iscomplex:
+                    smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
+                else:
+                    smap[..., i] = numpy.random.uniform(realmmin[i], realmmax[i], map_shape) + numpy.random.uniform(imagmmin[i], imagmmax[i], map_shape) * 1j
         else:
             raise NotImplementedError('non-random init is not implemented yet')
         return smap
@@ -402,7 +424,10 @@ class SOM(object):
             neuron = smap[point]
             neighbors = tuple(numpy.asarray(neighborhood(point, shape), dtype='int').T)
             #print neighbors
-            umatrix[point] = cdist(smap[neighbors], neuron[None]).mean()
+            if not self.iscomplex:
+                umatrix[point] = cdist(smap[neighbors], neuron[None]).mean()
+            else:
+                umatrix[point] = numpy.sqrt( ( numpy.abs( smap[neighbors] - neuron[None] )**2 ).sum(axis=1) ).mean()
         return umatrix
 
     def getmatindex(self):
