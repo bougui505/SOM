@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 02 25
+creation date: 2014 03 26
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -18,7 +18,6 @@ import sys
 
 import numpy
 
-from scipy.spatial.distance import cdist
 from scipy.ndimage.morphology import distance_transform_edt
 import itertools
 import bisect, copy
@@ -42,6 +41,8 @@ class SOM(object):
     """
     def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
+        self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
+        print "%d rigid bodies"%self.ncom
         try:
             __IPYTHON__
             self.ipython = True
@@ -300,53 +301,31 @@ class SOM(object):
         self.smap = smap
         return self.smap
 
+    def rigidbody_dist(self, smap, vector, k=1):
+        ncoords = self.ncom * 3
+        shape = list(smap.shape)
+        neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
+        sqeucl = scipy.spatial.distance.cdist(smap.reshape((neurons, shape[-1]))[:,:ncoords], vector[None,:ncoords], 'sqeuclidean')
+        qdist = 0
+        for i in range(self.ncom):
+            a = ncoords + i*4
+            b = ncoords + (i+1)*4
+            qdist += (2*numpy.arccos(abs(1-scipy.spatial.distance.cdist(smap.reshape(neurons,shape[-1])[:,a:b], vector[None,a:b], 'cosine'))))**2
+        return sqeucl[:,0] + k*qdist[:,0]
+
     def findbmu(self, smap, vector, n_cpu=1, returndist=False):
         if numpy.ma.isMaskedArray(vector):
             smap = smap[:,:,numpy.asarray(1-vector.mask, dtype=bool)]
             vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
-        d = cdist(smap.reshape((neurons, shape[-1])), vector[None])[:,0]
+        d = self.rigidbody_dist(smap, vector, k=1)
         if returndist:
             r = list(numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1])))
             r.append(d.min())
             return tuple(r)
         else:
             return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
-    
-    def get_allbmus(self, smap=None, vectors=None, **parameters):
-        if smap is None:
-            smap = self.smap
-        if vectors is None:
-            vectors = self.input_matrix
-        if numpy.ma.isMaskedArray(vectors):
-            print "get_allbmus not yet implemented for masked input array !!! Use findbmu with a loop instead"
-        else:
-            try:
-                subpart = parameters['learning_subpart']
-            except KeyError:
-                subpart = None
-            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-            if subpart is None:
-                dist = cdist(smap.reshape((s, smap.shape[-1])), vectors)
-            else:
-                mask = list(subpart.nonzero()[0])
-                dist = cdist(smap[..., mask].reshape((s, mask.sum())), vectors[:, mask])
-            return numpy.asarray(numpy.unravel_index(dist.argmin(axis=0), smap.shape[:-1])).T
-
-    def get_allbmus_kdtree(self, smap=None, **parameters): # Don't use this function for high dimension data: greater than 20 !!!
-        if smap is None:
-            smap = self.smap
-        try:
-            subpart = parameters['learning_subpart']
-        except KeyError:
-            subpart = None
-        if numpy.ma.isMaskedArray(self.input_matrix):
-            print "get_allbmus_kdtree not yet implemented for masked input array !!! Use findbmu with a loop instead"
-        else:
-            s = reduce(lambda x,y: x*y, list(smap.shape)[:-1], 1)
-            tree = scipy.spatial.cKDTree(smap.reshape((s, smap.shape[-1])))
-            return numpy.asarray(numpy.unravel_index(tree.query(self.input_matrix)[1], smap.shape[:-1])).T
     
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
@@ -402,7 +381,7 @@ class SOM(object):
             neuron = smap[point]
             neighbors = tuple(numpy.asarray(neighborhood(point, shape), dtype='int').T)
             #print neighbors
-            umatrix[point] = cdist(smap[neighbors], neuron[None]).mean()
+            umatrix[point] = self.rigidbody_dist(smap[neighbors], neuron).mean()
         return umatrix
 
     def getmatindex(self):
