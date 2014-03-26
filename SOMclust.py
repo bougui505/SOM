@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 02 24
+creation date: 2014 01 01
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -30,7 +30,7 @@ if run_from_ipython():
 
 class clusters:
 
-    def __init__(self, umatrix, bmus, smap, input_matrix, waterstop=None):
+    def __init__(self, umatrix, bmus, smap, waterstop=None):
         try:
             __IPYTHON__
             self.ipython = True
@@ -40,7 +40,7 @@ class clusters:
         self.umatrix = umatrix
         self.umat_cont, self.x_offset, self.y_offset, self.mask, self.waterlevels, self.flooding = self.flood(umatrix, verbose = True, waterstop=waterstop)
         self.bmus = bmus
-        self.som = SOM2.SOM(input_matrix=input_matrix)
+        self.som = SOM2.SOM()
         self.som.smap = smap
 
     def flood(self, inputmat, x_offset=None, y_offset=None, mask=None, verbose=False, waterstop = None, startingpoint = None, floodgate = False):
@@ -226,10 +226,7 @@ class clusters:
         smallclustmat = SOMTools.continuousMap(scipy.ndimage.label(smallclustmat!=0)[0])
         clustmatori = copy.deepcopy(smallclustmat)
         tofill = smallclustmat==0
-        try:
-            fillupindex = self.som.get_allbmus(vectors=self.som.smap[tofill], smap=self.som.smap[smallclustmat!=0])
-        except NotImplementedError:
-            fillupindex = numpy.asarray([self.som.findbmu(self.som.smap[smallclustmat!=0],v) for v in self.som.smap[tofill]])
+        fillupindex = self.som.get_allbmus(vectors=self.som.smap[tofill], smap=self.som.smap[smallclustmat!=0])
         for k,e in enumerate(numpy.asarray(numpy.nonzero(tofill)).T):
             i,j = e
             c = clustmatori[clustmatori!=0][fillupindex[k]]
