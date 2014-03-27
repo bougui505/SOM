@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 03 26
+creation date: 2014 03 27
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -39,9 +39,10 @@ if run_from_ipython():
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
     """
-    def __init__(self, input_matrix=None, from_map=None):
+    def __init__(self, input_matrix=None, from_map=None, k):
         self.input_matrix = input_matrix
         self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
+        self.k = k
         print "%d rigid bodies"%self.ncom
         try:
             __IPYTHON__
@@ -301,7 +302,8 @@ class SOM(object):
         self.smap = smap
         return self.smap
 
-    def rigidbody_dist(self, smap, vector, k=1):
+    def rigidbody_dist(self, smap, vector):
+        k = self.k
         ncoords = self.ncom * 3
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
