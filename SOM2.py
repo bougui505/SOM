@@ -9,7 +9,7 @@ license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
 """
-        
+
 
 import os
 import struct
@@ -39,7 +39,7 @@ if run_from_ipython():
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
     """
-    def __init__(self, input_matrix=None, from_map=None, k):
+    def __init__(self, input_matrix=None, from_map=None, k=1.0):
         self.input_matrix = input_matrix
         self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
         self.k = k
@@ -49,32 +49,32 @@ class SOM(object):
             self.ipython = True
         except NameError:
             self.ipython = False
-    
+
     def _generic_learning_rate(self, t, end_t, alpha_begin, alpha_end, shape='exp'):
         if shape == 'exp':
             timeCte = end_t / 10.
             rate = (alpha_begin - alpha_end) * numpy.exp( -t/timeCte ) + alpha_end
         return rate
-    
+
     def _generic_learning_radius(self, t, end_t, radius_begin, radius_end, shape='exp'):
         if shape == 'exp':
             timeCte = end_t / 10.
             radius = (radius_begin - radius_end) * numpy.exp( -t/timeCte ) + radius_end
         return radius
-    
+
     def _generic_learning_function(self, distance, rate, radius, shape='exp'):
         if shape == 'exp':
             return rate * numpy.exp( - distance**2 / (2.*radius)**2 )
         if shape == 'sinc':
             return rate * numpy.sinc(distance/radius)
-        
-    
+
+
     @staticmethod
     def _neighbor_dim1_toric(x, X):
         """Efficient toric neighborhood function for 1D SOM.
         """
         return [(x-1)%X, (x+1)%X]
-    
+
     @staticmethod
     def _neighbor_dim2_toric(p, s):
         """Efficient toric neighborhood function for 2D SOM.
@@ -86,7 +86,7 @@ class SOM(object):
         xp = (x+1)%X
         yp = (y+1)%Y
         return [(xm,ym), (xm,y), (xm,yp), (x,ym), (x,yp), (xp,ym), (xp,y), (xp,yp)]
-    
+
     @staticmethod
     def _neighbor_dim3(p, s):
         """Efficient toric neighborhood function for 3D SOM.
@@ -102,7 +102,7 @@ class SOM(object):
         return [(xm,ym,zm), (xm,y,zm), (xm,yp,zm), (x,ym,zm), (x,y,zm), (x,yp,zm), (xp,ym,zm), (xp,y,zm), (xp,yp,zm),
             (xm,ym,z), (xm,y,z), (xm,yp,z), (x,ym,z), (x,yp,z), (xp,ym,z), (xp,y,z), (xp,yp,z),
             (xm,ym,zp), (xm,y,zp), (xm,yp,zp), (x,ym,zp), (x,yp,zp), (xp,ym,zp), (xp,y,zp), (xp,yp,zp)]
-    
+
     @staticmethod
     def _neighbor_general_toric(point, shape):
         """Toric neighborhood function for dimensions > 3.
@@ -112,7 +112,7 @@ class SOM(object):
         neighbors = [ t for t in itertools.product(*all_coords) ]
         neighbors.remove(point)
         return neighbors
-    
+
     def _generic_neighborhood_func(self, shape, toric):
         if toric:
             if len(shape) == 1:
@@ -140,7 +140,7 @@ class SOM(object):
     def epsilon(self, k, BMUindices, Map):
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.input_matrix[k], Map[i,j]) / self.rho(k, BMUindices, Map)
-    
+
     def learn(self, **parameters):
         params = {
             'shape': (50, 50),
@@ -172,9 +172,9 @@ class SOM(object):
             }
         params.update(parameters) # TODO: put default learning parameters after update if not present
         self.parameters = params
-        
+
         show_umatrices = 'show_umatrices' in params # DEBUG show_umatrices=(imshow,draw)
-        
+
         numpy.random.seed(params['seed'])
         # initialize SOM using given parameters (size, size of input vectors, choice of init mode)
         smap = self.map_init(self.input_matrix, params['shape'], params['random_init'])
@@ -328,9 +328,40 @@ class SOM(object):
             return tuple(r)
         else:
             return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
-    
-    def quadprod(self, q0, q1):
-        
+
+    def slerp(self, t, q0, q1):
+        """SLERP: Spherical Linear Interpolation between two quaternions.
+
+        The return value is an interpolation between q0 and q1. For t=0.0 the
+        return value equals q0, for t=1.0 it equals q1.  q0 and q1 must be unit
+        quaternions.  Always picks the shortest path.
+
+        Adapted from Python Computer Graphics Kit implementation, GPL v2.
+        expanded to work on arrays of quaternions.
+
+        Parameters:
+            t     : array of shape (a, b, 1)
+            q0,q1 : arrays of shape (a, b, 4)
+        Returns:
+            qfinal : the interpolated quaternion array of shape (a, b, 4)
+        """
+        ca = numpy.inner(q0, q1)
+        neg_q1 = (ca < 0)
+        o = numpy.acos(numpy.clip(ca,-1,1))
+        so = numpy.sin(o)
+
+        retmat = numpy.empty(q0.shape)
+        #t close to 0 is q0
+        nullloc = where(abs(so)<=1e-8)
+        retmat[nullloc] = q0[nullloc]
+        #longest path
+        a = numpy.sin(o*(1.-t)) / so
+        b = numpy.sin(o*t) / so
+        longloc = where(neg_q1)
+        retmat[longloc] = q0[longloc]*a - q1[longloc]*b
+        #shortest path
+        shortloc = where(not neg_q1)
+        retmat[shortloc] = q0[shortloc]*a + q1[shortloc]*b
 
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
@@ -352,13 +383,22 @@ class SOM(object):
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
         radmap = func(distance, rate, radius)
         if not batchlearn:
-            adjmap_com = (smap[:,:,:3*self.ncom] - vector[:3*self.ncom]) * radmap[..., None]
-            smap -= adjmap
+            #centers of mass, euclidian distance
+            smap[:,:,:3*self.ncom] += radmap[..., None]
+                *(vector[:3*self.ncom] - smap[:,:,:3*self.ncom])
+            #quaternions, use slerp
+            for rb in xrange(self.ncom):
+                qbegin = self.ncom*3+rb*4
+                smap[...,qbegin:qbegin+4] = self.slerp(radmap[...,None],
+                                               smap[...,qbegin:qbegin+4],
+                                               vector[qbegin:qbegin+4])
         else:
             adjmap = radmap[..., None]
             return adjmap
 
-    
+    def normalize_quaternion(self, q):
+        return q/sqrt((q**2).sum())
+
     def map_init(self, input_matrix, map_shape, random_init):
         nvec = input_matrix.shape[1]
         shape = list(map_shape)+[nvec]
@@ -369,10 +409,16 @@ class SOM(object):
             #smallshape = tuple([1]*len(map_shape)+[nvec])
             for i in range(nvec):
                 smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
+            #normalize quaternions, TODO use linalg.norm instead
+            for i,j in numpy.ndindex(*map_shape):
+                for rb in xrange(self.ncom):
+                    qbegin = self.ncom*3 + rb*4
+                    smap[i,j,qbegin:qbegin+4]\
+                        = self.normalize_quaternion(smap[i,j,qbegin:qbegin+4])
         else:
             raise NotImplementedError('non-random init is not implemented yet')
         return smap
-    
+
     def umatrix(self, smap=None, **parameters):
         if smap is None:
             smap = self.smap
@@ -409,19 +455,19 @@ class SOM(object):
         mask = indexmap == -1
         self.indexmap = numpy.ma.masked_array(indexmap, mask)
         return self.indexmap
-    
+
     def cluster_umatrix(self, umatrix, connectivity=2, gradient_connectivity=None, verbose=False):
         """Do a hierarchical clustering of the given umatrix.
         """
-        
+
         if len(umatrix.shape) != 2:
             raise ValueError('cluster_umatrix only takes 2D U-matrices as argument.')
-        
+
         # define the subprocesses that will be used later
-        
+
         def getValues(neighbors, mat):
             return [mat[i,j] for i,j in neighbors]
-        
+
         def down_gradient(umatrix, start, clusters, connectivity):
             """Start from a point and go down the gradient.
             Returns the arriving point (which should be a local minimum).
@@ -445,7 +491,7 @@ class SOM(object):
                 #if len(path) > 30:
                 #   break
             return point
-        
+
         def fill_bassin(umatrix, start, clusters, connectivity):
             s = umatrix.shape
             bassin = start # so we can start from merged bassins
@@ -491,7 +537,7 @@ class SOM(object):
                     neighbors_vals.insert(idx, nb_vals[i])
                     neighbors.insert(idx, p)
                 #print "  finished one loop of 'fill_bassin'. Bassin has %d neurons and neighbors %d"%(len(bassin), len(neighbors))
-        
+
         def fill_clusters(clusters, bassin, current, s):
             X, Y = s
             for a, b in bassin:
@@ -499,7 +545,7 @@ class SOM(object):
                     for j in range(5):
                         clusters[(a+i*X)%(5*X), (b+j*Y)%(5*Y)] = -1 # fill with outside value in every copy
                 clusters[a, b] = current # then, fill with correct cluster color just in the bassin
-        
+
         # now we start with the main process
         if gradient_connectivity is None:
             gradient_connectivity = connectivity
@@ -640,12 +686,12 @@ class SOM(object):
                         break
             to_leaves[c] = tl
         return leaves, [ self.translate(c, old_to_new) for c in cl_list ], linkage, to_leaves, self.translate(stack, old_to_new), leaves_cl, leaves_val, (x_offset.sum(), y_offset.sum()), view, to_big, to_verybig
-    
-    
+
+
     @staticmethod
     def getLinkage(cl_list, umat_big, stack, verbose=False):
         # get real merging from cl_list
-        
+
         prec_u = numpy.unique(cl_list[0])
         blarg = 0
         if 0 in prec_u:
@@ -654,7 +700,7 @@ class SOM(object):
             blarg += 1
         prec_u = prec_u[blarg:]
         prec_cl = cl_list[0]
-        
+
         m = []
         l = []
         leaves = []
@@ -715,7 +761,7 @@ class SOM(object):
             merge_ord.append((na,nb,val,count[nc]))
         linkage = numpy.asarray(merge_ord, dtype='double')
         return linkage, old_to_new, new_to_old, order, leaves, leaves_val #[order], order
-    
+
     @staticmethod
     def translate(arr, old_to_new, add_one=False):
         new = numpy.zeros_like(arr)
@@ -728,7 +774,7 @@ class SOM(object):
                 continue
             new[arr == color] = old_to_new[color] + (1 if add_one else 0)
         return new
-    
+
     @staticmethod
     def get_bigger(arr, view, cl):
         mask = cl == -1
