@@ -329,6 +329,9 @@ class SOM(object):
         else:
             return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
     
+    def quadprod(self, q0, q1):
+        
+
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
         if numpy.ma.isMaskedArray(vector):
@@ -349,7 +352,7 @@ class SOM(object):
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
         radmap = func(distance, rate, radius)
         if not batchlearn:
-            adjmap = (smap - vector) * radmap[..., None]
+            adjmap_com = (smap[:,:,:3*self.ncom] - vector[:3*self.ncom]) * radmap[..., None]
             smap -= adjmap
         else:
             adjmap = radmap[..., None]
