@@ -320,7 +320,7 @@ class SOM(object):
             vector = numpy.asarray(vector[numpy.asarray(1-vector.mask, dtype=bool)])
         shape = list(smap.shape)
         neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
-        d = self.rigidbody_dist(smap, vector, k=1)
+        d = self.rigidbody_dist(smap, vector)
         if returndist:
             r = list(numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1])))
             r.append(d.min())
@@ -339,28 +339,32 @@ class SOM(object):
         expanded to work on arrays of quaternions.
 
         Parameters:
-            t     : array of shape (a, b, 1)
-            q0,q1 : arrays of shape (a, b, 4)
+            t  : displacement array, of shape (a, b)
+            q0 : quaternion array, of shape (a, b, 4)
+            q1 : quaternion, of shape (4)
         Returns:
             qfinal : the interpolated quaternion array of shape (a, b, 4)
         """
-        ca = numpy.inner(q0, q1)
-        neg_q1 = (ca < 0)
-        o = numpy.acos(numpy.clip(ca,-1,1))
+        ca = (q0*q1[None,None,:]).sum(axis=2)
+        o = numpy.arccos(numpy.clip(ca,-1,1))
         so = numpy.sin(o)
+        a = numpy.sin(o*(1.-t)) / so
+        b = numpy.sin(o*t) / so
 
         retmat = numpy.empty(q0.shape)
         #t close to 0 is q0
-        nullloc = where(abs(so)<=1e-8)
+        nullloc = numpy.abs(so)<=1e-8
+        neg_q1 = (ca < 0)
         retmat[nullloc] = q0[nullloc]
-        #longest path
-        a = numpy.sin(o*(1.-t)) / so
-        b = numpy.sin(o*t) / so
-        longloc = where(neg_q1)
-        retmat[longloc] = q0[longloc]*a - q1[longloc]*b
-        #shortest path
-        shortloc = where(not neg_q1)
-        retmat[shortloc] = q0[shortloc]*a + q1[shortloc]*b
+        #perform direct path
+        poscase = numpy.logical_not(numpy.logical_or(neg_q1, nullloc))
+        retmat[poscase] = q0[poscase,:]*a[poscase,None] \
+                          + q1[None,:]*b[poscase,None]
+        #direct path would be long, negate
+        negcase = numpy.logical_and(neg_q1, numpy.logical_not(nullloc))
+        retmat[negcase] = q0[negcase,:]*a[negcase,None] \
+                            - q1[None,:]*b[negcase,None]
+        return retmat
 
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
         toric, shape = params['toric'], params['shape']
@@ -383,12 +387,12 @@ class SOM(object):
         radmap = func(distance, rate, radius)
         if not batchlearn:
             #centers of mass, euclidian distance
-            smap[:,:,:3*self.ncom] += radmap[..., None]
+            smap[:,:,:3*self.ncom] += radmap[..., None] \
                 *(vector[:3*self.ncom] - smap[:,:,:3*self.ncom])
             #quaternions, use slerp
             for rb in xrange(self.ncom):
                 qbegin = self.ncom*3+rb*4
-                smap[...,qbegin:qbegin+4] = self.slerp(radmap[...,None],
+                smap[...,qbegin:qbegin+4] = self.slerp(radmap,
                                                smap[...,qbegin:qbegin+4],
                                                vector[qbegin:qbegin+4])
         else:
@@ -396,7 +400,7 @@ class SOM(object):
             return adjmap
 
     def normalize_quaternion(self, q):
-        return q/sqrt((q**2).sum())
+        return q/numpy.sqrt((q**2).sum())
 
     def map_init(self, input_matrix, map_shape, random_init):
         nvec = input_matrix.shape[1]
@@ -405,7 +409,7 @@ class SOM(object):
         if random_init:
             mmin = numpy.min(input_matrix, axis=0)
             mmax = numpy.max(input_matrix, axis=0)
-            self.k = sqrt((((mmax-mmin)[:3])**2).sum())/numpy.pi
+            self.k = numpy.sqrt((((mmax-mmin)[:3])**2).sum())/numpy.pi
             #smallshape = tuple([1]*len(map_shape)+[nvec])
             for i in range(nvec):
                 smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
