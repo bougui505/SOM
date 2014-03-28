@@ -329,7 +329,7 @@ class SOM(object):
             return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
 
     def slerp(self, t, q0, q1):
-        """SLERP: Spherical Linear Interpolation between two quaternions.
+        """SLERP: Spherical Linear intERPolation between two quaternions.
 
         The return value is an interpolation between q0 and q1. For t=0.0 the
         return value equals q0, for t=1.0 it equals q1.  q0 and q1 must be unit
@@ -345,8 +345,10 @@ class SOM(object):
         Returns:
             qfinal : the interpolated quaternion array of shape (a, b, 4)
         """
-        ca = (q0*q1[None,None,:]).sum(axis=2)
-        o = numpy.arccos(numpy.clip(ca,-1,1))
+        ca = numpy.dot(q0,q1)
+        neg_q1 = (ca < 0)
+        ca = numpy.abs(ca)
+        o = numpy.arccos(numpy.clip(ca,0,1))
         so = numpy.sin(o)
         a = numpy.sin(o*(1.-t)) / so
         b = numpy.sin(o*t) / so
@@ -354,7 +356,7 @@ class SOM(object):
         retmat = numpy.empty(q0.shape)
         #t close to 0 is q0
         nullloc = numpy.abs(so)<=1e-8
-        neg_q1 = (ca < 0)
+
         retmat[nullloc] = q0[nullloc]
         #perform direct path
         poscase = numpy.logical_not(numpy.logical_or(neg_q1, nullloc))
