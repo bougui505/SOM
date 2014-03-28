@@ -39,10 +39,9 @@ if run_from_ipython():
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
     """
-    def __init__(self, input_matrix=None, from_map=None, k=1.0):
+    def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
         self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
-        self.k = k
         print "%d rigid bodies"%self.ncom
         try:
             __IPYTHON__
@@ -406,6 +405,7 @@ class SOM(object):
         if random_init:
             mmin = numpy.min(input_matrix, axis=0)
             mmax = numpy.max(input_matrix, axis=0)
+            self.k = sqrt((((mmax-mmin)[:3])**2).sum())/numpy.pi
             #smallshape = tuple([1]*len(map_shape)+[nvec])
             for i in range(nvec):
                 smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
