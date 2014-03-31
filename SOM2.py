@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 03 27
+creation date: 2014 03 31
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -361,12 +361,12 @@ class SOM(object):
         retmat[nullloc] = q0[nullloc]
         #perform direct path
         poscase = numpy.logical_not(numpy.logical_or(neg_q1, nullloc))
-        retmat[poscase] = q0[poscase,:]*a[poscase,None] \
-                          + q1[None,:]*b[poscase,None]
+        retmat[poscase] = q0[poscase,:]*a[poscase][...,None] \
+                          + q1[None,:]*b[poscase][...,None]
         #direct path would be long, negate
         negcase = numpy.logical_and(neg_q1, numpy.logical_not(nullloc))
-        retmat[negcase] = q0[negcase,:]*a[negcase,None] \
-                            - q1[None,:]*b[negcase,None]
+        retmat[negcase] = q0[negcase,:]*a[negcase][...,None] \
+                            - q1[None,:]*b[negcase][...,None]
         return retmat
 
     def apply_learning(self, smap, vector, bmu, radius, rate, func, params, batchlearn=False):
