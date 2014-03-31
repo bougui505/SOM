@@ -41,8 +41,9 @@ class SOM(object):
     """
     def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
-        self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
-        print "%d rigid bodies"%self.ncom
+        if input_matrix != None:
+            self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
+            print "%d rigid bodies"%self.ncom
         try:
             __IPYTHON__
             self.ipython = True
