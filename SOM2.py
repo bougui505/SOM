@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 03 31
+creation date: 2014 04 01
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -41,6 +41,9 @@ class SOM(object):
     """
     def __init__(self, input_matrix=None, from_map=None):
         self.input_matrix = input_matrix
+        mmin = numpy.min(input_matrix, axis=0)
+        mmax = numpy.max(input_matrix, axis=0)
+        self.k = numpy.sqrt((((mmax-mmin)[:3])**2).sum())/numpy.pi # coefficient to scale geodesic distance with Euclidean distance
         if input_matrix != None:
             self.ncom = self.input_matrix.shape[1] / 7 #number of center of mass
             print "%d rigid bodies"%self.ncom
@@ -412,7 +415,6 @@ class SOM(object):
         if random_init:
             mmin = numpy.min(input_matrix, axis=0)
             mmax = numpy.max(input_matrix, axis=0)
-            self.k = numpy.sqrt((((mmax-mmin)[:3])**2).sum())/numpy.pi
             #smallshape = tuple([1]*len(map_shape)+[nvec])
             for i in range(nvec):
                 smap[..., i] = numpy.random.uniform(mmin[i], mmax[i], map_shape)
