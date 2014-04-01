@@ -253,7 +253,7 @@ class clusters:
                     self.erodedmap[i,j] = self.cmat[i,j]
         return self.cmat, self.erodedmap
 
-    def plotclusters(self, color='m', matrix = None, cmap=matplotlib.pyplot.cm.jet, vmin=None, vmax=None, interpolation='nearest'):
+    def plotclusters(self, color='m', matrix = None, cmap=matplotlib.pyplot.cm.jet, vmin=None, vmax=None, interpolation='nearest', erosion=False):
         cmat = copy.deepcopy(self.cmat)
         cmat[self.mask] = 0
         erodedmap = copy.deepcopy(self.erodedmap)
@@ -266,7 +266,13 @@ class clusters:
         matplotlib.pyplot.imshow(numpy.ma.masked_array(matrix,self.mask), interpolation=interpolation, cmap=cmap, vmin=vmin, vmax=vmax)
         matplotlib.pyplot.colorbar()
         for e in numpy.unique(cmat)[1:]:
-            matplotlib.pyplot.contour(cmat==e, 1, colors=color)
+            if erosion:
+                try:
+                    matplotlib.pyplot.contour(erodedmap==e, 1, colors=color)
+                except ValueError:
+                    pass
+            else:
+                matplotlib.pyplot.contour(cmat==e, 1, colors=color)
             labmat, nlabs = scipy.ndimage.label(cmat==e)
             for lab in range(1,nlabs+1):
                 if (labmat==lab).sum() > 4:
