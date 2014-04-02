@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 04 01
+creation date: 2014 04 02
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -331,6 +331,41 @@ class SOM(object):
             return tuple(r)
         else:
             return numpy.unravel_index(numpy.argmin(d), tuple(shape[:-1]))
+
+    def q_mult(self, q1, q2):
+        w1, x1, y1, z1 = q1.T
+        w2, x2, y2, z2 = q2.T
+        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+        y = w1 * y2 + y1 * w2 + z1 * x2 - x1 * z2
+        z = w1 * z2 + z1 * w2 + x1 * y2 - y1 * x2
+        prod = numpy.asarray([w, x, y, z]).T
+        return prod
+
+    def q_conjugate(self, q):
+        w, x, y, z = q
+        return numpy.asarray([w, -x, -y, -z])
+
+    def qv_mult(self, q1, v1):
+        n = v1.shape[0]
+        q2 = numpy.hstack( ( numpy.zeros((n,1)),v1 ) )
+        return numpy.asarray(self.q_mult(self.q_mult(q1, q2), self.q_conjugate(q1))[1:])
+
+    def q_transform(self, coords, quat, vect):
+        """
+        Apply a transformation to the coordinates (coords) : a quaternion
+        rotation from quat and a translation from vect
+        parameters:
+            coords: initial coordinates; numpy.array of shape (n,3)
+            quat: quaternion defining the rotation of shape (4,)
+            vect: vector defining the translation of shape (3,)
+        Returns:
+            coords: the transformed coordinates; numpy.array of shape (n,3)
+        """
+        coords -= coords.mean(axis=0)
+        coords = self.qv_mult(quat, coords)[:,1:] # rotation
+        coords += vect # translation
+        return coords
 
     def slerp(self, t, q0, q1):
         """SLERP: Spherical Linear intERPolation between two quaternions.
