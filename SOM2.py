@@ -355,7 +355,7 @@ class SOM(object):
         """
         Apply a transformation to the coordinates (coords) : a quaternion
         rotation from quat and a translation from vect
-        parameters:
+        Parameters:
             coords: initial coordinates; numpy.array of shape (n,3)
             quat: quaternion defining the rotation of shape (4,)
             vect: vector defining the translation of shape (3,)
@@ -366,6 +366,29 @@ class SOM(object):
         coords = self.qv_mult(quat, coords)[:,1:] # rotation
         coords += vect # translation
         return coords
+
+    def get_quats_vects_from_map(self):
+        """
+        Get quaternions and centers of mass from self.smap
+        Parameters:
+            self
+        Returns:
+            quats: numpy.array of shape (self.ncom, X, Y, 4)
+            coms: numpy.array of shape (self.ncom, X, Y, 3)
+        """
+        quats = []
+        coms = []
+        com_ind = numpy.asarray([0,3])
+        quat_ind = numpy.asarray([self.ncom * 3, self.ncom * 3 + 4])
+        for i in range(self.ncom):
+            coms.append(self.smap[...,com_ind[0]:com_ind[1]])
+            quats.append(self.smap[..., quat_ind[0]:quat_ind[1]])
+            com_ind += 3
+            quat_ind += 4
+        quats = numpy.asarray(quats)
+        coms = numpy.asarray(coms)
+        return quats, coms
+
 
     def slerp(self, t, q0, q1):
         """SLERP: Spherical Linear intERPolation between two quaternions.
