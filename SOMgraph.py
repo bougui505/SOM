@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 30
+creation date: 2014 04 02
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -206,6 +206,10 @@ class graph:
             if not hasattr(self, 'mingraph'):
                 mingraph = self.clean_graph()
             longestpath = self.shortestPath(longestpath[0], longestpath[-1], self.mingraph)
+            steps = zip(longestpath, longestpath[1:])
+            longestpath = []
+            for i,j in steps:
+                longestpath.extend(self.shortestPath(i,j))
             return longestpath
 
     def has_edge(self, n1, n2, graph=None):
