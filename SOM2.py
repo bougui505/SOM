@@ -367,7 +367,7 @@ class SOM(object):
         coords += vect # translation
         return coords
 
-    def get_quats_vects_from_map(self):
+    def get_quats_vects_from_map(self, smap=None):
         """
         Get quaternions and centers of mass from self.smap
         Parameters:
@@ -376,13 +376,15 @@ class SOM(object):
             quats: numpy.array of shape (self.ncom, X, Y, 4)
             coms: numpy.array of shape (self.ncom, X, Y, 3)
         """
+        if smap == None:
+            smap = self.smap
         quats = []
         coms = []
         com_ind = numpy.asarray([0,3])
         quat_ind = numpy.asarray([self.ncom * 3, self.ncom * 3 + 4])
         for i in range(self.ncom):
-            coms.append(self.smap[...,com_ind[0]:com_ind[1]])
-            quats.append(self.smap[..., quat_ind[0]:quat_ind[1]])
+            coms.append(smap[...,com_ind[0]:com_ind[1]])
+            quats.append(smap[..., quat_ind[0]:quat_ind[1]])
             com_ind += 3
             quat_ind += 4
         quats = numpy.asarray(quats)
