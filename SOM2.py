@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 12 31
+creation date: 2014 02 25
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -32,7 +32,10 @@ def run_from_ipython():
         return False
 
 if run_from_ipython():
-    from IPython.display import clear_output
+    try:
+        from IPython.display import clear_output
+    except ImportError:
+        pass
 
 class SOM(object):
     """A class to perform a variety of SOM-based analysis (any dimensions and shape)
@@ -208,7 +211,10 @@ class SOM(object):
                 self.apply_learning(smap, vector, bmu, radius, rate, func, params) # apply the gaussian to 
                 if verbose:
                     if self.ipython:
-                        clear_output()
+                        try:
+                            clear_output()
+                        except NameError:
+                            self.ipython = False
                         print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
                     elif (t%100 == 0):
                         print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), radius, rate, bmu
@@ -283,8 +289,10 @@ class SOM(object):
                 smap = prods / neighborhoods
                 if verbose and (t%(end_t/100) == 0):
                     print phase, t, end_t, '%.2f%%'%((100.*t)/end_t), t_prime, radius
-                    if self.ipython:
+                    try:
                         clear_output()
+                    except NameError:
+                        self.ipython = False
 #                    if show_umatrices:
 #                        imshow, draw = params['show_umatrices']
 #                        imshow(self.umatrix(smap, toric=True), interpolation='nearest')
@@ -396,6 +404,27 @@ class SOM(object):
             #print neighbors
             umatrix[point] = cdist(smap[neighbors], neuron[None]).mean()
         return umatrix
+
+    def getmatindex(self):
+        """
+        return a masked array with the same shape than U-matrix. Each element
+        gives the index of the input matrix of the best matching input vector.
+        """
+        print "computing distances and bmus"
+        bmudists = numpy.asarray([self.findbmu(self.smap, e, returndist=True) for e in self.input_matrix])
+        X,Y,Z = self.smap.shape
+        indexmap = -numpy.ones((X,Y), dtype=int)
+        for i in range(X):
+            for j in range(Y):
+                indices = numpy.nonzero((bmudists[:,:2] == (i,j)).all(axis=1))[0]
+                if len(indices) > 0:
+                    distances = bmudists[:,2][indices]
+                    minindex = numpy.argmin(distances)
+                    index = indices[minindex]
+                    indexmap[i,j] = index
+        mask = indexmap == -1
+        self.indexmap = numpy.ma.masked_array(indexmap, mask)
+        return self.indexmap
     
     def cluster_umatrix(self, umatrix, connectivity=2, gradient_connectivity=None, verbose=False):
         """Do a hierarchical clustering of the given umatrix.

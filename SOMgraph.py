@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 01 17
+creation date: 2014 04 02
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -71,6 +71,11 @@ class graph:
                             d = scipy.spatial.distance.euclidean(self.smap[i,j], self.smap[u,v])
 #                            d = self.umat[u,v]
                             self.updategraph((i,j), (u,v), d)
+        subgraphes = self.splitgraph(self.graph)
+        if len(subgraphes) > 1:
+            print "Warning: the main graph is splitted in %d graphes"%len(subgraphes)
+            self.graph = subgraphes[numpy.argmax([len(e) for e in subgraphes])]
+            print "Keep only the main graph of size %d"%len(self.graph)
 
 
     def Dijkstra(self, G, start, end=None):
@@ -201,6 +206,10 @@ class graph:
             if not hasattr(self, 'mingraph'):
                 mingraph = self.clean_graph()
             longestpath = self.shortestPath(longestpath[0], longestpath[-1], self.mingraph)
+            steps = zip(longestpath, longestpath[1:])
+            longestpath = []
+            for i,j in steps:
+                longestpath.extend(self.shortestPath(i,j))
             return longestpath
 
     def has_edge(self, n1, n2, graph=None):
@@ -400,7 +409,7 @@ class graph:
                     plottedkeys.append(n1)
                     matplotlib.pyplot.annotate(n1, list(n1)[::-1])
             if plotnode:
-                matplotlib.pyplot.scatter(n1[1], n1[0], color=color)
+                matplotlib.pyplot.scatter(n1[1], n1[0], color=color, linewidths=linewidth)
             for n2 in G[n1].keys():
                 v = numpy.asarray((n1,n2))
                 if plotpath:
@@ -473,15 +482,55 @@ class graph:
                     n1min, n2min, dmin = n1, n2, d
         return n1min, n2min, dmin
 
-    def get_cluster(self):
+    def connect_graphes(self, subgraph):
+        """
+        Connect sub graphes of a graph
+        """
+        subgraph = self.symmetrize_edges(subgraph)
+        splitgraph = self.splitgraph(subgraph)
+        ngraph = len(splitgraph)
+        while ngraph != 1:
+            for i in range(ngraph):
+                dmin = numpy.inf
+                for j in range(ngraph):
+                    if i != j:
+                        g1 = splitgraph[i]
+                        g2 = splitgraph[j]
+                        n1, n2, d = self.get_graph_distance(g1,g2)
+                        if d < dmin:
+                            n1min, n2min, dmin = n1, n2, d
+                self.updategraph(n1min, n2min, dmin, subgraph)
+            subgraph = self.symmetrize_edges(subgraph)
+            splitgraph = self.splitgraph(subgraph)
+            ngraph = len(splitgraph)
+        return subgraph
+
+    def prune(self, graph, threshold):
+        """
+        apply distance threshold to graph. Keep only distance more than threshold
+        """
+        newgraph = {}
+        for n1 in graph:
+            for n2 in graph[n1]:
+                d = graph[n1][n2]
+                if d > threshold:
+                    self.updategraph(n1, n2, d, newgraph)
+        newgraph = self.connect_graphes(newgraph)
+        return newgraph
+
+    def get_cluster(self, graph=None):
         """
         return a cluster mat from graphes
         """
-        if not hasattr(self, 'localminimagraph'):
-            self.getAllPathes()
+        if graph == None:
+            if not hasattr(self, 'localminimagraph'):
+                self.getAllPathes()
+            localminima = self.localminima
+        else:
+            localminima = numpy.asarray(self.get_vertices(graph))
         x,y,z = self.smap.shape
         # compute cluster matrix cmat
-        d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in self.localminima.T]])
+        d = scipy.spatial.distance.cdist(self.smap.reshape(x*y,z),self.smap[[tuple(e) for e in localminima.T]])
         cmat = numpy.zeros_like(d, dtype=int)
         for i, r in enumerate(d):
             cmat[i] = numpy.argsort(r)
@@ -496,7 +545,7 @@ class graph:
             print 'clustgraph: %.4f'%(float(i+1)/nnodes)
             if self.ipython:
                 clear_output()
-            n2s = self.localminima[cmat[n1]]
+            n2s = localminima[cmat[n1]]
             dmin = numpy.inf
             for j, n2 in enumerate(n2s[:3]):
                 n1, n2 = tuple(n1), tuple(n2)
@@ -539,23 +588,7 @@ class graph:
                 nvert_prev = nvert
             if nvert == nvertmax:
                 break
-        subgraph = self.symmetrize_edges(subgraph)
-        splitgraph = self.splitgraph(subgraph)
-        ngraph = len(splitgraph)
-        while ngraph != 1:
-            for i in range(ngraph):
-                dmin = numpy.inf
-                for j in range(ngraph):
-                    if i != j:
-                        g1 = splitgraph[i]
-                        g2 = splitgraph[j]
-                        n1, n2, d = self.get_graph_distance(g1,g2)
-                        if d < dmin:
-                            n1min, n2min, dmin = n1, n2, d
-                self.updategraph(n1min, n2min, dmin, subgraph)
-            subgraph = self.symmetrize_edges(subgraph)
-            splitgraph = self.splitgraph(subgraph)
-            ngraph = len(splitgraph)
+        subgraph = self.connect_graphes(subgraph)
         vertlist = self.get_vertices(subgraph)
         nvert = len(vertlist)
         if nvert != self.localminima.shape[0]:
