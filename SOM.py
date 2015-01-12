@@ -35,7 +35,7 @@ class SOM:
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
     """
-    def __init__(self, inputvectors, inputnames=None, confname = 'SOM.conf',simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
@@ -46,27 +46,16 @@ class SOM:
         self.sort2ndPhase = sort2ndPhase
         self.toricMap = toricMap
         self.randomInit = randomInit
-        conffile = open(confname, 'r')
-        lines = conffile.readlines()
-        conffile.close()
-        test = False
-        for line in lines:
-            if re.findall('<TreeSOM>', line):
-                test = True
-            if test:
-                if re.findall('#', line):
-                    line = line.split('#')[0]
-                if re.findall(r'X\s*=', line):
-                    self.X = int(line.split('=')[1]) # Number of neurons in X dimension
-                if re.findall(r'Y\s*=', line):
-                    self.Y = int(line.split('=')[1]) # Number of neurons in Y dimension
-                if re.findall(r'number_of_phase\s*=', line):
-                    self.number_of_phase = int(line.split('=')[1]) # Number of training phase
+        self.X = X
+        self.Y = Y
+        self.number_of_phase = nphase
         i = 1
-        self.alpha_begin = []
-        self.alpha_end = []
-        self.radius_begin = []
-        self.radius_end = []
+        self.alpha_begin = alpha_begin
+        self.alpha_end = alpha_end
+        if radius_begin == None:
+                        self.radius_begin = [self.X/8.,self.X/16.]
+        if radius_end == None:
+                        self.radius_end = [self.X/16.,1]
         self.iterations = []
         while i <= self.number_of_phase:
             test = False
@@ -76,14 +65,6 @@ class SOM:
                 if test:
                     if re.findall(r'#', line):
                         line = line.split('#')[0]
-                    if re.findall(r'alpha_begin_%s\s*='%i, line):
-                        self.alpha_begin.append(float(line.split('=')[1]))
-                    if re.findall(r'alpha_end_%s\s*='%i, line):
-                        self.alpha_end.append(float(line.split('=')[1]))
-                    if re.findall(r'radius_begin_%s\s*='%i, line):
-                        self.radius_begin.append(float(line.split('=')[1]))
-                    if re.findall(r'radius_end_%s\s*='%i, line):
-                        self.radius_end.append(float(line.split('=')[1]))
                     if re.findall(r'iterations_%s\s*='%i, line):
                         try:
                             self.iterations.append(int(line.split('=')[1]))
