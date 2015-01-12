@@ -159,8 +159,7 @@ class SOM:
             adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
         elif self.autoParam:
             self.epsilon_value = self.epsilon(k,BMUindices,Map)
-            radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
-            radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
+            radius =self.epsilon_value * self.radius_begin[trainingPhase]
             self.epsilon_values.append(self.epsilon_value)
             adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
         if self.toricMap:
@@ -180,7 +179,7 @@ class SOM:
             self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
         elif self.autoParam:
             radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
-            learning = min(self.epsilon_value, self.learningRate(t, trainingPhase))
+            learning = self.epsilon_value * self.alpha_begin[trainingPhase]
             self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
         return self.adjustMap
     
