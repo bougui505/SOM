@@ -11,18 +11,11 @@ Thanks!
 """
 
 import numpy
-import re
-import math
-import matplotlib.pyplot
 import random
 import progressbar
 import pickle
-import sys
-from multiprocessing import Process, Queue
 import itertools
 import scipy.spatial
-import tarfile
-import os
 
 class SOM:
     """
@@ -135,12 +128,12 @@ class SOM:
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
-        self.radius = ( self.radius_begin[trainingPhase] - self.radius_end[trainingPhase] ) * math.exp( -t/timeCte ) + self.radius_end[trainingPhase]
+        self.radius = ( self.radius_begin[trainingPhase] - self.radius_end[trainingPhase] ) * numpy.exp( -t/timeCte ) + self.radius_end[trainingPhase]
         return self.radius
         
     def learningRate(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
-        self.learning = ( self.alpha_begin[trainingPhase] - self.alpha_end[trainingPhase] ) * math.exp( -t/timeCte ) + self.alpha_end[trainingPhase]
+        self.learning = ( self.alpha_begin[trainingPhase] - self.alpha_end[trainingPhase] ) * numpy.exp( -t/timeCte ) + self.alpha_end[trainingPhase]
         return self.learning
         
     def rho(self, k,  BMUindices, Map):
