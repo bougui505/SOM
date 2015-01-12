@@ -35,7 +35,7 @@ class SOM:
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
     """
-    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
@@ -64,9 +64,6 @@ class SOM:
             self.iterations = [self.n_input, self.n_input*2]
         else:
             self.iterations = iterations
-        # Vector simplification
-        if simplify_vectors:
-            self.inputvectors = self.simplifyVectors()
         if randomUnit is None:
             # Matrix initialization
             if mapFileName == None:
@@ -153,29 +150,6 @@ class SOM:
             if L not in ligands_list:
                 self.inputvectors.pop(self.inputnames.index(L))
                 self.inputnames.remove(L)
-
-    def simplifyVectors(self):
-        """
-            Remove systematic zeros in vectors
-        """
-        sumV = []
-        for Eindex in range(self.cardinal):
-            S = 0
-            for Vindex in range(len(self.inputvectors)):
-                S = S + self.inputvectors[Vindex][Eindex]
-            sumV.append(S)
-        c = 0
-        nonzerosindex = []
-        for e in sumV:
-            if e!=0:
-                nonzerosindex.append(c)
-            c = c + 1
-        simplifiedVectors = []
-        for V in self.inputvectors:
-            simplifiedVector = [V[i] for i in nonzerosindex]
-            simplifiedVectors.append(simplifiedVector)
-        self.simplifiedVectors = simplifiedVectors
-        return self.simplifiedVectors
 
     def findBMU(self, k, Map, distKW=None):
         """
