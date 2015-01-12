@@ -35,11 +35,11 @@ class SOM:
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
     """
-    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, simplify_vectors=False, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
-        self.cardinal = len(inputvectors[0])
+        self.n_input, self.cardinal  = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
         self.autoParam = autoParam
@@ -48,36 +48,25 @@ class SOM:
         self.randomInit = randomInit
         self.X = X
         self.Y = Y
-        self.number_of_phase = nphase
+        self.number_of_phase = number_of_phases
         i = 1
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         if radius_begin == None:
-                        self.radius_begin = [self.X/8.,self.X/16.]
+            self.radius_begin = [self.X/8.,self.X/16.]
+        else:
+            self.radius_begin = radius_begin
         if radius_end == None:
-                        self.radius_end = [self.X/16.,1]
-        self.iterations = []
-        while i <= self.number_of_phase:
-            test = False
-            for line in lines:
-                if re.findall('<TreeSOM>', line):
-                    test = True
-                if test:
-                    if re.findall(r'#', line):
-                        line = line.split('#')[0]
-                    if re.findall(r'iterations_%s\s*='%i, line):
-                        try:
-                            self.iterations.append(int(line.split('=')[1]))
-                        except ValueError:
-                            if i == 1:
-                                self.iterations.append(self.inputvectors.shape[0])
-                            else:
-                                self.iterations.append(self.inputvectors.shape[0]*10)
-            i=i+1
+            self.radius_end = [self.X/16.,1]
+        else:
+            self.radius_end = radius_end
+        if iterations == None:
+            self.iterations = [self.n_input, self.n_input*2]
+        else:
+            self.iterations = iterations
         # Vector simplification
         if simplify_vectors:
             self.inputvectors = self.simplifyVectors()
-            self.cardinal = len(self.inputvectors[0])
         if randomUnit is None:
             # Matrix initialization
             if mapFileName == None:
@@ -134,12 +123,12 @@ class SOM:
 
     def loadMap(self, MapFile):
         MapFileFile = open(MapFile, 'r')
-        self.Map = pickle.load(MapFileFile)
+        self.smap = pickle.load(MapFileFile)
         MapFileFile.close()
-        shape = numpy.shape(self.Map)
+        shape = numpy.shape(self.smap)
         self.X = shape[0]
         self.Y = shape[1]
-        return self.Map
+        return self.smap
         
     def makeSubInputvectors(self, n, jobIndex=''):
         """
@@ -257,7 +246,7 @@ class SOM:
             self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
         return self.adjustMap
     
-    def learn(self, jobIndex=''):
+    def learn(self, jobIndex='', verbose='False'):
         if self.autoParam:
             self.epsilon_values = []
         Map = self.M
@@ -271,9 +260,10 @@ class SOM:
             print '%s iterations'%self.iterations[trainingPhase]
             ## Progress bar
             tpn = trainingPhase + 1
-            widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
-            pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
-            pbar.start()
+            if verbose:
+                widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
+                pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
+                pbar.start()
             ###
             for t in range(self.iterations[trainingPhase]):
                 if self.sort2ndPhase and tpn > 1:
@@ -297,9 +287,11 @@ class SOM:
                         k = kv.pop()
                         if firstpass==1: kdone.append(k)
                 Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
-                pbar.update(t)
-            pbar.finish()
-        self.Map = Map
+                if verbose:
+                    pbar.update(t)
+            if verbose:
+                pbar.finish()
+        self.smap = Map
         if jobIndex == '':
             MapFile = open('map_%sx%s.dat' % (self.X,self.Y), 'w')
         else:
@@ -308,7 +300,7 @@ class SOM:
         MapFile.close()
         if self.autoParam:
             numpy.savetxt('epsilon_values.txt', self.epsilon_values, fmt='%10.5f')
-        return self.Map
+        return self.smap
         
     def distmapPlot(self,k,Map):
         V=numpy.ones((self.X,self.Y,self.cardinal))*self.inputvectors[k]
