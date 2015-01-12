@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2014 02 25
+creation date: 2014 09 16
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -86,7 +86,7 @@ class SOM(object):
         return [(xm,ym), (xm,y), (xm,yp), (x,ym), (x,yp), (xp,ym), (xp,y), (xp,yp)]
     
     @staticmethod
-    def _neighbor_dim3(p, s):
+    def _neighbor_dim3_toric(p, s):
         """Efficient toric neighborhood function for 3D SOM.
         """
         x, y, z = p
@@ -117,8 +117,8 @@ class SOM(object):
                 return self._neighbor_dim1_toric
             if len(shape) == 2:
                 return self._neighbor_dim2_toric
-            if len(shape) == 3:
-                return self._neighbor_dim3_toric
+#            if len(shape) == 3:
+#                return self._neighbor_dim3_toric
             return self._neighbor_general_toric
         if len(shape) == 1:
             return self._neighbor_dim1

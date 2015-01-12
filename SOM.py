@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 01 10 2013
+creation date: 2014 11 28
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -128,7 +128,7 @@ class SOM:
      args=eival.argsort()[::-1]
      eival=eival[args]
      eivec=eivec[:,args]
-     sqev=numpy.sqrt(eival)[:3]
+     sqev=numpy.sqrt(eival)[:2]
      if autoSizeMap:
       self.X,self.Y=map(lambda x: int(round(x)),sqev/((numpy.prod(sqev)/(self.X*self.Y))**(1./2))) # returns a size with axes size proportional to the eigenvalues and so that the total number of neurons is at least the number of neurons given in SOM.conf (X*Y)
       print "Size of map will be %dx%d."%(self.X,self.Y)
