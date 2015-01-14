@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 12
+creation date: 2015 01 14
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -68,9 +68,9 @@ class SOM:
                     vShape = numpy.array(self.inputvectors[0]).shape
                     for e in vShape:
                         somShape.append(e)
-                    self.M = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
+                    self.smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
                     for e in zip(mininpvalue[1:],maxinpvalue[1:]):
-                        self.M = numpy.concatenate( (self.M,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+                        self.smap = numpy.concatenate( (self.smap,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
                 else:
                     inputarray=numpy.asarray(self.inputvectors)
                     inputmean=inputarray.mean(axis=0)
@@ -105,10 +105,10 @@ class SOM:
                         restptp=Cmax[2:]-Cmin[2:]
                         rest=numpy.random.random((restn,self.X,self.Y))*restptp[:,numpy.newaxis,numpy.newaxis]+Cmin[2:,numpy.newaxis,numpy.newaxis]
                         origrid=numpy.r_[origrid,rest]
-                    self.M=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
+                    self.smap=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
             else:
-                self.M = self.loadMap(mapFileName)
-            print "Shape of the SOM:%s"%str(self.M.shape)
+                self.smap = self.loadMap(mapFileName)
+            print "Shape of the SOM:%s"%str(self.smap.shape)
         self.distFunc = distFunc
 
     def loadMap(self, MapFile):
@@ -186,7 +186,7 @@ class SOM:
     def learn(self, jobIndex='', verbose='False'):
         if self.autoParam:
             self.epsilon_values = []
-        Map = self.M
+        Map = self.smap
         print 'Learning for %s vectors'%len(self.inputvectors)
         firstpass=0
         kdone=[]
