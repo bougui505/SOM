@@ -124,11 +124,16 @@ class SOM:
         self.Y = shape[1]
         return self.smap
         
-    def findBMU(self, k, Map, distKW=None):
+    def findBMU(self, k, Map, distKW=None, return_distance=False):
         """
             Find the Best Matching Unit for the input vector number k
         """
-        return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric).argmin(), (self.X,self.Y))
+        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric)
+        index = cdist.argmin()
+        if not return_distance:
+            return numpy.unravel_index(index, (self.X,self.Y))
+        else:
+            return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
