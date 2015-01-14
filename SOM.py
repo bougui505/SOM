@@ -61,16 +61,7 @@ class SOM:
             # Matrix initialization
             if mapFileName == None:
                 if randomInit:
-                    print "Map initialization..."
-                    maxinpvalue = self.inputvectors.max(axis=0)
-                    mininpvalue = self.inputvectors.min(axis=0)
-                    somShape = [self.X, self.Y]
-                    vShape = numpy.array(self.inputvectors[0]).shape
-                    for e in vShape:
-                        somShape.append(e)
-                    self.smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
-                    for e in zip(mininpvalue[1:],maxinpvalue[1:]):
-                        self.smap = numpy.concatenate( (self.smap,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+                    self.smap = self.random_map()
                 else:
                     inputarray=numpy.asarray(self.inputvectors)
                     inputmean=inputarray.mean(axis=0)
@@ -110,6 +101,19 @@ class SOM:
                 self.smap = self.loadMap(mapFileName)
             print "Shape of the SOM:%s"%str(self.smap.shape)
         self.distFunc = distFunc
+
+    def random_map(self):
+        print "Map initialization..."
+        maxinpvalue = self.inputvectors.max(axis=0)
+        mininpvalue = self.inputvectors.min(axis=0)
+        somShape = [self.X, self.Y]
+        vShape = numpy.array(self.inputvectors[0]).shape
+        for e in vShape:
+            somShape.append(e)
+        smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
+        for e in zip(mininpvalue[1:],maxinpvalue[1:]):
+            smap = numpy.concatenate( (smap,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+        return smap
 
     def loadMap(self, MapFile):
         MapFileFile = open(MapFile, 'r')
