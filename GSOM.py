@@ -30,19 +30,66 @@ class GSOM:
         """
         add a frame of masked elements around the self.smap
         """
-        smap_shape = numpy.asarray(self.smap.shape)
 
+        def add_left():
+            smap_shape = numpy.asarray(self.smap.shape)
+            new_shape = smap_shape + [0,1,0]
+            mask = numpy.zeros(new_shape,dtype=bool)
+            mask[:,0,...] = True
+            new_smap = numpy.ma.masked_array(numpy.empty_like(mask, dtype=float), mask)
+            new_smap[:,1:,...] = self.smap
+            self.smap = new_smap
+            self.X, self.Y, self.cardinal = self.smap.shape
+
+        def add_right():
+            smap_shape = numpy.asarray(self.smap.shape)
+            new_shape = smap_shape + [0,1,0]
+            mask = numpy.zeros(new_shape,dtype=bool)
+            mask[:,-1,...] = True
+            new_smap = numpy.ma.masked_array(numpy.empty_like(mask, dtype=float), mask)
+            new_smap[:,:-1,...] = self.smap
+            self.smap = new_smap
+            self.X, self.Y, self.cardinal = self.smap.shape
+
+        def add_top():
+            smap_shape = numpy.asarray(self.smap.shape)
+            new_shape = smap_shape + [1,0,0]
+            mask = numpy.zeros(new_shape,dtype=bool)
+            mask[0,:,...] = True
+            new_smap = numpy.ma.masked_array(numpy.empty_like(mask, dtype=float), mask)
+            new_smap[1:,:,...] = self.smap
+            self.smap = new_smap
+            self.X, self.Y, self.cardinal = self.smap.shape
+
+        def add_bottom():
+            smap_shape = numpy.asarray(self.smap.shape)
+            new_shape = smap_shape + [1,0,0]
+            mask = numpy.zeros(new_shape,dtype=bool)
+            mask[-1,:,...] = True
+            new_smap = numpy.ma.masked_array(numpy.empty_like(mask, dtype=float), mask)
+            new_smap[:-1,:,...] = self.smap
+            self.smap = new_smap
+            self.X, self.Y, self.cardinal = self.smap.shape
+
+        
         imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
         imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
-
-        new_shape = smap_shape + [2,2,0]
-        mask = numpy.zeros(new_shape,dtype=bool)
-        mask[[0,-1],...] = True
-        mask[:,[0,-1],...] = True
-        new_smap = numpy.ma.masked_array(numpy.empty_like(mask, dtype=float), mask)
-        new_smap[1:-1,1:-1,...] = self.smap
-        self.smap = new_smap
-        self.X, self.Y, self.cardinal = self.smap.shape
+        if imin == 0:
+            add_top()
+            imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
+            imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
+        if imax == self.X - 1:
+            add_bottom()
+            imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
+            imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
+        if jmin == 0:
+            add_left()
+            imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
+            imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
+        if jmax == self.Y-1:
+            add_right()
+            imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
+            imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
 
     def unmask_neighbors(self, pos):
         """
@@ -64,3 +111,4 @@ class GSOM:
                     if (1-neighbors.mask.all(axis=1)).sum() > 1:
                         sub_smap[u,v] = neighbors.sum(axis=0)
         self.smap[footprint] = sub_smap.reshape(9,2)
+        self.grow()
