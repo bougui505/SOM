@@ -3,3 +3,6 @@
 *.swp
 test/MapSnapshots.tar
 test/map_50x50.dat
+test/.ipynb_checkpoints/
+test/epsilon_values.txt
+test/map_25x25.dat
