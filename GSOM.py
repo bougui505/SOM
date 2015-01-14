@@ -25,8 +25,9 @@ class GSOM:
         self.smap = self.som.random_map()
         self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
         self.X, self.Y, self.cardinal = self.smap.shape
+        self.add_margins()
 
-    def grow(self):
+    def add_margins(self):
         """
         add a frame of masked elements around the self.smap
         """
@@ -91,9 +92,9 @@ class GSOM:
             imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
             imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
 
-    def unmask_neighbors(self, pos):
+    def grow(self, pos):
         """
-        unmask neighbors of cell pos=(i,j) after growing phase
+        grow neighbors of cell pos=(i,j)
         """
         footprint = numpy.zeros((self.X,self.Y), dtype=bool)
         i,j = pos
@@ -111,4 +112,4 @@ class GSOM:
                     if (1-neighbors.mask.all(axis=1)).sum() > 1:
                         sub_smap[u,v] = neighbors.sum(axis=0)
         self.smap[footprint] = sub_smap.reshape(9,2)
-        self.grow()
+        self.add_margins()
