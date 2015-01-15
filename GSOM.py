@@ -14,6 +14,7 @@ import numpy
 import progressbar
 import random
 import pickle
+import scipy.spatial
 
 class GSOM:
     def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
@@ -163,3 +164,20 @@ class GSOM:
         MapFile.close()
         self.n_neurons = numpy.asarray(self.n_neurons)
         return self.smap
+
+    def umatrix(self, smap = None):
+        if smap == None:
+            smap = self.smap
+        nx,ny,nz = smap.shape
+        umat = numpy.empty((nx,ny))
+        for i in range(nx)[1:-1]:
+            for j in range(ny)[1:-1]:
+                footprint = numpy.zeros((nx,ny), dtype=bool)
+                footprint[i-1:i+2,j-1:j+2] = True
+                sub_smap = smap[footprint].reshape(3,3,nz)
+                mask = sub_smap.mask[:,:,0]
+                mu = scipy.spatial.distance.pdist(sub_smap[~mask]).mean()
+                umat[i,j] = mu
+        umat = numpy.ma.masked_array(umat, smap.mask[:,:,0])
+        self.umat = umat
+        return umat
