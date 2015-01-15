@@ -154,7 +154,7 @@ class GSOM:
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
                 self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
-                self.n_neurons.append([self.step, (1-self.smap.mask).sum()])
+                self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 if verbose:
                     pbar.update(t)
             if verbose:
