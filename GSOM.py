@@ -11,9 +11,13 @@ Thanks!
 
 import SOM
 import numpy
+import progressbar
+import random
+import pickle
 
 class GSOM:
-    def __init__(self, inputvectors, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
+    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
+        self.growing_threshold = growing_threshold
         self.som = SOM.SOM(\
         inputvectors,\
         X = 3, Y = 3,\
@@ -22,6 +26,13 @@ class GSOM:
         radius_begin=radius_begin,\
         radius_end=radius_end\
         )
+        self.inputvectors = inputvectors
+        self.number_of_phase = number_of_phases
+        self.n_input, self.cardinal  = inputvectors.shape
+        if max_iterations == None:
+            self.iterations = [self.n_input, self.n_input*2]
+        else:
+            self.iterations = max_iterations
         self.smap = self.som.random_map()
         self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
         self.X, self.Y, self.cardinal = self.smap.shape
@@ -114,3 +125,36 @@ class GSOM:
                         sub_smap[u,v] = neighbors.sum(axis=0)
         self.smap[footprint] = sub_smap.reshape(9,2)
         self.add_margins()
+
+    def learn(self, verbose='False'):
+        print 'Learning for %s vectors'%len(self.inputvectors)
+        kdone=[]
+        for trainingPhase in range(self.number_of_phase):
+            kv=[]
+            print '%s iterations'%self.iterations[trainingPhase]
+            ## Progress bar
+            tpn = trainingPhase + 1
+            if verbose:
+                widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
+                pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
+                pbar.start()
+            ###
+            for t in range(self.iterations[trainingPhase]):
+                if len(kv) > 0:
+                    k = kv.pop()
+                else:
+                    kv = range(len(self.inputvectors))
+                    random.shuffle(kv)
+                    k = kv.pop()
+                bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
+                if dist >= self.growing_threshold:
+                    self.grow(bmu)
+                self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
+                if verbose:
+                    pbar.update(t)
+            if verbose:
+                pbar.finish()
+        MapFile = open('map_%sx%s.dat' % (self.X,self.Y), 'w')
+        pickle.dump(self.smap, MapFile) # Write Map into npy file
+        MapFile.close()
+        return self.smap
