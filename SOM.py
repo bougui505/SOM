@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 14
+creation date: 2015 01 15
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -128,12 +128,15 @@ class SOM:
         """
             Find the Best Matching Unit for the input vector number k
         """
-        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric)
+        X, Y, cardinal = Map.shape
+        if numpy.ma.isMaskedArray(Map):
+            Map = Map.filled(numpy.inf)
+        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,cardinal)), numpy.reshape(Map, (X*Y,cardinal)), self.metric)
         index = cdist.argmin()
         if not return_distance:
-            return numpy.unravel_index(index, (self.X,self.Y))
+            return numpy.unravel_index(index, (X,Y))
         else:
-            return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
+            return numpy.unravel_index(index, (X,Y)), cdist[0,index]
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
