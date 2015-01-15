@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 14
+creation date: 2015 01 15
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -91,6 +91,7 @@ class GSOM:
             add_right()
             imin, jmin = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).min(axis=1)
             imax, jmax = numpy.asarray(numpy.where(~self.smap.mask.all(axis=2))).max(axis=1)
+        self.som.X, self.som.Y, self.som.cardinal = self.smap.shape
 
     def grow(self, pos):
         """
