@@ -18,6 +18,8 @@ import pickle
 class GSOM:
     def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
         self.growing_threshold = growing_threshold
+        self.n_neurons = []
+        self.step = 0
         self.som = SOM.SOM(\
         inputvectors,\
         X = 3, Y = 3,\
@@ -30,7 +32,7 @@ class GSOM:
         self.number_of_phase = number_of_phases
         self.n_input, self.cardinal  = inputvectors.shape
         if max_iterations == None:
-            self.iterations = [self.n_input, self.n_input*2]
+            self.iterations = [self.n_input, self.n_input*10]
         else:
             self.iterations = max_iterations
         self.smap = self.som.random_map()
@@ -140,6 +142,7 @@ class GSOM:
                 pbar.start()
             ###
             for t in range(self.iterations[trainingPhase]):
+                self.step += 1
                 if len(kv) > 0:
                     k = kv.pop()
                 else:
@@ -150,6 +153,7 @@ class GSOM:
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
                 self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
+                self.n_neurons.append([self.step, (1-self.smap.mask).sum()])
                 if verbose:
                     pbar.update(t)
             if verbose:
@@ -157,4 +161,5 @@ class GSOM:
         MapFile = open('map_%sx%s.dat' % (self.X,self.Y), 'w')
         pickle.dump(self.smap, MapFile) # Write Map into npy file
         MapFile.close()
+        self.n_neurons = numpy.asarray(self.n_neurons)
         return self.smap
