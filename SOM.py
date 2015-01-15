@@ -128,15 +128,14 @@ class SOM:
         """
             Find the Best Matching Unit for the input vector number k
         """
-        X, Y, cardinal = Map.shape
         if numpy.ma.isMaskedArray(Map):
             Map = Map.filled(numpy.inf)
-        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,cardinal)), numpy.reshape(Map, (X*Y,cardinal)), self.metric)
+        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric)
         index = cdist.argmin()
         if not return_distance:
-            return numpy.unravel_index(index, (X,Y))
+            return numpy.unravel_index(index, (self.X,self.Y))
         else:
-            return numpy.unravel_index(index, (X,Y)), cdist[0,index]
+            return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
