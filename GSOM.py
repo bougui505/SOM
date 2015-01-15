@@ -125,7 +125,7 @@ class GSOM:
                     neighbors = sub_smap[neighbors[:,0], neighbors[:,1]]
                     if (1-neighbors.mask.all(axis=1)).sum() > 1:
                         sub_smap[u,v] = neighbors.sum(axis=0)
-        self.smap[footprint] = sub_smap.reshape(9,2)
+        self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
         self.add_margins()
 
     def learn(self, verbose='False'):
