@@ -11,10 +11,18 @@ Thanks!
 
 import SOM
 import numpy
-import progressbar
 import random
 import pickle
 import scipy.spatial
+
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+if is_interactive():
+    import progressbar_notebook as progressbar
+else:
+    import progressbar
 
 class GSOM:
     def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
