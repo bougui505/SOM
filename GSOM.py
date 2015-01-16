@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 15
+creation date: 2015 01 16
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -135,10 +135,11 @@ class GSOM:
         for trainingPhase in range(self.number_of_phase):
             kv=[]
             print '%s iterations'%self.iterations[trainingPhase]
+            self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
             ## Progress bar
             tpn = trainingPhase + 1
             if verbose:
-                widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
+                widgets = ['Training phase %s; %d neurons: ' % (tpn, self.n_neurons[-1][1]), progressbar.Percentage(), progressbar.Bar(marker='=',left='[',right=']'), progressbar.ETA()]
                 pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase]-1)
                 pbar.start()
             ###
