@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 16
+creation date: 2015 01 19
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -41,7 +41,7 @@ class GSOM:
         self.number_of_phase = number_of_phases
         self.n_input, self.cardinal  = inputvectors.shape
         if max_iterations == None:
-            self.iterations = [self.n_input, self.n_input*10]
+            self.iterations = [self.n_input, self.n_input*2]
         else:
             self.iterations = max_iterations
         self.smap = self.som.random_map()
