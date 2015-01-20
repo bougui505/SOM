@@ -42,7 +42,7 @@ class GSOM:
         self.number_of_phase = number_of_phases
         self.n_input, self.cardinal  = inputvectors.shape
         if max_iterations == None:
-            self.iterations = [self.n_input, self.n_input*2]
+            self.iterations = [self.n_input, self.n_input]
         else:
             self.iterations = max_iterations
         self.smap = self.som.random_map()
