@@ -12,10 +12,18 @@ Thanks!
 
 import numpy
 import random
-import progressbar
 import pickle
 import itertools
 import scipy.spatial
+
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+if is_interactive():
+    import progressbar_notebook as progressbar
+else:
+    import progressbar
 
 class SOM:
     """
