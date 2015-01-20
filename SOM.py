@@ -218,6 +218,9 @@ class SOM:
 
     def adjustment(self, k, t, trainingPhase, Map, BMUindices):
         self.adjustMap = numpy.zeros(Map.shape)
+        if self.metric == 'RMSD':
+            i,j = BMUindices
+            self.inputvectors[k] = self.align(self.inputvectors[k], Map[i,j])[0]
         if not self.autoParam:
             learning = self.learningRate(t, trainingPhase)
             self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
