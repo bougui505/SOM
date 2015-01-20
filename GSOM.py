@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 19
+creation date: 2015 01 20
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -162,7 +162,8 @@ class GSOM:
                 bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
-                self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
+                self.som.apply_learning(self.smap, self.inputvectors[k], self.som.findBMU(k, self.smap), self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
+                #self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 if verbose:
                     pbar.update(t)

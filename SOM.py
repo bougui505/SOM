@@ -15,6 +15,7 @@ import random
 import pickle
 import itertools
 import scipy.spatial
+from scipy.ndimage.morphology import distance_transform_edt
 
 def is_interactive():
     import __main__ as main
@@ -190,47 +191,27 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-
-    def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
-        i,j = BMUindices
+    def apply_learning(self, smap, vector, bmu, radius, rate):
+        shape = (self.X, self.Y)
         if self.toricMap:
-            i2 = i + self.X
-            j2 = j + self.Y
-            X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+            bigshape = tuple(map(lambda x: 3*x, shape))
+            midselect = tuple([ slice(s, 2*s) for s in shape ])
+            features = numpy.ones(bigshape)
+            copy_coord = lambda p, s: tuple([p+i*s for i in range(3)])
+            all_coords = [ copy_coord(coord, s) for coord, s in zip(bmu, shape) ]
+            for p in itertools.product(*all_coords):
+                features[p] = 0
+            distance = distance_transform_edt(features)[midselect]
         else:
-            X,Y=numpy.mgrid[-i:self.X-i,-j:self.Y-j]
-        if not self.autoParam:
-            adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
-        elif self.autoParam:
-            self.epsilon_value = self.epsilon(k,BMUindices,Map)
-            radius =self.epsilon_value * self.radius_begin[trainingPhase]
-            self.epsilon_values.append(self.epsilon_value)
-            adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
-        if self.toricMap:
-            adjMapR = numpy.zeros((self.X,self.Y,9))
-            c = itertools.count()
-            for i in range(3):
-                for j in range(3):
-                    adjMapR[:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y]
-            return numpy.max(adjMapR, axis=2)
-        else:
-            return adjMap
+            features = numpy.ones(shape)
+            features[bmu] = 0
+            distance = distance_transform_edt(features)
+        #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
+        radmap = rate * numpy.exp( - distance**2 / (2.*radius)**2 )
+        adjmap = (smap - vector) * radmap[..., None]
+        smap -= adjmap
 
-    def adjustment(self, k, t, trainingPhase, Map, BMUindices):
-        self.adjustMap = numpy.zeros(Map.shape)
-        if self.metric == 'RMSD':
-            i,j = BMUindices
-            self.inputvectors[k] = self.align(self.inputvectors[k], Map[i,j])[0]
-        if not self.autoParam:
-            learning = self.learningRate(t, trainingPhase)
-            self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
-        elif self.autoParam:
-            radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
-            learning = self.epsilon_value * self.alpha_begin[trainingPhase]
-            self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
-        return self.adjustMap
-    
-    def learn(self, jobIndex='', verbose='False'):
+    def learn(self, jobIndex='', verbose=False):
         if self.autoParam:
             self.epsilon_values = []
         Map = self.smap
@@ -270,7 +251,7 @@ class SOM:
                         random.shuffle(kv)
                         k = kv.pop()
                         if firstpass==1: kdone.append(k)
-                Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
+                self.apply_learning(Map, self.inputvectors[k], self.findBMU(k, Map), self.radiusFunction(t, trainingPhase), self.learningRate(t, trainingPhase))
                 if verbose:
                     pbar.update(t)
             if verbose:
