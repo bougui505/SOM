@@ -191,7 +191,12 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-    def apply_learning(self, smap, vector, bmu, radius, rate):
+    def apply_learning(self, smap, k, bmu, radius, rate):
+        i,j = bmu
+        if self.metric == 'RMSD':
+            vector = self.align(self.inputvectors[k], smap[i,j])[0]
+        else:
+            vector = self.inputvectors[k]
         shape = (self.X, self.Y)
         if self.toricMap:
             bigshape = tuple(map(lambda x: 3*x, shape))
@@ -251,7 +256,7 @@ class SOM:
                         random.shuffle(kv)
                         k = kv.pop()
                         if firstpass==1: kdone.append(k)
-                self.apply_learning(Map, self.inputvectors[k], self.findBMU(k, Map), self.radiusFunction(t, trainingPhase), self.learningRate(t, trainingPhase))
+                self.apply_learning(Map, k, self.findBMU(k, Map), self.radiusFunction(t, trainingPhase), self.learningRate(t, trainingPhase))
                 if verbose:
                     pbar.update(t)
             if verbose:

@@ -25,7 +25,7 @@ else:
     import progressbar
 
 class GSOM:
-    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1]):
+    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean'):
         self.growing_threshold = growing_threshold
         self.n_neurons = []
         self.step = 0
@@ -35,7 +35,8 @@ class GSOM:
         toricMap = False,\
         number_of_phases=number_of_phases,\
         radius_begin=radius_begin,\
-        radius_end=radius_end\
+        radius_end=radius_end,\
+        metric = metric
         )
         self.inputvectors = inputvectors
         self.number_of_phase = number_of_phases
@@ -162,8 +163,7 @@ class GSOM:
                 bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
-                self.som.apply_learning(self.smap, self.inputvectors[k], self.som.findBMU(k, self.smap), self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
-                #self.smap = self.smap + self.som.adjustment(k, t, trainingPhase, self.smap, bmu)
+                self.som.apply_learning(self.smap, k, self.som.findBMU(k, self.smap), self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 if verbose:
                     pbar.update(t)
