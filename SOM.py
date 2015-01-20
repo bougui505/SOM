@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 15
+creation date: 2015 01 20
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -32,6 +32,8 @@ class SOM:
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
+        if metric == 'RMSD':
+            self.metric = lambda A,B: self.align(A,B)[1]
         self.n_input, self.cardinal  = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
@@ -100,7 +102,6 @@ class SOM:
             else:
                 self.smap = self.loadMap(mapFileName)
             print "Shape of the SOM:%s"%str(self.smap.shape)
-        self.distFunc = distFunc
 
     def random_map(self):
         print "Map initialization..."
@@ -123,7 +124,31 @@ class SOM:
         self.X = shape[0]
         self.Y = shape[1]
         return self.smap
-        
+
+    def align(self,A,B):
+        """
+        align coordinates of A on B
+        return: new coordinates of A
+        """
+        N = A.shape[0]
+        A = A.reshape(N/3,3)
+        B = B.reshape(N/3,3)
+        centroid_A = A.mean(axis=0)
+        centroid_B = B.mean(axis=0)
+        AA = A - centroid_A
+        BB = B - centroid_B
+        H = numpy.dot(AA.T, BB)
+        U, S, Vt = numpy.linalg.svd(H)
+        R = numpy.dot(U,Vt)
+        #  change sign of the last vector if needed to assure similar orientation of bases
+        if numpy.linalg.det(R) < 0:
+            Vt[2,:] *= -1
+            R = numpy.dot(U,Vt)
+        trans = centroid_B - centroid_A
+        A = numpy.dot(A,R) + trans
+        RMSD = numpy.sqrt( ( (B - A)**2 ).sum(axis=1).mean() )
+        return A.flatten(), RMSD
+            
     def findBMU(self, k, Map, distKW=None, return_distance=False):
         """
             Find the Best Matching Unit for the input vector number k
