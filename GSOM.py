@@ -137,7 +137,7 @@ class GSOM:
         self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
         self.add_margins()
 
-    def learn(self, verbose='False'):
+    def learn(self, verbose=False):
         print 'Learning for %s vectors'%len(self.inputvectors)
         kdone=[]
         for trainingPhase in range(self.number_of_phase):
