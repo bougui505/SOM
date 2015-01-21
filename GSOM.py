@@ -25,17 +25,27 @@ else:
     import progressbar
 
 class GSOM:
-    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean', mapFileName=None):
+    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin_factor=[1./8,1./8], radius_end_factor=[1./8,1./32], metric = 'euclidean', mapFileName=None):
+        """
+
+        radius_begin, radius_end: The radius is given as a function of the
+        number of neurons in the current map. For exemple if the radius is r and
+        the number of neuron is n, then the effective radius is sqrt(n) * r
+
+        """
         self.growing_threshold = growing_threshold
         self.n_neurons = []
+        self.radius_list = []
         self.step = 0
+        self.radius_begin_factor = numpy.asarray(radius_begin_factor)
+        self.radius_end_factor = numpy.asarray(radius_end_factor)
         self.som = SOM.SOM(\
         inputvectors,\
         X = 3, Y = 3,\
         toricMap = False,\
         number_of_phases=number_of_phases,\
-        radius_begin=radius_begin,\
-        radius_end=radius_end,\
+        radius_begin = self.radius_begin_factor * numpy.sqrt(9),\
+        radius_end = self.radius_end_factor * numpy.sqrt(9),\
         metric = metric,\
         mapFileName = mapFileName
         )
@@ -167,8 +177,14 @@ class GSOM:
                 bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
+                    snn = numpy.sqrt((1-self.smap.mask[:,:,0]).sum()) # sqrt of the number of neurons
+                    self.som.radius_begin=\
+                    self.radius_begin_factor * snn
+                    self.som.radius_end=\
+                    self.radius_end_factor * snn
                 self.som.apply_learning(self.smap, k, self.som.findBMU(k, self.smap), self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
+                self.radius_list.append([self.step, self.som.radiusFunction(t, trainingPhase=trainingPhase)]) # to monitor the radius evolution
                 if verbose:
                     pbar.update(t)
             if verbose:
@@ -177,6 +193,7 @@ class GSOM:
         pickle.dump(self.smap, MapFile) # Write Map into npy file
         MapFile.close()
         self.n_neurons = numpy.asarray(self.n_neurons)
+        self.radius_list = numpy.asarray(self.radius_list)
         return self.smap
 
     def umatrix(self, smap = None):
