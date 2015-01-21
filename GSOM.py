@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 20
+creation date: 2015 01 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -25,7 +25,7 @@ else:
     import progressbar
 
 class GSOM:
-    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean'):
+    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean', mapFileName=None):
         self.growing_threshold = growing_threshold
         self.n_neurons = []
         self.step = 0
@@ -36,7 +36,8 @@ class GSOM:
         number_of_phases=number_of_phases,\
         radius_begin=radius_begin,\
         radius_end=radius_end,\
-        metric = metric
+        metric = metric,\
+        mapFileName = mapFileName
         )
         self.inputvectors = inputvectors
         self.number_of_phase = number_of_phases
@@ -45,8 +46,11 @@ class GSOM:
             self.iterations = [self.n_input, self.n_input]
         else:
             self.iterations = max_iterations
-        self.smap = self.som.random_map()
-        self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
+        if mapFileName == None:
+            self.smap = self.som.random_map()
+            self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
+        else:
+            self.smap = self.som.smap
         self.X, self.Y, self.cardinal = self.smap.shape
         self.add_margins()
 
