@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 20
+creation date: 2015 01 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -57,11 +57,11 @@ class SOM:
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         if radius_begin == None:
-            self.radius_begin = [self.X/8.,self.X/16.]
+            self.radius_begin = [numpy.sqrt(self.X*self.Y)/8.,numpy.sqrt(self.X*self.Y)/16.]
         else:
             self.radius_begin = radius_begin
         if radius_end == None:
-            self.radius_end = [self.X/16.,1]
+            self.radius_end = [numpy.sqrt(self.X*self.Y)/16.,1]
         else:
             self.radius_end = radius_end
         if iterations == None:
