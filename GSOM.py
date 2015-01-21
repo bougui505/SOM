@@ -47,7 +47,7 @@ class GSOM:
         else:
             self.iterations = max_iterations
         if mapFileName == None:
-            self.smap = self.som.random_map()
+            self.smap = self.som.smap
             self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
         else:
             self.smap = self.som.smap
