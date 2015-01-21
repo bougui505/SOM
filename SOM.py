@@ -37,7 +37,7 @@ class SOM:
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
     """
-    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, distFunc=None, randomUnit=None, smap=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
@@ -70,7 +70,7 @@ class SOM:
             self.iterations = iterations
         if randomUnit is None:
             # Matrix initialization
-            if mapFileName == None:
+            if smap == None:
                 if randomInit:
                     self.smap = self.random_map()
                 else:
@@ -109,7 +109,7 @@ class SOM:
                         origrid=numpy.r_[origrid,rest]
                     self.smap=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
             else:
-                self.smap = self.loadMap(mapFileName)
+                self.loadMap(smap)
             print "Shape of the SOM:%s"%str(self.smap.shape)
 
     def random_map(self):
@@ -125,14 +125,11 @@ class SOM:
             smap = numpy.concatenate( (smap,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
         return smap
 
-    def loadMap(self, MapFile):
-        MapFileFile = open(MapFile, 'r')
-        self.smap = pickle.load(MapFileFile)
-        MapFileFile.close()
+    def loadMap(self, smap):
+        self.smap = smap
         shape = numpy.shape(self.smap)
         self.X = shape[0]
         self.Y = shape[1]
-        return self.smap
 
     def align(self,A,B):
         """

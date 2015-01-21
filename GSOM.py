@@ -25,7 +25,7 @@ else:
     import progressbar
 
 class GSOM:
-    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean', mapFileName=None):
+    def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean', smap=None):
         self.growing_threshold = growing_threshold
         self.n_neurons = []
         self.step = 0
@@ -37,7 +37,7 @@ class GSOM:
         radius_begin=radius_begin,\
         radius_end=radius_end,\
         metric = metric,\
-        mapFileName = mapFileName
+        smap = smap
         )
         self.inputvectors = inputvectors
         self.number_of_phase = number_of_phases
@@ -46,7 +46,7 @@ class GSOM:
             self.iterations = [self.n_input, self.n_input]
         else:
             self.iterations = max_iterations
-        if mapFileName == None:
+        if smap == None:
             self.smap = self.som.smap
             self.smap = numpy.ma.masked_array(self.smap, numpy.zeros_like(self.smap, dtype=bool))
         else:
