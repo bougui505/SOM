@@ -27,7 +27,6 @@ else:
 class GSOM:
     def __init__(self, inputvectors, growing_threshold, max_iterations=None, number_of_phases=2, alpha_begin = [.5,0.5], alpha_end = [.5,0.], radius_begin=[1.5,1.5], radius_end=[1.5,1], metric = 'euclidean', smap=None):
         self.growing_threshold = growing_threshold
-        self.n_neurons = []
         self.step = 0
         self.som = SOM.SOM(\
         inputvectors,\
@@ -144,6 +143,7 @@ class GSOM:
 
     def learn(self, verbose=False):
         self.smap_list = []
+        self.n_neurons = []
         print 'Learning for %s vectors'%len(self.inputvectors)
         kdone=[]
         for trainingPhase in range(self.number_of_phase):
