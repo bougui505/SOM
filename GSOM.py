@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 21
+creation date: 2015 01 22
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -143,6 +143,7 @@ class GSOM:
         self.add_margins()
 
     def learn(self, verbose=False):
+        self.smap_list = []
         print 'Learning for %s vectors'%len(self.inputvectors)
         kdone=[]
         for trainingPhase in range(self.number_of_phase):
@@ -173,6 +174,12 @@ class GSOM:
                     pbar.update(t)
             if verbose:
                 pbar.finish()
+            if trainingPhase < self.number_of_phase-1:
+                self.smap_list.append(self.smap.copy()) # keep a copy of the smap after the first phase
+                MapFile = open('map_phase_%s_%sx%s.dat' % (trainingPhase, self.X,self.Y), 'w')
+                pickle.dump(self.smap, MapFile) # Write Map into npy file
+                MapFile.close()
+
         MapFile = open('map_%sx%s.dat' % (self.X,self.Y), 'w')
         pickle.dump(self.smap, MapFile) # Write Map into npy file
         MapFile.close()
