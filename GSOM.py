@@ -128,18 +128,19 @@ class GSOM:
         footprint[i-1:i+2,j-1:j+2] = True
         sub_smap = self.smap[footprint].reshape(3,3,self.cardinal)
         mask = numpy.ma.getmask(sub_smap)
-        for u in range(3):
-            for v in range(3):
-                if mask[u,v].all():
-                    pos = numpy.asarray([u,v])
-                    direction = pos - numpy.asarray([1,1])
-                    neighbors = numpy.asarray([pos + direction, pos + 2 * direction, pos - direction, pos - 2 * direction])
-                    neighbors = neighbors[numpy.logical_and((neighbors >= 0).all(axis=1), (neighbors < 3).all(axis=1))]
-                    neighbors = sub_smap[neighbors[:,0], neighbors[:,1]]
-                    if (1-neighbors.mask.all(axis=1)).sum() > 1:
-                        sub_smap[u,v] = neighbors.sum(axis=0)
-        self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
-        self.add_margins()
+        if mask.any():
+            for u in range(3):
+                for v in range(3):
+                    if mask[u,v].all():
+                        pos = numpy.asarray([u,v])
+                        direction = pos - numpy.asarray([1,1])
+                        neighbors = numpy.asarray([pos + direction, pos + 2 * direction, pos - direction, pos - 2 * direction])
+                        neighbors = neighbors[numpy.logical_and((neighbors >= 0).all(axis=1), (neighbors < 3).all(axis=1))]
+                        neighbors = sub_smap[neighbors[:,0], neighbors[:,1]]
+                        if (1-neighbors.mask.all(axis=1)).sum() > 1:
+                            sub_smap[u,v] = neighbors.sum(axis=0)
+            self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
+            self.add_margins()
 
     def learn(self, verbose=False):
         self.smap_list = []
