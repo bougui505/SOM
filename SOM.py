@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 21
+creation date: 2015 01 23
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -212,6 +212,7 @@ class SOM:
         radmap = rate * numpy.exp( - distance**2 / (2.*radius)**2 )
         adjmap = (smap - vector) * radmap[..., None]
         smap -= adjmap
+        return smap
 
     def learn(self, jobIndex='', verbose=False):
         if self.autoParam:

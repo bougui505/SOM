@@ -180,7 +180,7 @@ class GSOM:
                 if is_growing:
                     smap_growing_area = self.smap.copy()
                     smap_growing_area = numpy.ma.masked_array(smap_growing_area, learning_mask)
-                    self.som.apply_learning(smap_growing_area, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
+                    smap_growing_area = self.som.apply_learning(smap_growing_area, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
                     self.smap[~learning_mask] = smap_growing_area[~learning_mask]
                     self.add_margins()
                 else:
