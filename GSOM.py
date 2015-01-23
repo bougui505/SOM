@@ -142,6 +142,12 @@ class GSOM:
                         if (1-neighbors.mask.all(axis=1)).sum() > 1:
                             sub_smap[u,v] = neighbors.sum(axis=0)
             self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
+            learning_mask = ~numpy.logical_and(~self.smap.mask[:,:,0], footprint) # learn only on the growing area
+            learning_mask = numpy.repeat(learning_mask[:,:,None], self.cardinal, axis=2)
+            return True, learning_mask
+        else:
+            learning_mask = self.smap.mask
+            return False, learning_mask
 
     def learn(self, verbose=False):
         self.smap_list = []
@@ -168,9 +174,17 @@ class GSOM:
                     random.shuffle(kv)
                     k = kv.pop()
                 bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
+                is_growing = False
                 if dist >= self.growing_threshold:
-                    self.grow(bmu)
-                self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
+                    is_growing, learning_mask = self.grow(bmu)
+                if is_growing:
+                    smap_growing_area = self.smap.copy()
+                    smap_growing_area = numpy.ma.masked_array(smap_growing_area, learning_mask)
+                    self.som.apply_learning(smap_growing_area, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
+                    self.smap[~learning_mask] = smap_growing_area[~learning_mask]
+                    self.add_margins()
+                else:
+                    self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 self.add_margins()
                 if verbose:
