@@ -188,20 +188,19 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-    def geodesic_distance_transform(self,m):
+    def geodesic_distance_transform(self, m):
         mask = m.mask
         visit_mask = mask.copy() # mask visited cells
+        m = m.filled(numpy.inf)
         m[m!=0] = numpy.inf
         distance_increments = numpy.asarray([numpy.sqrt(2), 1., numpy.sqrt(2), 1., 1., numpy.sqrt(2), 1., numpy.sqrt(2)])
+        connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
         cc = numpy.unravel_index(m.argmin(), m.shape) # current_cell
         while (~visit_mask).sum() > 0:
-            neighbors = [tuple(cc - numpy.asarray([i,j])) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
-            current_mask = numpy.asarray([~visit_mask[e] for e in neighbors])
-            neighbors = numpy.asarray([e for e in neighbors])[current_mask]
-            neighbors = [tuple(e) for e in neighbors]
-            #if len(neighbors) == 0:
-                #break
-            tentative_distance = distance_increments[current_mask]
+            neighbors = [tuple(e) for e in numpy.asarray(cc) - connectivity 
+                         if not visit_mask[tuple(e)]]
+            tentative_distance = [distance_increments[i] for i,e in enumerate(numpy.asarray(cc) - connectivity) 
+                                  if not visit_mask[tuple(e)]]
             for i,e in enumerate(neighbors):
                 d = tentative_distance[i] + m[cc]
                 if d < m[e]:
