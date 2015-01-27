@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 21
+creation date: 2015 01 28
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -188,7 +188,30 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-    def apply_learning(self, smap, k, bmu, radius, rate):
+    def geodesic_distance_transform(self,m):
+        mask = m.mask
+        visit_mask = mask.copy() # mask visited cells
+        m[m!=0] = numpy.inf
+        distance_increments = numpy.asarray([numpy.sqrt(2), 1., numpy.sqrt(2), 1., 1., numpy.sqrt(2), 1., numpy.sqrt(2)])
+        cc = numpy.unravel_index(m.argmin(), m.shape) # current_cell
+        while (~visit_mask).sum() > 0:
+            neighbors = [tuple(cc - numpy.asarray([i,j])) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
+            current_mask = numpy.asarray([~visit_mask[e] for e in neighbors])
+            neighbors = numpy.asarray([e for e in neighbors])[current_mask]
+            neighbors = [tuple(e) for e in neighbors]
+            #if len(neighbors) == 0:
+                #break
+            tentative_distance = distance_increments[current_mask]
+            for i,e in enumerate(neighbors):
+                d = tentative_distance[i] + m[cc]
+                if d < m[e]:
+                    m[e] = d
+            visit_mask[cc] = True
+            m_mask = numpy.ma.masked_array(m, visit_mask)
+            cc = numpy.unravel_index(m_mask.argmin(), m.shape)
+        return m
+
+    def apply_learning(self, smap, k, bmu, radius, rate, geodesic=False, mask=None):
         i,j = bmu
         if self.metric == 'RMSD':
             vector = self.align(self.inputvectors[k], smap[i,j])[0]
@@ -207,7 +230,11 @@ class SOM:
         else:
             features = numpy.ones(shape)
             features[bmu] = 0
-            distance = distance_transform_edt(features)
+            if geodesic:
+                features = numpy.ma.masked_array(features, mask)
+                distance = self.geodesic_distance_transform(features)
+            else:
+                distance = distance_transform_edt(features)
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
         radmap = rate * numpy.exp( - distance**2 / (2.*radius)**2 )
         adjmap = (smap - vector) * radmap[..., None]
