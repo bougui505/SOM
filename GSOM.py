@@ -170,7 +170,7 @@ class GSOM:
                 bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
                 if dist >= self.growing_threshold:
                     self.grow(bmu)
-                self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
+                self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase), geodesic=True)
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 self.add_margins()
                 if verbose:
