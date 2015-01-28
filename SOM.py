@@ -16,6 +16,7 @@ import pickle
 import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
+import skfmm
 
 def is_interactive():
     import __main__ as main
@@ -188,28 +189,6 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-    def geodesic_distance_transform(self, m):
-        mask = m.mask
-        visit_mask = mask.copy() # mask visited cells
-        m = m.filled(numpy.inf)
-        m[m!=0] = numpy.inf
-        distance_increments = numpy.asarray([numpy.sqrt(2), 1., numpy.sqrt(2), 1., 1., numpy.sqrt(2), 1., numpy.sqrt(2)])
-        connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1] if (not (i == j == 0))]
-        cc = numpy.unravel_index(m.argmin(), m.shape) # current_cell
-        while (~visit_mask).sum() > 0:
-            neighbors = [tuple(e) for e in numpy.asarray(cc) - connectivity 
-                         if not visit_mask[tuple(e)]]
-            tentative_distance = [distance_increments[i] for i,e in enumerate(numpy.asarray(cc) - connectivity) 
-                                  if not visit_mask[tuple(e)]]
-            for i,e in enumerate(neighbors):
-                d = tentative_distance[i] + m[cc]
-                if d < m[e]:
-                    m[e] = d
-            visit_mask[cc] = True
-            m_mask = numpy.ma.masked_array(m, visit_mask)
-            cc = numpy.unravel_index(m_mask.argmin(), m.shape)
-        return m
-
     def apply_learning(self, smap, k, bmu, radius, rate, geodesic=False, mask=None):
         i,j = bmu
         if self.metric == 'RMSD':
@@ -231,7 +210,7 @@ class SOM:
             features[bmu] = 0
             if geodesic:
                 features = numpy.ma.masked_array(features, mask)
-                distance = self.geodesic_distance_transform(features)
+                distance = skfmm.distance(features)
             else:
                 distance = distance_transform_edt(features)
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
