@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 23
+creation date: 2015 01 29
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -142,7 +142,6 @@ class GSOM:
                         if (1-neighbors.mask.all(axis=1)).sum() > 1:
                             sub_smap[u,v] = neighbors.sum(axis=0)
             self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
-            self.add_margins()
 
     def learn(self, verbose=False):
         self.smap_list = []
@@ -173,6 +172,7 @@ class GSOM:
                     self.grow(bmu)
                 self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase))
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
+                self.add_margins()
                 if verbose:
                     pbar.update(t)
             if verbose:
