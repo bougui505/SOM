@@ -142,6 +142,22 @@ class GSOM:
                         if (1-neighbors.mask.all(axis=1)).sum() > 1:
                             sub_smap[u,v] = neighbors.sum(axis=0)
             self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
+            self.add_margins()
+            return True
+        else:
+            return False
+
+    def apoptosis(self, bmu, bmus):
+        """
+        remove neighbors of bmu if not present in bmus
+        """
+        connectivity = [(i,j) for i in [-1, 0, 1] for j in [-1, 0, 1]]
+        neighbors = numpy.asarray(bmu) - connectivity
+        neighbors = set(tuple(e) for e in neighbors)
+        apoptotic = neighbors - set(bmus)
+        for e in apoptotic:
+            self.smap.mask[e] = True
+>>>>>>> debug for apoptotic function
 
     def learn(self, verbose=False):
         self.smap_list = []
@@ -167,9 +183,15 @@ class GSOM:
                     kv = range(len(self.inputvectors))
                     random.shuffle(kv)
                     k = kv.pop()
-                bmu, dist = self.som.findBMU(k, self.smap, return_distance = True)
+                bmus, dists = self.som.findBMU(k, self.smap, return_distance = True, n_neighbors=9)
+                bmu, dist = bmus[0], dists[0]
+                if numpy.ma.is_masked(self.smap[bmu]):
+                    raise Exception("The BMU is masked!")
+                is_growing = False
                 if dist >= self.growing_threshold:
-                    self.grow(bmu)
+                    is_growing = self.grow(bmu)
+                if not is_growing:
+                    self.apoptosis(bmu, bmus)
                 self.som.apply_learning(self.smap, k, bmu, self.som.radiusFunction(t, trainingPhase), self.som.learningRate(t, trainingPhase), geodesic=True, mask=self.smap.mask[:,:,0])
                 self.n_neurons.append([self.step, (1-self.smap.mask[:,:,0]).sum()])
                 self.add_margins()

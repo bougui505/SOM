@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 28
+creation date: 2015 01 29
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -156,18 +156,27 @@ class SOM:
         RMSD = numpy.sqrt( ( (B - A)**2 ).sum(axis=1).mean() )
         return A.flatten(), RMSD
             
-    def findBMU(self, k, Map, distKW=None, return_distance=False):
+    def findBMU(self, k, Map, distKW=None, return_distance=False, n_neighbors = 1):
         """
             Find the Best Matching Unit for the input vector number k
         """
         if numpy.ma.isMaskedArray(Map):
             Map = Map.filled(numpy.inf)
         cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric)
-        index = cdist.argmin()
-        if not return_distance:
-            return numpy.unravel_index(index, (self.X,self.Y))
+        if n_neighbors == 1:
+            index = cdist.argmin()
+            if not return_distance:
+                return numpy.unravel_index(index, (self.X,self.Y))
+            else:
+                return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
         else:
-            return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
+            indices = cdist.argsort()
+            distances = cdist[:,indices][0][0][:n_neighbors]
+            indices = [tuple(e) for e in numpy.asarray(numpy.unravel_index(indices, (self.X,self.Y)))[:,0,:n_neighbors].T]
+            if not return_distance:
+                return indices
+            else:
+                return indices, distances
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
@@ -210,7 +219,11 @@ class SOM:
             features[bmu] = 0
             if geodesic:
                 features = numpy.ma.masked_array(features, mask)
-                distance = skfmm.distance(features)
+                try:
+                    distance = skfmm.distance(features)
+                except ValueError:
+                    raise Exception('The BMU is masked!')
+                distance = distance.filled(numpy.inf)
             else:
                 distance = distance_transform_edt(features)
         #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
