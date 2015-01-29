@@ -35,6 +35,8 @@ class GSOM:
         number_of_phases=number_of_phases,\
         radius_begin=radius_begin,\
         radius_end=radius_end,\
+        alpha_begin = alpha_begin,\
+        alpha_end = alpha_end,\
         metric = metric,\
         smap = smap
         )
