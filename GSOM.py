@@ -185,8 +185,6 @@ class GSOM:
                     k = kv.pop()
                 bmus, dists = self.som.findBMU(k, self.smap, return_distance = True, n_neighbors=9)
                 bmu, dist = bmus[0], dists[0]
-                if numpy.ma.is_masked(self.smap[bmu]):
-                    raise Exception("The BMU is masked!")
                 is_growing = False
                 if dist >= self.growing_threshold:
                     is_growing = self.grow(bmu)

@@ -219,10 +219,7 @@ class SOM:
             features[bmu] = 0
             if geodesic:
                 features = numpy.ma.masked_array(features, mask)
-                try:
-                    distance = skfmm.distance(features)
-                except ValueError:
-                    raise Exception('The BMU is masked!')
+                distance = skfmm.distance(features)
                 distance = distance.filled(numpy.inf)
             else:
                 distance = distance_transform_edt(features)
