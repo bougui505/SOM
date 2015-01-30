@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 29
+creation date: 2015 01 30
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -205,3 +205,18 @@ class GSOM:
         umat = numpy.ma.masked_array(umat, smap.mask[:,:,0])
         self.umat = umat
         return umat
+
+    def density(self, smap = None):
+        if smap == None:
+            smap = self.smap
+        nx,ny,nz = smap.shape
+        dmat = numpy.zeros((nx,ny), dtype=int)
+        bmus = []
+        for k in range(self.n_input):
+            bmu = self.som.findBMU(k, self.smap)
+            bmus.append(bmu)
+            dmat[bmu] += 1
+        dmat = numpy.ma.masked_array(dmat, numpy.logical_or(smap.mask[:,:,0],dmat==0))
+        self.dmat = dmat
+        self.bmus = numpy.asarray(bmus)
+        return dmat
