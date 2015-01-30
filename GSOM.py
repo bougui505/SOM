@@ -142,7 +142,6 @@ class GSOM:
                         if (1-neighbors.mask.all(axis=1)).sum() > 1:
                             sub_smap[u,v] = neighbors.sum(axis=0)
             self.smap[footprint] = sub_smap.reshape(9,self.cardinal)
-            self.add_margins()
             return True
         else:
             return False
@@ -157,7 +156,6 @@ class GSOM:
         apoptotic = neighbors - set(bmus)
         for e in apoptotic:
             self.smap.mask[e] = True
->>>>>>> debug for apoptotic function
 
     def learn(self, verbose=False):
         self.smap_list = []
