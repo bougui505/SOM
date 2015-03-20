@@ -2,9 +2,8 @@
 # -*- coding: UTF8 -*-
 
 """
-author: Guillaume Bouvier
-email: guillaume.bouvier@ens-cachan.org
-creation date: 2013 11 19
+author: Nathan Desdouits
+creation date: 2015 03 20
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
