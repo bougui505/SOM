@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 12
+creation date: 2015 01 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -12,10 +12,19 @@ Thanks!
 
 import numpy
 import random
-import progressbar
 import pickle
 import itertools
 import scipy.spatial
+from scipy.ndimage.morphology import distance_transform_edt
+
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+if is_interactive():
+    import progressbar_notebook as progressbar
+else:
+    import progressbar
 
 class SOM:
     """
@@ -28,10 +37,12 @@ class SOM:
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
     """
-    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, distFunc=None, randomUnit=None, mapFileName=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
+    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin = [.50,.25], alpha_end = [.25,0.], radius_begin = None, radius_end = None, inputnames=None, distFunc=None, randomUnit=None, smap=None, metric = 'euclidean', autoParam = False, sort2ndPhase=False, toricMap=True, randomInit=True, autoSizeMap=False):
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
+        if metric == 'RMSD':
+            self.metric = lambda A,B: self.align(A,B)[1]
         self.n_input, self.cardinal  = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
@@ -46,11 +57,11 @@ class SOM:
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         if radius_begin == None:
-            self.radius_begin = [self.X/8.,self.X/16.]
+            self.radius_begin = [numpy.sqrt(self.X*self.Y)/8.,numpy.sqrt(self.X*self.Y)/16.]
         else:
             self.radius_begin = radius_begin
         if radius_end == None:
-            self.radius_end = [self.X/16.,1]
+            self.radius_end = [numpy.sqrt(self.X*self.Y)/16.,1]
         else:
             self.radius_end = radius_end
         if iterations == None:
@@ -59,18 +70,9 @@ class SOM:
             self.iterations = iterations
         if randomUnit is None:
             # Matrix initialization
-            if mapFileName == None:
+            if smap == None:
                 if randomInit:
-                    print "Map initialization..."
-                    maxinpvalue = self.inputvectors.max(axis=0)
-                    mininpvalue = self.inputvectors.min(axis=0)
-                    somShape = [self.X, self.Y]
-                    vShape = numpy.array(self.inputvectors[0]).shape
-                    for e in vShape:
-                        somShape.append(e)
-                    self.M = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
-                    for e in zip(mininpvalue[1:],maxinpvalue[1:]):
-                        self.M = numpy.concatenate( (self.M,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+                    self.smap = self.random_map()
                 else:
                     inputarray=numpy.asarray(self.inputvectors)
                     inputmean=inputarray.mean(axis=0)
@@ -105,26 +107,66 @@ class SOM:
                         restptp=Cmax[2:]-Cmin[2:]
                         rest=numpy.random.random((restn,self.X,self.Y))*restptp[:,numpy.newaxis,numpy.newaxis]+Cmin[2:,numpy.newaxis,numpy.newaxis]
                         origrid=numpy.r_[origrid,rest]
-                    self.M=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
+                    self.smap=numpy.dot(origrid.transpose([1,2,0]),eivec.T)+inputmean
             else:
-                self.M = self.loadMap(mapFileName)
-            print "Shape of the SOM:%s"%str(self.M.shape)
-        self.distFunc = distFunc
+                self.loadMap(smap)
+            print "Shape of the SOM:%s"%str(self.smap.shape)
 
-    def loadMap(self, MapFile):
-        MapFileFile = open(MapFile, 'r')
-        self.smap = pickle.load(MapFileFile)
-        MapFileFile.close()
+    def random_map(self):
+        print "Map initialization..."
+        maxinpvalue = self.inputvectors.max(axis=0)
+        mininpvalue = self.inputvectors.min(axis=0)
+        somShape = [self.X, self.Y]
+        vShape = numpy.array(self.inputvectors[0]).shape
+        for e in vShape:
+            somShape.append(e)
+        smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X,self.Y,1))
+        for e in zip(mininpvalue[1:],maxinpvalue[1:]):
+            smap = numpy.concatenate( (smap,numpy.random.uniform(e[0],e[1],(self.X,self.Y,1))), axis=2 )
+        return smap
+
+    def loadMap(self, smap):
+        self.smap = smap
         shape = numpy.shape(self.smap)
         self.X = shape[0]
         self.Y = shape[1]
-        return self.smap
-        
-    def findBMU(self, k, Map, distKW=None):
+
+    def align(self,A,B):
+        """
+        align coordinates of A on B
+        return: new coordinates of A
+        """
+        N = A.shape[0]
+        A = A.reshape(N/3,3)
+        B = B.reshape(N/3,3)
+        centroid_A = A.mean(axis=0)
+        centroid_B = B.mean(axis=0)
+        AA = A - centroid_A
+        BB = B - centroid_B
+        H = numpy.dot(AA.T, BB)
+        U, S, Vt = numpy.linalg.svd(H)
+        R = numpy.dot(U,Vt)
+        #  change sign of the last vector if needed to assure similar orientation of bases
+        if numpy.linalg.det(R) < 0:
+            Vt[2,:] *= -1
+            R = numpy.dot(U,Vt)
+        trans = centroid_B - centroid_A
+        A = numpy.dot(A,R) + trans
+        RMSD = numpy.sqrt( ( (B - A)**2 ).sum(axis=1).mean() )
+        return A.flatten(), RMSD
+            
+    def findBMU(self, k, Map, distKW=None, return_distance=False):
         """
             Find the Best Matching Unit for the input vector number k
         """
-        return numpy.unravel_index(scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric).argmin(), (self.X,self.Y))
+        if numpy.ma.isMaskedArray(Map):
+            Map = Map.filled(numpy.inf)
+        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1,self.cardinal)), numpy.reshape(Map, (self.X*self.Y,self.cardinal)), self.metric)
+        index = cdist.argmin()
+        if not return_distance:
+            return numpy.unravel_index(index, (self.X,self.Y))
+        else:
+            return numpy.unravel_index(index, (self.X,self.Y)), cdist[0,index]
         
     def radiusFunction(self, t, trainingPhase=0):
         timeCte = float(self.iterations[trainingPhase])/10
@@ -146,48 +188,35 @@ class SOM:
         i,j = BMUindices
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i,j]) / self.rho(k, BMUindices, Map)
 
-
-    def BMUneighbourhood(self, t, BMUindices, trainingPhase, Map = None, k = None):
-        i,j = BMUindices
-        if self.toricMap:
-            i2 = i + self.X
-            j2 = j + self.Y
-            X,Y=numpy.mgrid[-i2:3*self.X-i2:1,-j2:3*self.Y-j2:1]
+    def apply_learning(self, smap, k, bmu, radius, rate):
+        i,j = bmu
+        if self.metric == 'RMSD':
+            vector = self.align(self.inputvectors[k], smap[i,j])[0]
         else:
-            X,Y=numpy.mgrid[-i:self.X-i,-j:self.Y-j]
-        if not self.autoParam:
-            adjMap = numpy.exp( -(X**2+Y**2)/ (2.*self.radiusFunction(t, trainingPhase))**2 )
-        elif self.autoParam:
-            self.epsilon_value = self.epsilon(k,BMUindices,Map)
-            radius_auto =self.epsilon_value * self.radius_begin[trainingPhase]
-            radius = min(self.radiusFunction(t, trainingPhase), radius_auto)
-            self.epsilon_values.append(self.epsilon_value)
-            adjMap = numpy.exp(-(X**2+Y**2)/ ( 2.* radius )**2 )
+            vector = self.inputvectors[k]
+        shape = (self.X, self.Y)
         if self.toricMap:
-            adjMapR = numpy.zeros((self.X,self.Y,9))
-            c = itertools.count()
-            for i in range(3):
-                for j in range(3):
-                    adjMapR[:,:,c.next()] = adjMap[i*self.X:(i+1)*self.X,j*self.Y:(j+1)*self.Y]
-            return numpy.max(adjMapR, axis=2)
+            bigshape = tuple(map(lambda x: 3*x, shape))
+            midselect = tuple([ slice(s, 2*s) for s in shape ])
+            features = numpy.ones(bigshape)
+            copy_coord = lambda p, s: tuple([p+i*s for i in range(3)])
+            all_coords = [ copy_coord(coord, s) for coord, s in zip(bmu, shape) ]
+            for p in itertools.product(*all_coords):
+                features[p] = 0
+            distance = distance_transform_edt(features)[midselect]
         else:
-            return adjMap
+            features = numpy.ones(shape)
+            features[bmu] = 0
+            distance = distance_transform_edt(features)
+        #radmap = numpy.exp( -sqdistance / (2.*radius)**2 )
+        radmap = rate * numpy.exp( - distance**2 / (2.*radius)**2 )
+        adjmap = (smap - vector) * radmap[..., None]
+        smap -= adjmap
 
-    def adjustment(self, k, t, trainingPhase, Map, BMUindices):
-        self.adjustMap = numpy.zeros(Map.shape)
-        if not self.autoParam:
-            learning = self.learningRate(t, trainingPhase)
-            self.adjustMap = numpy.reshape(self.BMUneighbourhood(t, BMUindices, trainingPhase), (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
-        elif self.autoParam:
-            radius_map = self.BMUneighbourhood(t, BMUindices, trainingPhase, Map=Map, k=k)
-            learning = min(self.epsilon_value, self.learningRate(t, trainingPhase))
-            self.adjustMap = numpy.reshape(radius_map, (self.X, self.Y, 1)) * learning * (self.inputvectors[k] - Map)
-        return self.adjustMap
-    
-    def learn(self, jobIndex='', verbose='False'):
+    def learn(self, jobIndex='', verbose=False):
         if self.autoParam:
             self.epsilon_values = []
-        Map = self.M
+        Map = self.smap
         print 'Learning for %s vectors'%len(self.inputvectors)
         firstpass=0
         kdone=[]
@@ -224,7 +253,7 @@ class SOM:
                         random.shuffle(kv)
                         k = kv.pop()
                         if firstpass==1: kdone.append(k)
-                Map = Map + self.adjustment(k, t, trainingPhase, Map, self.findBMU(k, Map))
+                self.apply_learning(Map, k, self.findBMU(k, Map), self.radiusFunction(t, trainingPhase), self.learningRate(t, trainingPhase))
                 if verbose:
                     pbar.update(t)
             if verbose:

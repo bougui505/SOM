@@ -1,5 +1,6 @@
 *.pyc
 .trash
 *.swp
-test/MapSnapshots.tar
-test/map_50x50.dat
+test/.ipynb_checkpoints/
+test/testset.ipynb
+test/test.py
