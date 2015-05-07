@@ -296,5 +296,9 @@ class SOM:
         for point in itertools.product(*[range(s) for s in shape]):
             neuron = self.smap[point]
             neighbors = tuple(numpy.asarray(self.neighbor_dim2_toric(point, shape), dtype='int').T)
-            umatrix[point] = scipy.spatial.distance.cdist(self.smap[neighbors], neuron[None]).mean()
+            if not self.is_complex:
+                cdist = scipy.spatial.distance.cdist(self.smap[neighbors], neuron[None])
+            else:
+                cdist = numpy.sqrt( ( numpy.abs( self.smap[neighbors] - neuron[None] )**2 ).sum(axis=1) )
+            umatrix[point] = cdist.mean()
         return umatrix
