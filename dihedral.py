@@ -67,3 +67,19 @@ class Dihedral:
         sign = numpy.sign(numpy.einsum('ij,ji->i', n_b, (frame[b2][1:] - frame[b3][1:]).T))
         psi = sign * numpy.arccos(dotp / (norm_u_a * norm_u_b))
         return psi
+
+    @property
+    def dihedral_descriptors(self):
+        """
+
+        :return: the dihedral angles (phi, psi) for each frames in complex number (cos(phi) + i*sin(phi))
+        """
+        descriptors = []
+        for frame_id in range(self.traj.nframe):
+            psi = self.get_psi(frame_id)
+            phi = self.get_phi(frame_id)
+            psi_complex = numpy.cos(psi) + 1j * numpy.sin(psi)
+            phi_complex = numpy.cos(phi) + 1j * numpy.sin(phi)
+            descriptor = numpy.asarray(zip(phi_complex[:-1],psi_complex[1:])).flatten()
+            descriptors.append(descriptor)
+        return numpy.asarray(descriptors)
