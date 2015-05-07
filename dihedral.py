@@ -14,16 +14,6 @@ class Dihedral:
         self.traj = IO.Trajectory(dcdfile=self.dcdfile, struct=self.struct)
         self.traj.array = self.traj.array.reshape(self.traj.nframe, self.traj.natom, 3)
 
-
-    def get_dihedral(self, frame, a1, a2, a3):
-        """
-
-        :type frame: numpy array of floats
-        :type a1: numpy array of booleans
-        :type a2: numpy array of booleans
-        :type a3: numpy array of booleans
-        """
-
     def get_phi(self, frame_id):
         """
 
@@ -45,7 +35,10 @@ class Dihedral:
         dotp = numpy.einsum('ij,ji->i', u_a, u_b.T)
         norm_u_a = numpy.linalg.norm(u_a, axis=1)
         norm_u_b = numpy.linalg.norm(u_b, axis=1)
-        phi = numpy.arccos(dotp / (norm_u_a * norm_u_b))
+        # Computation of the sign of the dihedral angle (see: http://structbio.biochem.dal.ca/jrainey/dihedralcalc.html)
+        n_b = numpy.cross((frame[a3][1:] - frame[a2][1:]), (frame[a1][:-1] - frame[a2][1:]))
+        sign = -numpy.sign(numpy.einsum('ij,ji->i', n_b, (frame[b2][1:] - frame[b3][1:]).T))
+        phi = sign * numpy.arccos(dotp / (norm_u_a * norm_u_b))
         return phi
 
     def get_psi(self, frame_id):
@@ -69,5 +62,8 @@ class Dihedral:
         dotp = numpy.einsum('ij,ji->i', u_a, u_b.T)
         norm_u_a = numpy.linalg.norm(u_a, axis=1)
         norm_u_b = numpy.linalg.norm(u_b, axis=1)
-        psi = numpy.arccos(dotp / (norm_u_a * norm_u_b))
+        # Computation of the sign of the dihedral angle (see: http://structbio.biochem.dal.ca/jrainey/dihedralcalc.html)
+        n_b = numpy.cross((frame[a3][1:] - frame[a2][1:]), (frame[a1][:-1] - frame[a2][1:]))
+        sign = numpy.sign(numpy.einsum('ij,ji->i', n_b, (frame[b2][1:] - frame[b3][1:]).T))
+        psi = sign * numpy.arccos(dotp / (norm_u_a * norm_u_b))
         return psi
