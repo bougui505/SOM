@@ -49,8 +49,6 @@ class SOM:
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.metric = metric
-        if metric == 'RMSD':
-            self.metric = lambda A, B: self.align(A, B)[1]
         self.n_input, self.cardinal = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
@@ -143,30 +141,6 @@ class SOM:
         self.X = shape[0]
         self.Y = shape[1]
 
-    def align(self, A, B):
-        """
-        align coordinates of A on B
-        return: new coordinates of A
-        """
-        N = A.shape[0]
-        A = A.reshape(N / 3, 3)
-        B = B.reshape(N / 3, 3)
-        centroid_A = A.mean(axis=0)
-        centroid_B = B.mean(axis=0)
-        AA = A - centroid_A
-        BB = B - centroid_B
-        H = numpy.dot(AA.T, BB)
-        U, S, Vt = numpy.linalg.svd(H)
-        R = numpy.dot(U, Vt)
-        # change sign of the last vector if needed to assure similar orientation of bases
-        if numpy.linalg.det(R) < 0:
-            Vt[2, :] *= -1
-            R = numpy.dot(U, Vt)
-        trans = centroid_B - centroid_A
-        A = numpy.dot(A, R) + trans
-        RMSD = numpy.sqrt(( (B - A) ** 2 ).sum(axis=1).mean())
-        return A.flatten(), RMSD
-
     def findBMU(self, k, Map, distKW=None, return_distance=False):
         """
             Find the Best Matching Unit for the input vector number k
@@ -204,11 +178,7 @@ class SOM:
         return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i, j]) / self.rho(k, BMUindices, Map)
 
     def apply_learning(self, smap, k, bmu, radius, rate):
-        i, j = bmu
-        if self.metric == 'RMSD':
-            vector = self.align(self.inputvectors[k], smap[i, j])[0]
-        else:
-            vector = self.inputvectors[k]
+        vector = self.inputvectors[k]
         shape = (self.X, self.Y)
         if self.toricMap:
             bigshape = tuple(map(lambda x: 3 * x, shape))
