@@ -302,3 +302,21 @@ class SOM:
                 cdist = numpy.sqrt( ( numpy.abs( self.smap[neighbors] - neuron[None] )**2 ).sum(axis=1) )
             umatrix[point] = cdist.mean()
         return umatrix
+
+    @property
+    def bmus(self):
+        sub_arrays = numpy.array_split(self.inputvectors, 100)
+        bmus = []
+        c_metric = lambda u,v : numpy.sqrt( ( numpy.abs( u - v )**2 ).sum() ) # metric for complex numbers
+        for a in sub_arrays:
+            if a.size > 0:
+                if not self.is_complex:
+                    cdist = scipy.spatial.distance.cdist(a, self.smap.reshape(self.X*self.Y, self.cardinal))
+                else:
+                    cdist = scipy.spatial.distance.cdist(a, self.smap.reshape(self.X*self.Y, self.cardinal), metric = c_metric)
+                b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (self.X,self.Y))).T # new bmus
+                bmus.extend(list(b))
+            else:
+                break
+        return numpy.asarray(bmus)
+
