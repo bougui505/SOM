@@ -74,9 +74,13 @@ class SOM:
             self.iterations = [self.n_input, self.n_input * 2]
         else:
             self.iterations = iterations
+        self.is_complex = False
+        if self.inputvectors.dtype == numpy.asarray(numpy.complex(1,1)).dtype:
+            self.is_complex = True
+            print "Complex numbers space"
         if randomUnit is None:
             # Matrix initialization
-            if smap == None:
+            if smap is None:
                 if randomInit:
                     self.smap = self.random_map()
                 else:
@@ -124,15 +128,30 @@ class SOM:
 
     def random_map(self):
         print "Map initialization..."
-        maxinpvalue = self.inputvectors.max(axis=0)
-        mininpvalue = self.inputvectors.min(axis=0)
+        if not self.is_complex:
+            maxinpvalue = self.inputvectors.max(axis=0)
+            mininpvalue = self.inputvectors.min(axis=0)
+        else:
+            maxinpvalue_real = numpy.real(self.inputvectors).max(axis=0)
+            mininpvalue_real = numpy.real(self.inputvectors).min(axis=0)
+            maxinpvalue_imag = numpy.imag(self.inputvectors).max(axis=0)
+            mininpvalue_imag = numpy.imag(self.inputvectors).min(axis=0)
         somShape = [self.X, self.Y]
         vShape = numpy.array(self.inputvectors[0]).shape
         for e in vShape:
             somShape.append(e)
-        smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X, self.Y, 1))
-        for e in zip(mininpvalue[1:], maxinpvalue[1:]):
-            smap = numpy.concatenate((smap, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+        if not self.is_complex:
+            smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X, self.Y, 1))
+            for e in zip(mininpvalue[1:], maxinpvalue[1:]):
+                smap = numpy.concatenate((smap, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+        else:
+            smap_real = numpy.random.uniform(mininpvalue_real[0], maxinpvalue_real[0], (self.X, self.Y, 1))
+            smap_imag = numpy.random.uniform(mininpvalue_imag[0], maxinpvalue_imag[0], (self.X, self.Y, 1))
+            for e in zip(mininpvalue_real[1:], maxinpvalue_real[1:]):
+                smap_real = numpy.concatenate((smap_real, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+            for e in zip(mininpvalue_imag[1:], maxinpvalue_imag[1:]):
+                smap_imag = numpy.concatenate((smap_imag, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+            smap = smap_real + 1j * smap_imag
         return smap
 
     def loadMap(self, smap):
@@ -141,14 +160,20 @@ class SOM:
         self.X = shape[0]
         self.Y = shape[1]
 
-    def findBMU(self, k, Map, distKW=None, return_distance=False):
+    def findBMU(self, k, smap, distKW=None, return_distance=False):
         """
             Find the Best Matching Unit for the input vector number k
         """
-        if numpy.ma.isMaskedArray(Map):
-            Map = Map.filled(numpy.inf)
-        cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1, self.cardinal)),
-                                             numpy.reshape(Map, (self.X * self.Y, self.cardinal)), self.metric)
+        if numpy.ma.isMaskedArray(smap):
+            smap = smap.filled(numpy.inf)
+        if not self.is_complex:
+            cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1, self.cardinal)),
+                                             numpy.reshape(smap, (self.X * self.Y, self.cardinal)), self.metric)
+        else:
+            vector = self.inputvectors[k]
+            shape = self.smap.shape
+            neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
+            cdist = numpy.sqrt( ( numpy.abs( smap.reshape((neurons, shape[-1])) - vector[None] )**2 ).sum(axis=1) )
         index = cdist.argmin()
         if not return_distance:
             return numpy.unravel_index(index, (self.X, self.Y))
