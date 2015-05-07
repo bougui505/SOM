@@ -277,4 +277,24 @@ class SOM:
         if self.autoParam:
             numpy.savetxt('epsilon_values.txt', self.epsilon_values, fmt='%10.5f')
         return self.smap
-        
+
+    def neighbor_dim2_toric(self, p, s):
+        """Efficient toric neighborhood function for 2D SOM.
+        """
+        x, y = p
+        X, Y = s
+        xm = (x-1)%X
+        ym = (y-1)%Y
+        xp = (x+1)%X
+        yp = (y+1)%Y
+        return [(xm,ym), (xm,y), (xm,yp), (x,ym), (x,yp), (xp,ym), (xp,y), (xp,yp)]
+
+    @property
+    def umatrix(self):
+        shape = list(self.smap.shape)[:-1]
+        umatrix = numpy.zeros(shape)
+        for point in itertools.product(*[range(s) for s in shape]):
+            neuron = self.smap[point]
+            neighbors = tuple(numpy.asarray(self.neighbor_dim2_toric(point, shape), dtype='int').T)
+            umatrix[point] = scipy.spatial.distance.cdist(self.smap[neighbors], neuron[None]).mean()
+        return umatrix
