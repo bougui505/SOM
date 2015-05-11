@@ -30,12 +30,20 @@ if is_interactive():
 else:
     import progressbar
 
-def get_bmus(v_smap):
-    a, smap = v_smap
+def get_bmus(v_smap_iscomplex):
+    a, smap, is_complex = v_smap_iscomplex
     X, Y, cardinal = smap.shape
-    cdist = scipy.spatial.distance.cdist(a, smap.reshape(X*Y, cardinal))
-    b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (X,Y))).T # new bmus
-    return b
+    if not is_complex:
+        cdist = scipy.spatial.distance.cdist(a, smap.reshape(X*Y, cardinal))
+        bmus = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (X,Y))).T # new bmus
+    else:
+        bmus = []
+        for vector in a:
+            cdist = numpy.sqrt( ( numpy.abs( smap.reshape((X*Y, cardinal)) - vector[None] )**2 ).sum(axis=1) )
+            b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=0), (X,Y))).T # new bmus
+            bmus.append(b)
+        bmus = numpy.asarray(bmus)
+    return bmus
 
 class SOM:
     """
@@ -316,9 +324,11 @@ class SOM:
 
     def find_bmus(self):
         n_split = self.cardinal / 100
+        if n_split < 1:
+            n_split = 1
         sub_arrays = numpy.array_split(self.inputvectors, n_split)
         sub_arrays = [a for a in sub_arrays if a.size > 0]
-        pools = self.pool.map(get_bmus, [(a, self.smap) for a in sub_arrays])
+        pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
         bmus = []
         for a in pools:
             bmus.extend(list(a))
