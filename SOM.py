@@ -30,6 +30,7 @@ if is_interactive():
 else:
     import progressbar
 
+
 def get_bmus(v_smap_iscomplex):
     a, smap, is_complex = v_smap_iscomplex
     X, Y, cardinal = smap.shape
