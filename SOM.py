@@ -61,8 +61,9 @@ class SOM:
     def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
-                 randomInit=True, autoSizeMap=False, n_process=1):
+                 randomInit=True, autoSizeMap=False, n_process=1, batch_size=1):
         self.n_process = n_process
+        self.batch_size = batch_size
         self.pool = Pool(processes=self.n_process)
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
@@ -232,7 +233,6 @@ class SOM:
         smap -= adjmap
 
     def learn(self, verbose=False):
-        Map = self.smap
         print 'Learning for %s vectors' % len(self.inputvectors)
         for trainingPhase in range(self.number_of_phase):
             kv = []
@@ -245,22 +245,30 @@ class SOM:
                 pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase] - 1)
                 pbar.start()
             ###
-            for t in range(self.iterations[trainingPhase]):
-                if len(kv) > 0:
-                    k = kv.pop()
-                else:
-                    kv = range(len(self.inputvectors))
-                    random.shuffle(kv)
-                    k = kv.pop()
-                self.apply_learning(Map, k, self.findBMU(k, Map), self.radiusFunction(t, trainingPhase),
-                                    self.learningRate(t, trainingPhase))
+            t = -1
+            while t < self.iterations[trainingPhase] - 1:
+                k_list = []
+                for jobid in range(self.batch_size):
+                    if len(kv) > 0:
+                        k = kv.pop()
+                    else:
+                        kv = range(len(self.inputvectors))
+                        random.shuffle(kv)
+                        k = kv.pop()
+                    k_list.append(k)
+                bmu_list = self.find_bmus(self.inputvectors[k_list])
+                for bmu in bmu_list:
+                    t += 1
+                    self.apply_learning(self.smap, k, bmu, self.radiusFunction(t, trainingPhase), self.learningRate(t, trainingPhase))
                 if verbose:
-                    pbar.update(t)
+                    try:
+                        pbar.update(t)
+                    except AssertionError:
+                        pass
             if verbose:
                 pbar.finish()
-        self.smap = Map
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
-        pickle.dump(Map, MapFile)  # Write Map into file map.dat
+        pickle.dump(self.smap, MapFile)  # Write Map into file map.dat
         MapFile.close()
         return self.smap
 
@@ -289,11 +297,13 @@ class SOM:
             umatrix[point] = cdist.mean()
         return umatrix
 
-    def find_bmus(self):
-        n_split = self.cardinal / 100
+    def find_bmus(self, vectors=None):
+        if vectors is None:
+            vectors = self.inputvectors
+        n_split = len(vectors) / 100
         if n_split < self.n_process:
             n_split = self.n_process
-        sub_arrays = numpy.array_split(self.inputvectors, n_split)
+        sub_arrays = numpy.array_split(vectors, n_split)
         sub_arrays = [a for a in sub_arrays if a.size > 0]
         pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
         bmus = []
