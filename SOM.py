@@ -16,6 +16,7 @@ import pickle
 import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
+from multiprocessing import Pool
 
 
 def is_interactive():
@@ -29,6 +30,12 @@ if is_interactive():
 else:
     import progressbar
 
+def get_bmus(v_smap):
+    a, smap = v_smap
+    X, Y, cardinal = smap.shape
+    cdist = scipy.spatial.distance.cdist(a, smap.reshape(X*Y, cardinal))
+    b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (X,Y))).T # new bmus
+    return b
 
 class SOM:
     """
@@ -45,10 +52,10 @@ class SOM:
     def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None, distFunc=None,
                  randomUnit=None, smap=None, metric='euclidean', autoParam=False, sort2ndPhase=False, toricMap=True,
-                 randomInit=True, autoSizeMap=False):
+                 randomInit=True, autoSizeMap=False, n_process=1):
+        self.pool = Pool(processes=n_process)
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
-        self.metric = metric
         self.n_input, self.cardinal = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
@@ -78,6 +85,10 @@ class SOM:
         if self.inputvectors.dtype == numpy.asarray(numpy.complex(1,1)).dtype:
             self.is_complex = True
             print "Complex numbers space"
+        if not self.is_complex:
+            self.metric = metric
+        else:
+            self.metric = lambda u,v : numpy.sqrt( ( numpy.abs( u - v )**2 ).sum() ) # metric for complex numbers
         if randomUnit is None:
             # Matrix initialization
             if smap is None:
@@ -303,20 +314,13 @@ class SOM:
             umatrix[point] = cdist.mean()
         return umatrix
 
-    @property
-    def bmus(self):
-        sub_arrays = numpy.array_split(self.inputvectors, 100)
+    def find_bmus(self):
+        n_split = self.cardinal / 100
+        sub_arrays = numpy.array_split(self.inputvectors, n_split)
+        sub_arrays = [a for a in sub_arrays if a.size > 0]
+        pools = self.pool.map(get_bmus, [(a, self.smap) for a in sub_arrays])
         bmus = []
-        c_metric = lambda u,v : numpy.sqrt( ( numpy.abs( u - v )**2 ).sum() ) # metric for complex numbers
-        for a in sub_arrays:
-            if a.size > 0:
-                if not self.is_complex:
-                    cdist = scipy.spatial.distance.cdist(a, self.smap.reshape(self.X*self.Y, self.cardinal))
-                else:
-                    cdist = scipy.spatial.distance.cdist(a, self.smap.reshape(self.X*self.Y, self.cardinal), metric = c_metric)
-                b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (self.X,self.Y))).T # new bmus
-                bmus.extend(list(b))
-            else:
-                break
+        for a in pools:
+            bmus.extend(list(a))
         return numpy.asarray(bmus)
 
