@@ -59,8 +59,8 @@ class SOM:
     """
 
     def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
-                 alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None, distFunc=None,
-                 randomUnit=None, smap=None, metric='euclidean', autoParam=False, sort2ndPhase=False, toricMap=True,
+                 alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
+                 randomUnit=None, smap=None, metric='euclidean', toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
         self.n_process = n_process
         self.pool = Pool(processes=self.n_process)
@@ -69,14 +69,11 @@ class SOM:
         self.n_input, self.cardinal = inputvectors.shape
         self.inputvectors = inputvectors
         self.inputnames = inputnames
-        self.autoParam = autoParam
-        self.sort2ndPhase = sort2ndPhase
         self.toricMap = toricMap
         self.randomInit = randomInit
         self.X = X
         self.Y = Y
         self.number_of_phase = number_of_phases
-        i = 1
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         if radius_begin == None:
@@ -213,16 +210,6 @@ class SOM:
                         self.alpha_end[trainingPhase]
         return self.learning
 
-    def rho(self, k, BMUindices, Map):
-        i, j = BMUindices
-        rhoValue = max(scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i, j]), self.rhoValue)
-        self.rhoValue = rhoValue
-        return rhoValue
-
-    def epsilon(self, k, BMUindices, Map):
-        i, j = BMUindices
-        return scipy.spatial.distance.euclidean(self.inputvectors[k], Map[i, j]) / self.rho(k, BMUindices, Map)
-
     def apply_learning(self, smap, k, bmu, radius, rate):
         vector = self.inputvectors[k]
         shape = (self.X, self.Y)
@@ -245,16 +232,10 @@ class SOM:
         smap -= adjmap
 
     def learn(self, verbose=False):
-        if self.autoParam:
-            self.epsilon_values = []
         Map = self.smap
         print 'Learning for %s vectors' % len(self.inputvectors)
-        firstpass = 0
-        kdone = []
         for trainingPhase in range(self.number_of_phase):
             kv = []
-            if self.autoParam:
-                self.rhoValue = 0
             print '%s iterations' % self.iterations[trainingPhase]
             ## Progress bar
             tpn = trainingPhase + 1
@@ -265,26 +246,12 @@ class SOM:
                 pbar.start()
             ###
             for t in range(self.iterations[trainingPhase]):
-                if self.sort2ndPhase and tpn > 1:
-                    if len(kv) > 0:
-                        k = kv.pop()
-                    else:
-                        asarkd = numpy.asarray(kdone)
-                        print "Computing epsilon values for the current map..."
-                        epsvalues = [self.epsilon(k, self.findBMU(k, Map), Map) for k in asarkd]
-                        indx = numpy.argsort(epsvalues)[::1 if self.autoParam else -1]
-                        kv = list(asarkd[indx])
-                        k = kv.pop()
+                if len(kv) > 0:
+                    k = kv.pop()
                 else:
-                    if len(kv) > 0:
-                        k = kv.pop()
-                        if firstpass == 1: kdone.append(k)
-                    else:
-                        firstpass += 1
-                        kv = range(len(self.inputvectors))
-                        random.shuffle(kv)
-                        k = kv.pop()
-                        if firstpass == 1: kdone.append(k)
+                    kv = range(len(self.inputvectors))
+                    random.shuffle(kv)
+                    k = kv.pop()
                 self.apply_learning(Map, k, self.findBMU(k, Map), self.radiusFunction(t, trainingPhase),
                                     self.learningRate(t, trainingPhase))
                 if verbose:
@@ -295,8 +262,6 @@ class SOM:
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
         pickle.dump(Map, MapFile)  # Write Map into file map.dat
         MapFile.close()
-        if self.autoParam:
-            numpy.savetxt('epsilon_values.txt', self.epsilon_values, fmt='%10.5f')
         return self.smap
 
     def neighbor_dim2_toric(self, p, s):
