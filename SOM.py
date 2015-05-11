@@ -61,7 +61,8 @@ class SOM:
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None, distFunc=None,
                  randomUnit=None, smap=None, metric='euclidean', autoParam=False, sort2ndPhase=False, toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
-        self.pool = Pool(processes=n_process)
+        self.n_process = n_process
+        self.pool = Pool(processes=self.n_process)
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.n_input, self.cardinal = inputvectors.shape
@@ -324,8 +325,8 @@ class SOM:
 
     def find_bmus(self):
         n_split = self.cardinal / 100
-        if n_split < 1:
-            n_split = 1
+        if n_split < self.n_process:
+            n_split = self.n_process
         sub_arrays = numpy.array_split(self.inputvectors, n_split)
         sub_arrays = [a for a in sub_arrays if a.size > 0]
         pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
