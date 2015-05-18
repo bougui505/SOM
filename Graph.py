@@ -58,7 +58,7 @@ class Graph:
         except KeyError:
             graph[n2] = {n1: w}
 
-    def get_graph(self, adjacency_matrix = None):
+    def get_graph(self, adjacency_matrix=None):
         graph = {}
         if adjacency_matrix is None:
             adjacency_matrix = self.adjacency_matrix
@@ -106,11 +106,33 @@ class Graph:
             index_set2 = self.find_set(v)
             if index_set1 != index_set2:
                 self.union(index_set1, index_set2)
-                minimum_spanning_tree[u,v] = self.adjacency_matrix[u,v]
-                minimum_spanning_tree[v,u] = self.adjacency_matrix[u,v]
+                minimum_spanning_tree[u, v] = self.adjacency_matrix[u, v]
+                minimum_spanning_tree[v, u] = self.adjacency_matrix[u, v]
         return minimum_spanning_tree
 
-    def write_GML(self, outfilename, graph = None, directed_graph = False, **kwargs):
+    def dijkstra(self):
+        """
+        apply dijkstra distance transform to the SOM map
+        """
+        ms_tree = self.minimum_spanning_tree
+        nx, ny = self.smap.shape[:2]
+        nx2, ny2 = ms_tree.shape
+        visit_mask = numpy.zeros(nx2, dtype=bool)
+        m = numpy.ones(nx2) * numpy.inf
+        cc = numpy.unravel_index(ms_tree.argmin(), (nx2, ny2))[0]  # current cell
+        m[cc] = 0
+        while (~visit_mask).sum() > 0:
+            neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
+            for e in neighbors:
+                d = ms_tree[cc, e] + m[cc]
+                if d < m[e]:
+                    m[e] = d
+            visit_mask[cc] = True
+            m_masked = numpy.ma.masked_array(m, visit_mask)
+            cc = m_masked.argmin()
+        return m.reshape((nx,ny))
+
+    def write_GML(self, outfilename, graph=None, directed_graph=False, **kwargs):
         """
         Write gml file for ugraph.
 
@@ -131,18 +153,18 @@ class Graph:
             outfile.write('directed 0\n')
         nodes = graph.keys()
         for n in nodes:
-            outfile.write('node [ id %d\n'%n)
+            outfile.write('node [ id %d\n' % n)
             for key in kwargs.keys():
                 try:
-                    outfile.write('%s %.4f\n'%(key, kwargs[key][n]))
+                    outfile.write('%s %.4f\n' % (key, kwargs[key][n]))
                 except KeyError:
-                    print "no %s for node %d"%(key, n)
+                    print "no %s for node %d" % (key, n)
                     pass
             outfile.write(']\n')
         for n1 in graph.keys():
             for n2 in graph[n1].keys():
                 d = graph[n1][n2]
-                outfile.write('edge [ source %d target %d weight %.4f\n'%(n1, n2, d))
+                outfile.write('edge [ source %d target %d weight %.4f\n' % (n1, n2, d))
                 outfile.write(']\n')
         outfile.write(']')
         outfile.close()
