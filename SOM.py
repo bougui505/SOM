@@ -76,6 +76,7 @@ class SOM:
         self.number_of_phase = number_of_phases
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
+        self.bmus = None
         if radius_begin == None:
             self.radius_begin = [numpy.sqrt(self.X * self.Y) / 8., numpy.sqrt(self.X * self.Y) / 16.]
         else:
@@ -299,5 +300,23 @@ class SOM:
         bmus = []
         for a in pools:
             bmus.extend(list(a))
-        return numpy.asarray(bmus)
+        self.bmus = numpy.asarray(bmus)
+        return self.bmus
 
+    def get_representatives(self):
+        """
+        Find representative for each neuron. The representative is defined as the input element with the smallest
+        distance to the neuron.
+        :return:
+        """
+        if self.bmus is None:
+            self.find_bmus()
+        error_map = numpy.ones(self.smap.shape[:-1]) * numpy.inf
+        representatives = numpy.ones_like(error_map) * numpy.nan
+        for i, bmu in enumerate(self.bmus):
+            bmu = tuple(bmu)
+            d = scipy.spatial.distance.euclidean(self.inputvectors[i], self.smap[bmu])
+            if d < error_map[bmu]:
+                error_map[bmu] = d
+                representatives[bmu] = i
+        return representatives
