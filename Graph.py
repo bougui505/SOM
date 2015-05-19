@@ -4,6 +4,7 @@ import numpy
 import SOM
 import scipy.spatial.distance
 import itertools
+import scipy.ndimage
 
 
 class Graph:
@@ -130,7 +131,52 @@ class Graph:
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
             cc = m_masked.argmin()
-        return m.reshape((nx,ny))
+        return m.reshape((nx, ny))
+
+    @staticmethod
+    def get_neighbors_of_set(indices):
+        """
+        return the neighboring indices of the given indices [(i1,j1), (i2,j2), (i3,j3), ...]
+        """
+        indices = numpy.asarray(indices)
+        min_i = indices.min(axis=0)
+        indices = indices - min_i + (1, 1)
+        max_i = indices.max(axis=0)
+        m = numpy.zeros(max_i + (2, 2))
+        m[indices[:, 0], indices[:, 1]] = True
+        d = scipy.ndimage.morphology.binary_dilation(m, structure=numpy.ones((3, 3)))
+        delta = numpy.logical_and(d, 1 - m)
+        return numpy.asarray(numpy.where(delta)).T + min_i - (1, 1)
+
+    def unfold_smap(self):
+        """
+        Unfold the SOM map self.smap
+        """
+        m = self.dijkstra()
+        nx, ny = m.shape
+        cc = numpy.asarray(numpy.where(m == 0)).T[0]
+        change_of_basis = {}
+        for i in range(nx * ny):
+            d_min = numpy.inf
+            change_of_basis[tuple(cc % (nx, ny))] = tuple(cc)
+            m[tuple(cc % (nx, ny))] = numpy.inf
+            for e in numpy.asarray([[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]) + cc:
+                d = m[tuple(e % (nx, ny))]
+                if d < d_min:
+                    d_min = d
+            neighbors_of_set = self.get_neighbors_of_set(change_of_basis.values())
+            cc = neighbors_of_set[m[neighbors_of_set[:, 0] % nx, neighbors_of_set[:, 1] % ny].argmin()]
+        values = change_of_basis.values()
+        min_values = numpy.asarray(values).min(axis=0)
+        unfolded_shape = list(numpy.ptp(values, axis=0) + [1, 1])+[self.smap.shape[-1]]
+        unfolded_smap = numpy.empty(unfolded_shape, dtype=type(self.smap[0,0,0]))
+        for k in  change_of_basis.keys():
+            t = change_of_basis[k] # tuple
+            t = tuple(numpy.asarray(t, dtype=int) - min_values)
+            change_of_basis[k] = t
+            unfolded_smap[t] = self.smap[k]
+        self.unfolded_smap = unfolded_smap
+        self.change_of_basis = change_of_basis
 
     def write_GML(self, outfilename, graph=None, directed_graph=False, **kwargs):
         """
