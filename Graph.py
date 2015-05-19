@@ -111,6 +111,20 @@ class Graph:
                 minimum_spanning_tree[v, u] = self.adjacency_matrix[u, v]
         return minimum_spanning_tree
 
+    @property
+    def umatrix(self):
+        """
+        compute the umatrix from the adjacency matrix
+        """
+        if self.adjacency_matrix is None:
+            self.get_adjacency_matrix()
+        nx, ny = self.adjacency_matrix.shape
+        umat_shape = self.smap.shape[:-1]
+        umat = numpy.ma.filled(numpy.mean(numpy.ma.masked_array(self.adjacency_matrix,
+                                                                self.adjacency_matrix == numpy.inf),
+                                          axis=0)).reshape(umat_shape)
+        return umat
+
     def dijkstra(self):
         """
         apply dijkstra distance transform to the SOM map
@@ -170,12 +184,16 @@ class Graph:
         min_values = numpy.asarray(values).min(axis=0)
         unfolded_shape = list(numpy.ptp(values, axis=0) + [1, 1])+[self.smap.shape[-1]]
         unfolded_smap = numpy.empty(unfolded_shape, dtype=type(self.smap[0,0,0]))
+        umat = self.umatrix
+        unfolded_umat = numpy.ones(unfolded_shape[:-1]) * numpy.nan
         for k in  change_of_basis.keys():
             t = change_of_basis[k] # tuple
             t = tuple(numpy.asarray(t, dtype=int) - min_values)
             change_of_basis[k] = t
             unfolded_smap[t] = self.smap[k]
+            unfolded_umat[t] = umat[k]
         self.unfolded_smap = unfolded_smap
+        self.unfolded_umat = unfolded_umat
         self.change_of_basis = change_of_basis
 
     def write_GML(self, outfilename, graph=None, directed_graph=False, **kwargs):
