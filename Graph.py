@@ -20,6 +20,7 @@ class Graph:
                 self.metric = lambda u, v: numpy.sqrt(( numpy.abs(u - v) ** 2 ).sum())  # metric for complex numbers
         if self.adjacency_matrix is None:
             self.get_adjacency_matrix()
+        self.change_of_basis = None
 
     def get_adjacency_matrix(self):
         """
@@ -186,7 +187,7 @@ class Graph:
         unfolded_smap = numpy.empty(unfolded_shape, dtype=type(self.smap[0,0,0]))
         umat = self.umatrix
         unfolded_umat = numpy.ones(unfolded_shape[:-1]) * numpy.nan
-        for k in  change_of_basis.keys():
+        for k in change_of_basis.keys():
             t = change_of_basis[k] # tuple
             t = tuple(numpy.asarray(t, dtype=int) - min_values)
             change_of_basis[k] = t
@@ -195,6 +196,18 @@ class Graph:
         self.unfolded_smap = unfolded_smap
         self.unfolded_umat = unfolded_umat
         self.change_of_basis = change_of_basis
+
+    def unfold_matrix(self, matrix):
+        """
+        unfold the given matrix given self.change_of_basis
+        """
+        if self.change_of_basis is None:
+            self.unfold_smap()
+        unfolded_matrix = numpy.ones_like(self.unfolded_umat) * numpy.nan
+        for k in self.change_of_basis.keys():
+            t = self.change_of_basis[k] # tuple
+            unfolded_matrix[t] = matrix[k]
+        return unfolded_matrix
 
     def write_GML(self, outfilename, graph=None, directed_graph=False, **kwargs):
         """
