@@ -78,6 +78,7 @@ class SOM:
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         self.bmus = None
+        self.transition_matrix = None
         if radius_begin == None:
             self.radius_begin = [numpy.sqrt(self.X * self.Y) / 8., numpy.sqrt(self.X * self.Y) / 16.]
         else:
@@ -322,3 +323,41 @@ class SOM:
                 error_map[bmu] = d
                 representatives[bmu] = i
         return representatives
+
+    def get_transition_matrix(self, lag=1, dwell_time=None):
+        """
+        Compute the transition matrix. Relevant only for time series input data.
+        lag is the lag time.
+        dwell_time is the period of time that a system remains in a given state
+        :type dwell_time: int
+        :type lag: int
+        :return:
+        """
+        if self.bmus is None:
+            self.find_bmus()
+        shape = self.smap.shape[:-1]
+        n = numpy.product(shape)
+        transition_matrix = numpy.zeros((n, n))
+        density = numpy.zeros(shape, dtype=int)
+        modulo = 1
+        for k1, k2 in zip(range(self.n_input), range(lag, self.n_input)):
+            bmu1, bmu2 = self.bmus[k1], self.bmus[k2]
+            density[tuple(bmu1)] += 1
+            if dwell_time is not None:
+                modulo = k2 % dwell_time
+            if modulo != 0:
+                transition_matrix[numpy.ravel_multi_index(bmu1, shape), numpy.ravel_multi_index(bmu2, shape)] += 1
+        transition_matrix = transition_matrix / density.flatten()
+        transition_matrix[:, density.flatten() == 0] = 0
+        self.transition_matrix = transition_matrix
+
+    def get_kinetic_communities(self, lag=1, dwell_time=None):
+        """
+        Compute the kinetic communities. Relevant only for time series input
+        :return:
+        """
+        if self.transition_matrix is None:
+            self.get_transition_matrix(lag=lag, dwell_time=dwell_time)
+        self.kinetic_graph = Graph.Graph(adjacency_matrix=self.transition_matrix)
+        self.kinetic_graph.best_partition()
+        self.kinetic_graph.community_map = self.kinetic_graph.community_map.reshape(self.smap.shape[:-1])

@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import numpy
-import SOM
-import scipy.spatial.distance
 import itertools
+
+import numpy
+import scipy.spatial.distance
 import scipy.ndimage
+import networkx
+import community
 
 
 class Graph:
@@ -21,6 +23,7 @@ class Graph:
         if self.adjacency_matrix is None and not (self.smap is None):
             self.get_adjacency_matrix()
         self.change_of_basis = None
+        self.community_map = None
 
     def get_adjacency_matrix(self):
         """
@@ -209,6 +212,26 @@ class Graph:
             t = self.change_of_basis[k]  # tuple
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
+
+    def best_partition(self):
+        print "computing communities maximizing modularity"
+        gnx = networkx.Graph()
+        nx, ny = self.adjacency_matrix.shape
+        for index in itertools.combinations(range(nx), 2):
+            (i, j) = index
+            weight = self.adjacency_matrix[i, j]
+            if weight != numpy.inf and weight != 0:
+                gnx.add_edge(i, j, weight=weight)
+        communities = community.best_partition(gnx)
+        if self.smap is not None:
+            shape = self.smap.shape[:-1]
+        else:
+            shape = (nx,1)
+        community_map = numpy.ones(shape) * numpy.nan
+        for k in communities.keys():
+            ij = numpy.unravel_index(k, shape)
+            community_map[ij] = communities[k]
+        self.community_map = community_map
 
     def write_GML(self, outfilename, graph=None, directed_graph=False, **kwargs):
         """
