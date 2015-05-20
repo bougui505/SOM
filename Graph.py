@@ -159,7 +159,7 @@ class Graph:
         max_i = indices.max(axis=0)
         m = numpy.zeros(max_i + (2, 2))
         m[indices[:, 0], indices[:, 1]] = True
-        d = scipy.ndimage.morphology.binary_dilation(m, structure=numpy.ones((3, 3)))
+        d = scipy.ndimage.morphology.binary_dilation(m, structure=scipy.ndimage.morphology.generate_binary_structure(2,1))
         delta = numpy.logical_and(d, 1 - m)
         return numpy.asarray(numpy.where(delta)).T + min_i - (1, 1)
 
