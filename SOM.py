@@ -17,6 +17,7 @@ import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
 from multiprocessing import Pool
+import Graph
 
 
 def is_interactive():
@@ -144,6 +145,7 @@ class SOM:
             else:
                 self.loadMap(smap)
             print "Shape of the SOM:%s" % str(self.smap.shape)
+        self.graph = Graph.Graph(smap=self.smap)
 
     def random_map(self):
         print "Map initialization..."
