@@ -18,7 +18,7 @@ class Graph:
                 self.is_complex = True
                 print "Complex numbers space"
                 self.metric = lambda u, v: numpy.sqrt(( numpy.abs(u - v) ** 2 ).sum())  # metric for complex numbers
-        if self.adjacency_matrix is None:
+        if self.adjacency_matrix is None and not (self.smap is None):
             self.get_adjacency_matrix()
         self.change_of_basis = None
 
@@ -159,7 +159,8 @@ class Graph:
         max_i = indices.max(axis=0)
         m = numpy.zeros(max_i + (2, 2))
         m[indices[:, 0], indices[:, 1]] = True
-        d = scipy.ndimage.morphology.binary_dilation(m, structure=scipy.ndimage.morphology.generate_binary_structure(2,1))
+        d = scipy.ndimage.morphology.binary_dilation(m,
+                                                     structure=scipy.ndimage.morphology.generate_binary_structure(2, 1))
         delta = numpy.logical_and(d, 1 - m)
         return numpy.asarray(numpy.where(delta)).T + min_i - (1, 1)
 
@@ -183,12 +184,12 @@ class Graph:
             cc = neighbors_of_set[m[neighbors_of_set[:, 0] % nx, neighbors_of_set[:, 1] % ny].argmin()]
         values = change_of_basis.values()
         min_values = numpy.asarray(values).min(axis=0)
-        unfolded_shape = list(numpy.ptp(values, axis=0) + [1, 1])+[self.smap.shape[-1]]
-        unfolded_smap = numpy.empty(unfolded_shape, dtype=type(self.smap[0,0,0]))
+        unfolded_shape = list(numpy.ptp(values, axis=0) + [1, 1]) + [self.smap.shape[-1]]
+        unfolded_smap = numpy.empty(unfolded_shape, dtype=type(self.smap[0, 0, 0]))
         umat = self.umatrix
         unfolded_umat = numpy.ones(unfolded_shape[:-1]) * numpy.nan
         for k in change_of_basis.keys():
-            t = change_of_basis[k] # tuple
+            t = change_of_basis[k]  # tuple
             t = tuple(numpy.asarray(t, dtype=int) - min_values)
             change_of_basis[k] = t
             unfolded_smap[t] = self.smap[k]
@@ -205,7 +206,7 @@ class Graph:
             self.unfold_smap()
         unfolded_matrix = numpy.ones_like(self.unfolded_umat) * numpy.nan
         for k in self.change_of_basis.keys():
-            t = self.change_of_basis[k] # tuple
+            t = self.change_of_basis[k]  # tuple
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
 
