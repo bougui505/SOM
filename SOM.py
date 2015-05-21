@@ -36,16 +36,17 @@ def get_bmus(v_smap_iscomplex):
     a, smap, is_complex = v_smap_iscomplex
     X, Y, cardinal = smap.shape
     if not is_complex:
-        cdist = scipy.spatial.distance.cdist(a, smap.reshape(X*Y, cardinal))
-        bmus = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (X,Y))).T # new bmus
+        cdist = scipy.spatial.distance.cdist(a, smap.reshape(X * Y, cardinal))
+        bmus = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=1), (X, Y))).T  # new bmus
     else:
         bmus = []
         for vector in a:
-            cdist = numpy.sqrt( ( numpy.abs( smap.reshape((X*Y, cardinal)) - vector[None] )**2 ).sum(axis=1) )
-            b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=0), (X,Y))).T # new bmus
+            cdist = numpy.sqrt(( numpy.abs(smap.reshape((X * Y, cardinal)) - vector[None]) ** 2 ).sum(axis=1))
+            b = numpy.asarray(numpy.unravel_index(cdist.argmin(axis=0), (X, Y))).T  # new bmus
             bmus.append(b)
         bmus = numpy.asarray(bmus)
     return bmus
+
 
 class SOM:
     """
@@ -92,13 +93,13 @@ class SOM:
         else:
             self.iterations = iterations
         self.is_complex = False
-        if self.inputvectors.dtype == numpy.asarray(numpy.complex(1,1)).dtype:
+        if self.inputvectors.dtype == numpy.asarray(numpy.complex(1, 1)).dtype:
             self.is_complex = True
             print "Complex numbers space"
         if not self.is_complex:
             self.metric = metric
         else:
-            self.metric = lambda u,v : numpy.sqrt( ( numpy.abs( u - v )**2 ).sum() ) # metric for complex numbers
+            self.metric = lambda u, v: numpy.sqrt(( numpy.abs(u - v) ** 2 ).sum())  # metric for complex numbers
         if randomUnit is None:
             # Matrix initialization
             if smap is None:
@@ -163,13 +164,13 @@ class SOM:
         for e in vShape:
             somShape.append(e)
         if not self.is_complex:
-            smap = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
-                                        * (maxinpvalue - mininpvalue) + mininpvalue
+            smap = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal)) * (
+                maxinpvalue - mininpvalue) + mininpvalue
         else:
-            smap_real = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
-                                        * (maxinpvalue_real - mininpvalue_real) + mininpvalue_real
-            smap_imag = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
-                                        * (maxinpvalue_imag - mininpvalue_imag) + mininpvalue_imag
+            smap_real = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal)) * (
+                maxinpvalue_real - mininpvalue_real) + mininpvalue_real
+            smap_imag = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal)) * (
+                maxinpvalue_imag - mininpvalue_imag) + mininpvalue_imag
             smap = smap_real + 1j * smap_imag
         return smap
 
@@ -187,12 +188,12 @@ class SOM:
             smap = smap.filled(numpy.inf)
         if not self.is_complex:
             cdist = scipy.spatial.distance.cdist(numpy.reshape(self.inputvectors[k], (1, self.cardinal)),
-                                             numpy.reshape(smap, (self.X * self.Y, self.cardinal)), self.metric)
+                                                 numpy.reshape(smap, (self.X * self.Y, self.cardinal)), self.metric)
         else:
             vector = self.inputvectors[k]
             shape = self.smap.shape
-            neurons = reduce(lambda x,y: x*y, shape[:-1], 1)
-            cdist = numpy.sqrt( ( numpy.abs( smap.reshape((neurons, shape[-1])) - vector[None] )**2 ).sum(axis=1) )
+            neurons = reduce(lambda x, y: x * y, shape[:-1], 1)
+            cdist = numpy.sqrt(( numpy.abs(smap.reshape((neurons, shape[-1])) - vector[None]) ** 2 ).sum(axis=1))
         index = cdist.argmin()
         if not return_distance:
             return numpy.unravel_index(index, (self.X, self.Y))
@@ -270,11 +271,11 @@ class SOM:
         """
         x, y = p
         X, Y = s
-        xm = (x-1)%X
-        ym = (y-1)%Y
-        xp = (x+1)%X
-        yp = (y+1)%Y
-        return [(xm,ym), (xm,y), (xm,yp), (x,ym), (x,yp), (xp,ym), (xp,y), (xp,yp)]
+        xm = (x - 1) % X
+        ym = (y - 1) % Y
+        xp = (x + 1) % X
+        yp = (y + 1) % Y
+        return [(xm, ym), (xm, y), (xm, yp), (x, ym), (x, yp), (xp, ym), (xp, y), (xp, yp)]
 
     @property
     def umatrix(self):
@@ -286,7 +287,7 @@ class SOM:
             if not self.is_complex:
                 cdist = scipy.spatial.distance.cdist(self.smap[neighbors], neuron[None])
             else:
-                cdist = numpy.sqrt( ( numpy.abs( self.smap[neighbors] - neuron[None] )**2 ).sum(axis=1) )
+                cdist = numpy.sqrt(( numpy.abs(self.smap[neighbors] - neuron[None]) ** 2 ).sum(axis=1))
             umatrix[point] = cdist.mean()
         return umatrix
 
