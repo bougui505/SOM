@@ -66,6 +66,16 @@ class Viewer:
       //width of each column in the heatmap
       var w = 8;
 
+    // create the zoom listener
+    var zoomListener = d3.behavior.zoom()
+    .scaleExtent([0.1, 3])
+    .on("zoom", zoomHandler);
+
+    // function for handling zoom event
+    function zoomHandler() {
+      mySVG.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    }
+
       //attach a SVG element to the document's body
       var mySVG = d3.select("body")
          .append("svg")
@@ -157,6 +167,8 @@ class Viewer:
          expLab
             .style('display','none')
       });
+    // apply the zoom behavior to the svg image
+    zoomListener(mySVG);
    </script>
    </body>
 </html>
