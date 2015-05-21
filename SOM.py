@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 01 21
+creation date: 2015 05 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -163,16 +163,13 @@ class SOM:
         for e in vShape:
             somShape.append(e)
         if not self.is_complex:
-            smap = numpy.random.uniform(mininpvalue[0], maxinpvalue[0], (self.X, self.Y, 1))
-            for e in zip(mininpvalue[1:], maxinpvalue[1:]):
-                smap = numpy.concatenate((smap, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+            smap = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
+                                        * (maxinpvalue - mininpvalue) + mininpvalue
         else:
-            smap_real = numpy.random.uniform(mininpvalue_real[0], maxinpvalue_real[0], (self.X, self.Y, 1))
-            smap_imag = numpy.random.uniform(mininpvalue_imag[0], maxinpvalue_imag[0], (self.X, self.Y, 1))
-            for e in zip(mininpvalue_real[1:], maxinpvalue_real[1:]):
-                smap_real = numpy.concatenate((smap_real, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
-            for e in zip(mininpvalue_imag[1:], maxinpvalue_imag[1:]):
-                smap_imag = numpy.concatenate((smap_imag, numpy.random.uniform(e[0], e[1], (self.X, self.Y, 1))), axis=2)
+            smap_real = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
+                                        * (maxinpvalue_real - mininpvalue_real) + mininpvalue_real
+            smap_imag = numpy.random.uniform(0, 1, (self.X, self.Y, self.cardinal))
+                                        * (maxinpvalue_imag - mininpvalue_imag) + mininpvalue_imag
             smap = smap_real + 1j * smap_imag
         return smap
 
