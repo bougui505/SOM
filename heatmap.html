@@ -57,8 +57,8 @@
 
       //define a color scale using the min and max expression values
       var colorScale = d3.scale.linear()
-        .domain([minData, (minData + maxData)/2, maxData])
-        .range(["blue", "white", "red"]);
+        .domain([minData, (minData + maxData)/3, 2*(minData + maxData)/3, maxData])
+        .range(["blue", "cyan", "yellow", "red"]);
 
       //generate heatmap rows
       var heatmapRow = mySVG.selectAll(".heatmap")
