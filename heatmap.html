@@ -1,0 +1,153 @@
+
+<html>
+   <head>
+   <script type="text/javascript" src="http://d3js.org/d3.v3.js"></script>
+   <script type="text/javascript" src="data.js"></script>
+    <script type="text/javascript"
+        src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+   <style>
+      body {
+         margin: 0px;
+         padding: 0px;
+         font: 12px Arial;
+      }
+   </style>
+<!-- two columns style from: http://stackoverflow.com/a/6385310/1679629 -->
+<style type="text/css">
+#wrap {
+      width:600px;
+         margin:0 auto;
+}
+#left_col {
+   float:left;
+      width:500px;
+}
+#right_col {
+   float:right;
+      width:100px;
+}
+</style>
+   </head>
+   <div id="wrap">
+   <div id="left_col">
+   <script type="text/javascript">
+      //height of each row in the heatmap
+      var h = 8;
+      //width of each column in the heatmap
+      var w = 8;
+
+    // create the zoom listener
+    var zoomListener = d3.behavior.zoom()
+    .scaleExtent([0.1, 3])
+    .on("zoom", zoomHandler);
+
+    // function for handling zoom event
+    function zoomHandler() {
+      mySVG.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    }
+
+      //attach a SVG element to the document's body
+      var mySVG = d3.select("#left_col")
+         .append("svg")
+         .attr("width", (w * cols.length) + 100)
+         .attr("height", (h * rows.length) + 100)
+         .style('position','absolute')
+         .style('top',0)
+         .style('left',0);
+
+      //define a color scale using the min and max expression values
+      var colorScale = d3.scale.linear()
+        .domain([minData, (minData + maxData)/2, maxData])
+        .range(["blue", "white", "red"]);
+
+      //generate heatmap rows
+      var heatmapRow = mySVG.selectAll(".heatmap")
+         .data(data)
+         .enter().append("g");
+
+      //generate heatmap columns
+      var heatmapRects = heatmapRow
+         .selectAll(".rect")
+         .data(function(d) {
+            return d;
+         }).enter().append("svg:rect")
+         .attr('width',w)
+         .attr('height',h)
+         .attr('x', function(d) {
+            return (d[2] * w) + 25;
+         })
+         .attr('y', function(d) {
+            return (d[1] * h) + 50;
+         })
+         .style('fill',function(d) {
+            if ( d[0] < minData - minData / 10 )
+                {return "white"}
+            else
+                {return colorScale(d[0])};
+         });
+
+      //label columns
+      var columnLabel = mySVG.selectAll(".colLabel")
+         .data(cols)
+         .enter().append('svg:text')
+         .attr('x', function(d,i) {
+            return ((i + 0.5) * w) + 25;
+         })
+         //.attr('y', 30)
+         //.attr('class','label')
+         //.style('text-anchor','middle')
+         //.text(function(d) {return d;});
+
+      //expression value label
+      var expLab = d3.select("#left_col")
+         .append('div')
+         .style('height',23)
+         .style('position','absolute')
+         .style('background','FFE53B')
+         .style('opacity',0.8)
+         .style('top',0)
+         .style('padding',10)
+         .style('left',40)
+         .style('display','none');
+
+      //heatmap mouse events
+      heatmapRects
+         .on('mouseover', function(d,i,j) {
+            d3.select(this)
+               .attr('stroke-width',1)
+               .attr('stroke','black')
+
+            output = '<b>' +
+            '(' + rows[j] + ',' + cols[i] + ')' +
+            ': ' + d3.round(data[j][i][0], 2) +
+            '</b>';
+            expLab
+               .style('top',(rows[j] * h))
+               .style('left', (cols[i] * w))
+               .style('display','block')
+               .html(output.substring(0,output.length));
+      })
+      .on('mouseout', function(d,i) {
+         d3.select(this)
+            .attr('stroke-width',0)
+            .attr('stroke','none')
+         expLab
+            .style('display','none')
+      })
+      .on('click', function(d,i,j) {
+            d3.select(this)
+               .attr('stroke-width',2)
+               .attr('stroke','orange');
+            s = "<script src='http://3Dmol.csb.pitt.edu/build/3Dmol-min.js'><\/script><\/head><div style='height: 400px; width: 400px; position: relative;' class='viewer_3Dmoljs' data-href='tmp.pdb' data-backgroundcolor='0xffffff' data-style='cartoon:color=spectrum'><\/div>";
+            $('#right_col').html($(s));
+          }
+          );
+    // apply the zoom behavior to the svg image
+    zoomListener(mySVG);
+   </script>
+   </div>
+   <div id="right_col">
+   </div>
+</div>
+</html>
+        

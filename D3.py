@@ -1,4 +1,5 @@
 import numpy
+import os
 
 
 class Viewer:
@@ -46,133 +47,9 @@ class Viewer:
         data_file.close()
 
     def write_html(self):
-        html_str = """
-<html>
-   <head>
-   <script type="text/javascript" src="http://d3js.org/d3.v3.js"></script>
-   <script type="text/javascript" src="data.js"></script>
-   <style>
-      body {
-         margin: 0px;
-         padding: 0px;
-         font: 12px Arial;
-      }
-   </style>
-   </head>
-   <body>
-   <script type="text/javascript">
-      //height of each row in the heatmap
-      var h = 8;
-      //width of each column in the heatmap
-      var w = 8;
-
-    // create the zoom listener
-    var zoomListener = d3.behavior.zoom()
-    .scaleExtent([0.1, 3])
-    .on("zoom", zoomHandler);
-
-    // function for handling zoom event
-    function zoomHandler() {
-      mySVG.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-    }
-
-      //attach a SVG element to the document's body
-      var mySVG = d3.select("body")
-         .append("svg")
-         .attr("width", (w * cols.length) + 400)
-         .attr("height", (h * rows.length + 100))
-         .style('position','absolute')
-         .style('top',0)
-         .style('left',0);
-
-      //define a color scale using the min and max expression values
-      var colorScale = d3.scale.linear()
-        .domain([minData, (minData + maxData)/2, maxData])
-        .range(["blue", "white", "red"]);
-
-      //generate heatmap rows
-      var heatmapRow = mySVG.selectAll(".heatmap")
-         .data(data)
-         .enter().append("g");
-
-      //generate heatmap columns
-      var heatmapRects = heatmapRow
-         .selectAll(".rect")
-         .data(function(d) {
-            return d;
-         }).enter().append("svg:rect")
-         .attr('width',w)
-         .attr('height',h)
-         .attr('x', function(d) {
-            return (d[2] * w) + 25;
-         })
-         .attr('y', function(d) {
-            return (d[1] * h) + 50;
-         })
-         .style('fill',function(d) {
-            if ( d[0] < minData - minData / 10 )
-                {return "white"}
-            else
-                {return colorScale(d[0])};
-         });
-
-      //label columns
-      var columnLabel = mySVG.selectAll(".colLabel")
-         .data(cols)
-         .enter().append('svg:text')
-         .attr('x', function(d,i) {
-            return ((i + 0.5) * w) + 25;
-         })
-         //.attr('y', 30)
-         //.attr('class','label')
-         //.style('text-anchor','middle')
-         //.text(function(d) {return d;});
-
-      //expression value label
-      var expLab = d3.select("body")
-         .append('div')
-         .style('height',23)
-         .style('position','absolute')
-         .style('background','FFE53B')
-         .style('opacity',0.8)
-         .style('top',0)
-         .style('padding',10)
-         .style('left',40)
-         .style('display','none');
-
-      //heatmap mouse events
-      heatmapRects
-         .on('mouseover', function(d,i,j) {
-            d3.select(this)
-               .attr('stroke-width',1)
-               .attr('stroke','black')
-
-            output = '<b>' +
-            '(' + rows[j] + ',' + cols[i] + ')' +
-            ': ' + d3.round(data[j][i][0], 2) +
-            '</b>';
-            //for (var j = 0 , count = data[i].length; j < count; j ++ ) {
-            //   output += data[i][j][0] + ", ";
-            //}
-            expLab
-               .style('top',(rows[j] * h))
-               .style('left', (cols[i] * w))
-               .style('display','block')
-               .html(output.substring(0,output.length));
-      })
-      .on('mouseout', function(d,i) {
-         d3.select(this)
-            .attr('stroke-width',0)
-            .attr('stroke','none')
-         expLab
-            .style('display','none')
-      });
-    // apply the zoom behavior to the svg image
-    zoomListener(mySVG);
-   </script>
-   </body>
-</html>
-        """
+        script_dir = os.path.dirname(__file__)
+        html_file = open('%s/heatmap.html'%script_dir, 'r')
+        html_str = html_file.read()
         outfile = open(self.output_html_data_file, 'w')
         outfile.write(html_str)
         outfile.close()
