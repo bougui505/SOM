@@ -15,12 +15,12 @@
 <!-- two columns style from: http://stackoverflow.com/a/6385310/1679629 -->
 <style type="text/css">
 #wrap {
-      width:600px;
+      width:400px;
          margin:0 auto;
 }
 #left_col {
    float:left;
-      width:500px;
+      width:300px;
 }
 #right_col {
    float:right;
@@ -32,9 +32,9 @@
    <div id="left_col">
    <script type="text/javascript">
       //height of each row in the heatmap
-      var h = 8;
+      var h = 6;
       //width of each column in the heatmap
-      var w = 8;
+      var w = 6;
 
     // create the zoom listener
     var zoomListener = d3.behavior.zoom()
@@ -74,10 +74,10 @@
          .attr('width',w)
          .attr('height',h)
          .attr('x', function(d) {
-            return (d[2] * w) + 25;
+            return (d[3] * w) + 25;
          })
          .attr('y', function(d) {
-            return (d[1] * h) + 50;
+            return (d[2] * h) + 50;
          })
          .style('fill',function(d) {
             if ( d[0] < minData - minData / 10 )
@@ -119,7 +119,8 @@
 
             output = '<b>' +
             '(' + rows[j] + ',' + cols[i] + ')' +
-            ': ' + d3.round(data[j][i][0], 2) +
+            ': ' + d3.round(data[j][i][0], 2) + ', ' +
+            data[j][i][1] +
             '</b>';
             expLab
                .style('top',(rows[j] * h))

@@ -3,12 +3,17 @@ import os
 
 
 class Viewer:
-    def __init__(self, input_2d_matrix, output_js_data_file='data.js', output_html_data_file='heatmap.html'):
+    def __init__(self, som_object, output_js_data_file='data.js', output_html_data_file='heatmap.html'):
         # adapted from: http://blog.nextgenetics.net/?e=44
         #  output data for visualization in a browser with javascript/d3.js
         self.output_html_data_file = output_html_data_file
         self.output_js_data_file = output_js_data_file
-        self.input_matrix = input_2d_matrix
+        # unfold the SOM map and compute the U-matrix
+        self.som = som_object
+        self.som.graph.unfold_smap()
+        self.input_matrix = self.som.graph.unfolded_umat
+        representatives = self.som.get_representatives()
+        self.representatives = self.som.graph.unfold_matrix(representatives)
         self.write_data_js_file()
         self.write_html()
 
@@ -22,13 +27,18 @@ class Viewer:
             row_output = []
             for colData in rowData:
                 if not numpy.isnan(colData):
-                    row_output.append([colData, row, col])
+                    frame_id = self.representatives[row,col]
+                    if numpy.isnan(frame_id):
+                        frame_id = -1
+                    else:
+                        frame_id = numpy.int(frame_id)
+                    row_output.append([colData, frame_id, row, col])
                 else:
                     if min_data_value > 0:
                         none_value = 0
                     else:
                         none_value = min_data_value - min_data_value / 10
-                    row_output.append([none_value, row, col])
+                    row_output.append([none_value, -1, row, col])
                 col += 1
             matrix_output.append(row_output)
             row += 1
