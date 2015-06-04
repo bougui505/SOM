@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 03
+creation date: 2015 06 04
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -38,7 +38,10 @@ class UmatPlot(PlotDialog):
             y, x = neuron
             y+=.5
             x+=.5
-            ax.scatter(x, y, c=self.colors[i], edgecolors='white')
+            if self.keep_selection and self.colors[i] == 'g':
+                ax.scatter(x, y, c=self.colors[i], edgecolors='white')
+            elif not self.keep_selection:
+                ax.scatter(x, y, c=self.colors[i], edgecolors='white')
         nx,ny = self.matrix.shape
         fig = ax.imshow(self.matrix, interpolation='nearest', extent=(0,ny,nx,0), picker=True)
         #fig.colorbar
