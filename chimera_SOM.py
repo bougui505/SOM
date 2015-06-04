@@ -77,10 +77,15 @@ class UmatPlot(PlotDialog):
                 else:
                     self.colors.append('r')
                 self.display_frame(frame_id)
-                self.selected_neurons[(i,j)] = openModels.list()[-1]
-                self._displayData()
                 if self.keep_selection:
                     self.add_model(name='%d,%d'%(i,j))
+                self.selected_neurons[(i,j)] = openModels.list()[-1]
+        else:
+            model_to_del = self.selected_neurons[(i,j)]
+            if model_to_del not in self.init_models:
+                openModels.close([model_to_del])
+            del self.selected_neurons[(i,j)]
+        self._displayData()
 
     def onKey(self, event):
         if event.key == 'control':
