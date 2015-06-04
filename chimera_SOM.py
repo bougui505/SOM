@@ -14,6 +14,7 @@ from plotdialog import PlotDialog
 import numpy
 import Combine
 from chimera import openModels
+from collections import OrderedDict
 
 class UmatPlot(PlotDialog): 
     def __init__(self, movie): 
@@ -21,7 +22,7 @@ class UmatPlot(PlotDialog):
         self.movie = movie
         self.matrix = numpy.load('umat.npy')
         self.frame_map = numpy.load('frame_map.npy')
-        self.selected_neurons = []
+        self.selected_neurons = OrderedDict([])
         self.colors = [] # colors of the dot in the map
         self.subplot = self.add_subplot(1,1,1) 
         self._displayData() 
@@ -51,7 +52,7 @@ class UmatPlot(PlotDialog):
         x,y = event.mouseevent.xdata, event.mouseevent.ydata
         j,i = int(x), int(y)
         if not self.keep_selection:
-            self.selected_neurons = []
+            self.selected_neurons = OrderedDict([])
             self.colors = []
             current_models = set(openModels.list())
             models_to_close = current_models - self.init_models
@@ -59,13 +60,13 @@ class UmatPlot(PlotDialog):
         frame_id = self.frame_map[i,j]
         if not numpy.isnan(frame_id):
             frame_id = int(frame_id)
-            self.selected_neurons.append((i,j))
             if self.keep_selection:
                 self.colors.append('g')
             else:
                 self.colors.append('r')
             self.movie.currentFrame.set(frame_id)
             self.movie.LoadFrame()
+            self.selected_neurons[(i,j)] = openModels.list()[-1]
             self._displayData()
             if self.keep_selection:
                 mol = self.movie.model.Molecule()
