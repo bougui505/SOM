@@ -68,18 +68,19 @@ class UmatPlot(PlotDialog):
         j,i = int(x), int(y)
         if not self.keep_selection:
             self.close_current_models()
-        frame_id = self.frame_map[i,j]
-        if not numpy.isnan(frame_id):
-            frame_id = int(frame_id)
-            if self.keep_selection:
-                self.colors.append('g')
-            else:
-                self.colors.append('r')
-            self.display_frame(frame_id)
-            self.selected_neurons[(i,j)] = openModels.list()[-1]
-            self._displayData()
-            if self.keep_selection:
-                self.add_model(name='%d,%d'%(i,j))
+        if (i,j) not in self.selected_neurons.keys():
+            frame_id = self.frame_map[i,j]
+            if not numpy.isnan(frame_id):
+                frame_id = int(frame_id)
+                if self.keep_selection:
+                    self.colors.append('g')
+                else:
+                    self.colors.append('r')
+                self.display_frame(frame_id)
+                self.selected_neurons[(i,j)] = openModels.list()[-1]
+                self._displayData()
+                if self.keep_selection:
+                    self.add_model(name='%d,%d'%(i,j))
 
     def onKey(self, event):
         if event.key == 'control':
