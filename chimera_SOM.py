@@ -21,7 +21,7 @@ class UmatPlot(PlotDialog):
         PlotDialog.__init__(self) 
         self.movie = movie
         self.matrix = numpy.load('umat.npy')
-        self.frame_map = numpy.load('frame_map.npy')
+        self.rep_map = numpy.load('repmap.npy') # map of representative structures
         self.selected_neurons = OrderedDict([])
         self.colors = [] # colors of the dot in the map
         self.subplot = self.add_subplot(1,1,1) 
@@ -69,7 +69,7 @@ class UmatPlot(PlotDialog):
         if not self.keep_selection:
             self.close_current_models()
         if (i,j) not in self.selected_neurons.keys():
-            frame_id = self.frame_map[i,j]
+            frame_id = self.rep_map[i,j]
             if not numpy.isnan(frame_id):
                 frame_id = int(frame_id)
                 if self.keep_selection:
