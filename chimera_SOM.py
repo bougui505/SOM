@@ -48,15 +48,18 @@ class UmatPlot(PlotDialog):
         #fig.colorbar
         self.figure.canvas.draw()
 
+    def close_current_models(self):
+        self.selected_neurons = OrderedDict([])
+        self.colors = []
+        current_models = set(openModels.list())
+        models_to_close = current_models - self.init_models
+        openModels.close(models_to_close)
+
     def onPick(self, event):
         x,y = event.mouseevent.xdata, event.mouseevent.ydata
         j,i = int(x), int(y)
         if not self.keep_selection:
-            self.selected_neurons = OrderedDict([])
-            self.colors = []
-            current_models = set(openModels.list())
-            models_to_close = current_models - self.init_models
-            openModels.close(models_to_close)
+            self.close_current_models()
         frame_id = self.frame_map[i,j]
         if not numpy.isnan(frame_id):
             frame_id = int(frame_id)
