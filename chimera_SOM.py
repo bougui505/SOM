@@ -64,11 +64,6 @@ class UmatPlot(PlotDialog):
                 self.colors.append('g')
             else:
                 self.colors.append('r')
-        print i, j, frame_id, self.keep_selection
-        print self.selected_neurons
-        if len(self.selected_neurons) >0:
-            i,j = self.selected_neurons[-1]
-            frame_id = self.frame_map[i,j]
             self.movie.currentFrame.set(frame_id)
             self.movie.LoadFrame()
             self._displayData()
