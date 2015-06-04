@@ -55,6 +55,10 @@ class UmatPlot(PlotDialog):
         models_to_close = current_models - self.init_models
         openModels.close(models_to_close)
 
+    def display_frame(self, frame_id):
+        self.movie.currentFrame.set(frame_id)
+        self.movie.LoadFrame()
+
     def onPick(self, event):
         x,y = event.mouseevent.xdata, event.mouseevent.ydata
         j,i = int(x), int(y)
@@ -67,8 +71,7 @@ class UmatPlot(PlotDialog):
                 self.colors.append('g')
             else:
                 self.colors.append('r')
-            self.movie.currentFrame.set(frame_id)
-            self.movie.LoadFrame()
+            self.display_frame(frame_id)
             self.selected_neurons[(i,j)] = openModels.list()[-1]
             self._displayData()
             if self.keep_selection:
