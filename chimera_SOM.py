@@ -59,6 +59,10 @@ class UmatPlot(PlotDialog):
         self.movie.currentFrame.set(frame_id)
         self.movie.LoadFrame()
 
+    def add_model(self, name):
+        mol = self.movie.model.Molecule()
+        Combine.cmdCombine([mol], name=name)
+
     def onPick(self, event):
         x,y = event.mouseevent.xdata, event.mouseevent.ydata
         j,i = int(x), int(y)
@@ -75,8 +79,7 @@ class UmatPlot(PlotDialog):
             self.selected_neurons[(i,j)] = openModels.list()[-1]
             self._displayData()
             if self.keep_selection:
-                mol = self.movie.model.Molecule()
-                Combine.cmdCombine([mol], name='%d,%d'%(i,j))
+                self.add_model(name='%d,%d'%(i,j))
 
     def onKey(self, event):
         if event.key == 'control':
