@@ -39,13 +39,14 @@ class UmatPlot(PlotDialog):
         y, x = bmu
         y+=.5
         x+=.5
-        ax = self.subplot
-        ax.clear() 
-        ax.scatter(x, y, c='r', edgecolors='white')
-        nx,ny = self.matrix.shape
-        fig = ax.imshow(self.matrix, interpolation='nearest', extent=(0,ny,nx,0), picker=True)
-        #fig.colorbar
-        self.figure.canvas.draw()
+        if not self.keep_selection:
+            ax = self.subplot
+            ax.clear() 
+            ax.scatter(x, y, c='r', edgecolors='white')
+            nx,ny = self.matrix.shape
+            fig = ax.imshow(self.matrix, interpolation='nearest', extent=(0,ny,nx,0), picker=True)
+            #fig.colorbar
+            self.figure.canvas.draw()
 
     def _displayData(self): 
         ax = self.subplot
