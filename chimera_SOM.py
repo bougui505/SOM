@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 04
+creation date: 2015 06 05
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -22,15 +22,30 @@ class UmatPlot(PlotDialog):
         self.movie = movie
         self.matrix = numpy.load('umat.npy')
         self.rep_map = numpy.load('repmap.npy') # map of representative structures
+        self.bmus = numpy.load('bmus.npy')
         self.selected_neurons = OrderedDict([])
         self.colors = [] # colors of the dot in the map
         self.subplot = self.add_subplot(1,1,1) 
         self._displayData() 
+        movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
         self.figureCanvas.mpl_connect("key_press_event", self.onKey)
         self.figureCanvas.mpl_connect("key_release_event", self.offKey)
         self.keep_selection = False
         self.init_models = set(openModels.list())
+
+    def update_bmu(self, event_name, empty, frame_id):
+        bmu = self.bmus[frame_id-1]
+        y, x = bmu
+        y+=.5
+        x+=.5
+        ax = self.subplot
+        ax.clear() 
+        ax.scatter(x, y, c='r', edgecolors='white')
+        nx,ny = self.matrix.shape
+        fig = ax.imshow(self.matrix, interpolation='nearest', extent=(0,ny,nx,0), picker=True)
+        #fig.colorbar
+        self.figure.canvas.draw()
 
     def _displayData(self): 
         ax = self.subplot
@@ -69,7 +84,7 @@ class UmatPlot(PlotDialog):
         if not self.keep_selection:
             self.close_current_models()
         if (i,j) not in self.selected_neurons.keys():
-            frame_id = self.rep_map[i,j]
+            frame_id = self.rep_map[i,j] + 1
             if not numpy.isnan(frame_id):
                 frame_id = int(frame_id)
                 if self.keep_selection:
