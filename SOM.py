@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 08
+creation date: 2015 05 21
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -12,13 +12,12 @@ Thanks!
 
 import numpy
 import random
-import cPickle as pickle
+import pickle
 import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
 from multiprocessing import Pool
 import Graph
-import copy
 
 
 def is_interactive():
@@ -175,27 +174,6 @@ class SOM:
             smap = smap_real + 1j * smap_imag
         return smap
 
-    def save_data(self, outfile='som.dat', **kwargs):
-        print 'saving data in %s'%outfile
-        data = copy.copy(self.__dict__)
-        del data['graph'] # can't pickle lambda function
-        del data['pool'] # pool objects cannot be passed between processes or pickled
-        del data['metric'] # can't pickle lambda function
-        for key, value in kwargs.iteritems():
-            data[key] = value
-        f = open(outfile,'wb')
-        pickle.dump(data, f, 2)
-        f.close()
-        print 'done'
-
-    def load_data(self, infile='som.dat'):
-        print 'loading data from %s'%infile
-        f = open(infile,'rb')
-        tmp_dict = pickle.load(f)
-        f.close()
-        self.__dict__.update(tmp_dict)
-        print 'done'
-
     def loadMap(self, smap):
         self.smap = smap
         shape = numpy.shape(self.smap)
@@ -286,8 +264,6 @@ class SOM:
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
         pickle.dump(Map, MapFile)  # Write Map into file map.dat
         MapFile.close()
-        self.find_bmus()
-        self.save_data()
         return self.smap
 
     def neighbor_dim2_toric(self, p, s):
