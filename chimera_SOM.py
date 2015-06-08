@@ -15,6 +15,7 @@ sys.path.append('.')
 from plotdialog import PlotDialog
 import numpy
 import Combine
+from chimera import update
 from chimera import openModels
 from collections import OrderedDict
 import Midas
@@ -73,6 +74,7 @@ class UmatPlot(PlotDialog):
         current_models = set(openModels.list())
         models_to_close = current_models - self.init_models
         openModels.close(models_to_close)
+        update.checkForChanges() # to avoid memory leaks (see: http://www.cgl.ucsf.edu/chimera/docs/ProgrammersGuide/faq.html)
 
     def display_frame(self, frame_id):
         self.movie.currentFrame.set(frame_id)
