@@ -12,7 +12,7 @@ Thanks!
 
 import numpy
 import random
-import pickle
+import cPickle as pickle
 import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
@@ -178,8 +178,9 @@ class SOM:
     def save_data(self, outfile='som.dat', **kwargs):
         print 'saving data in %s'%outfile
         data = copy.copy(self.__dict__)
-        del data['graph']
+        del data['graph'] # can't pickle lambda function
         del data['pool'] # pool objects cannot be passed between processes or pickled
+        del data['metric'] # can't pickle lambda function
         for key, value in kwargs.iteritems():
             data[key] = value
         f = open(outfile,'wb')
