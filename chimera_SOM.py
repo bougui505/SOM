@@ -17,6 +17,7 @@ import numpy
 import Combine
 from chimera import openModels
 from collections import OrderedDict
+import Midas
 
 
 class UmatPlot(PlotDialog):
@@ -81,6 +82,15 @@ class UmatPlot(PlotDialog):
         mol = self.movie.model.Molecule()
         Combine.cmdCombine([mol], name=name)
 
+    def update_model_color(self):
+        model_id = openModels.listIds()[-1][0]
+        if not self.keep_selection:
+            Midas.color('orange red', '#%d'%model_id)
+        else:
+            Midas.color('forest green', '#%d'%model_id)
+            for model in self.init_models:
+                Midas.color('forest green', '#%d'%model.id)
+
     def onPick(self, event):
         if not self.keep_selection:
             self.close_current_models()
@@ -102,6 +112,7 @@ class UmatPlot(PlotDialog):
                 if self.keep_selection:
                     self.add_model(name='%d,%d' % (self.i, self.j))
                 self.selected_neurons[(self.i, self.j)] = openModels.list()[-1]
+                self.update_model_color()
         else:
             model_to_del = self.selected_neurons[(self.i, self.j)]
             if model_to_del not in self.init_models:
