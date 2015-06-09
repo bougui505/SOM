@@ -14,6 +14,7 @@ class PlotDialog(MPLDialog):
     "PlotDialog is a Chimera dialog whose content is a matplotlib figure" 
     buttons = ('Close',) 
     title = "Self-Organizing Map"
+    provideStatus = True
     def __init__(self, showToolbar=True, **kw): 
         self.showToolbar = showToolbar 
         MPLDialog.__init__(self, **kw)
@@ -28,6 +29,7 @@ class PlotDialog(MPLDialog):
                         command=self.switch_matrix)
         self.mapTypeOption.add("U-matrix")
         self.mapTypeOption.add("Closest frame id")
+        self.mapTypeOption.add("RMSD from first frame")
         self.mapTypeOption.pack()
 
         from matplotlib.figure import Figure 

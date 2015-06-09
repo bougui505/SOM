@@ -17,6 +17,9 @@ import numpy
 import Combine
 from chimera import update
 from chimera import openModels
+from chimera import numpyArrayFromAtoms
+from chimera.match import matchPositions
+from Movie.analysis import analysisAtoms, AnalysisError
 from collections import OrderedDict
 import Midas
 
@@ -42,12 +45,19 @@ class UmatPlot(PlotDialog):
         self.keep_selection = False
         self.init_models = set(openModels.list())
         self.i, self.j = None, None # current neuron
+        self.rmsd_list = None
+        self.rep_rmsd = None
+
 
     def switch_matrix(self, value):
         if self.mapTypeOption.getvalue() == "U-matrix" or self.mapTypeOption.getvalue() is None:
             self.displayed_matrix = self.matrix
         elif self.mapTypeOption.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
+        elif self.mapTypeOption.getvalue() == "RMSD from first frame":
+            if self.rep_rmsd is None:
+                self.rmsd_per_representative()
+            self.displayed_matrix = self.rep_rmsd
         self._displayData()
 
 
@@ -60,6 +70,54 @@ class UmatPlot(PlotDialog):
             t = self.change_of_basis[k]  # tuple
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
+
+    def rmsd_per_representative(self):
+        """
+        compute the RMSD from the first frame for each representative
+        :return:
+        """
+        rep_frames = self.rep_map.flatten()
+        self.rep_rmsd = []
+        total = len(rep_frames)
+        for i, frame_id in enumerate(rep_frames):
+            if not numpy.isnan(frame_id):
+                frame_id = int(frame_id)
+                rmsd = self.compute_rmsd(frame_id+1)
+            else:
+                rmsd = numpy.nan
+            self.status('Computing RMSD per cell: %.4f/1.0000, RMSD=%.2f'%(float(i)/total, rmsd))
+            self.rep_rmsd.append(rmsd)
+        self.rep_rmsd = numpy.asarray(self.rep_rmsd)
+        nx, ny = self.rep_map.shape
+        self.rep_rmsd = self.rep_rmsd.reshape((nx,ny))
+
+    def rmsd_per_frame(self):
+        """
+        compute the RMSD from the first frame for each frame of the loaded trajectory
+        :return:
+        """
+        self.rmsd_list = []
+        for i in range(self.movie.startFrame, self.movie.endFrame+1):
+            self.rmsd_list.append(self.compute_rmsd(i))
+
+    def compute_rmsd(self, frame):
+        """
+        compute the rmsd from the first frame for the given frame
+        :param frame:
+        :return:
+        """
+        useSel = False
+        ignoreBulk = True
+        ignoreHyds = True
+        metalIons = False
+        atoms = analysisAtoms(self.movie.model.Molecule(), useSel, ignoreBulk, ignoreHyds, metalIons)
+        frame_ref = 1
+        self.movie._LoadFrame(frame_ref, makeCurrent=False)
+        ref = numpyArrayFromAtoms(atoms, self.movie.findCoordSet(frame_ref))
+        self.movie._LoadFrame(frame, makeCurrent=False)
+        current = numpyArrayFromAtoms(atoms, self.movie.findCoordSet(frame))
+        rmsd = matchPositions(ref, current)[1]
+        return rmsd
 
     def update_bmu(self, event_name, empty, frame_id):
         bmu = self.bmus[frame_id - 1]
