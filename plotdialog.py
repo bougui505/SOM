@@ -3,21 +3,33 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 01
+creation date: 2015 06 09
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
 """
 
-from chimera.baseDialog import ModelessDialog 
-class PlotDialog(ModelessDialog): 
+from chimera.mplDialog import MPLDialog
+class PlotDialog(MPLDialog):
     "PlotDialog is a Chimera dialog whose content is a matplotlib figure" 
     buttons = ('Close',) 
-    title = "matplotlib figure" 
+    title = "Self-Organizing Map"
     def __init__(self, showToolbar=True, **kw): 
         self.showToolbar = showToolbar 
-        ModelessDialog.__init__(self, **kw) 
+        MPLDialog.__init__(self, **kw)
     def fillInUI(self, parent): 
+        import Pmw, Tkinter
+        # Option menu for map type
+        self.mapChains = []
+        self.mapTypeOption = Pmw.RadioSelect(parent,
+                        labelpos='w',
+                        label_text='Display: ',
+                        buttontype="radiobutton",
+                        command=self.switch_matrix)
+        self.mapTypeOption.add("U-matrix")
+        self.mapTypeOption.add("Closest frame id")
+        self.mapTypeOption.pack()
+
         from matplotlib.figure import Figure 
         self.figure = Figure() 
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg 
@@ -30,6 +42,7 @@ class PlotDialog(ModelessDialog):
             self.navToolbar = nt 
         else: 
             self.navToolbar = None 
+
     def add_subplot(self, *args): 
         return self.figure.add_subplot(*args) 
     def delaxes(self, ax): 

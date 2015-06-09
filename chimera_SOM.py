@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 05
+creation date: 2015 06 09
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -27,6 +27,7 @@ class UmatPlot(PlotDialog):
         self.movie = movie
         data = numpy.load('som.dat')
         self.matrix = data['unfolded_umat']
+        self.displayed_matrix = self.matrix
         self.change_of_basis = data['change_of_basis']
         self.rep_map = self.unfold_matrix(data['representatives'])  # map of representative structures
         self.bmus = numpy.asarray([self.change_of_basis[tuple(e)] for e in data['bmus']])
@@ -41,6 +42,14 @@ class UmatPlot(PlotDialog):
         self.keep_selection = False
         self.init_models = set(openModels.list())
         self.i, self.j = None, None # current neuron
+
+    def switch_matrix(self, value):
+        if self.mapTypeOption.getvalue() == "U-matrix" or self.mapTypeOption.getvalue() is None:
+            self.displayed_matrix = self.matrix
+        elif self.mapTypeOption.getvalue() == "Closest frame id":
+            self.displayed_matrix = self.rep_map
+        self._displayData()
+
 
     def unfold_matrix(self, matrix):
         """
@@ -62,7 +71,7 @@ class UmatPlot(PlotDialog):
             ax.clear()
             ax.scatter(x, y, c='r', edgecolors='white')
             nx, ny = self.matrix.shape
-            ax.imshow(self.matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             self.figure.canvas.draw()
 
     def _displayData(self):
@@ -77,7 +86,7 @@ class UmatPlot(PlotDialog):
             elif not self.keep_selection:
                 ax.scatter(x, y, c=self.colors[i], edgecolors='white')
         nx, ny = self.matrix.shape
-        ax.imshow(self.matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         self.figure.canvas.draw()
 
     def close_current_models(self):
