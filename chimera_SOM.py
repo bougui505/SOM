@@ -47,6 +47,7 @@ class UmatPlot(PlotDialog):
         self.i, self.j = None, None # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
+        self.ctrl_pressed = False
 
 
     def switch_matrix(self, value):
@@ -173,6 +174,13 @@ class UmatPlot(PlotDialog):
                 Midas.color('forest green', '#%d'%model.id)
 
     def onPick(self, event):
+
+
+        if event.mouseevent.button==3 or self.ctrl_pressed:
+            self.keep_selection = True
+        else:
+            self.keep_selection = False
+
         if not self.keep_selection:
             self.close_current_models()
         else:
@@ -203,11 +211,11 @@ class UmatPlot(PlotDialog):
 
     def onKey(self, event):
         if event.key == 'control':
-            self.keep_selection = True
+            self.ctrl_pressed = True
 
     def offKey(self, event):
         if event.key == 'control':
-            self.keep_selection = False
+            self.ctrl_pressed = False
 
 
 from chimera.extension import manager
