@@ -65,7 +65,10 @@ class SOM:
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
         self.n_process = n_process
-        self.pool = Pool(processes=self.n_process)
+        if self.n_process > 1:
+            self.pool = Pool(processes=self.n_process)
+        else:
+            self.pool = None
         if inputnames == None:
             inputnames = range(inputvectors.shape[0])
         self.n_input, self.cardinal = inputvectors.shape
@@ -297,7 +300,10 @@ class SOM:
             n_split = self.n_process
         sub_arrays = numpy.array_split(self.inputvectors, n_split)
         sub_arrays = [a for a in sub_arrays if a.size > 0]
-        pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
+        if self.pool is not None:
+            pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
+        else:
+            pools = map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
         bmus = []
         for a in pools:
             bmus.extend(list(a))
