@@ -25,9 +25,11 @@ class UmatPlot(PlotDialog):
     def __init__(self, movie):
         PlotDialog.__init__(self)
         self.movie = movie
-        self.matrix = numpy.load('umat.npy')
-        self.rep_map = numpy.load('repmap.npy')  # map of representative structures
-        self.bmus = numpy.load('bmus.npy')
+        data = numpy.load('som.dat')
+        self.matrix = data['unfolded_umat']
+        self.change_of_basis = data['change_of_basis']
+        self.rep_map = self.unfold_matrix(data['representatives'])  # map of representative structures
+        self.bmus = numpy.asarray([self.change_of_basis[tuple(e)] for e in data['bmus']])
         self.selected_neurons = OrderedDict([])
         self.colors = []  # colors of the dot in the map
         self.subplot = self.add_subplot(1, 1, 1)
@@ -39,6 +41,16 @@ class UmatPlot(PlotDialog):
         self.keep_selection = False
         self.init_models = set(openModels.list())
         self.i, self.j = None, None # current neuron
+
+    def unfold_matrix(self, matrix):
+        """
+        unfold the given matrix given self.change_of_basis
+        """
+        unfolded_matrix = numpy.ones_like(self.matrix) * numpy.nan
+        for k in self.change_of_basis.keys():
+            t = self.change_of_basis[k]  # tuple
+            unfolded_matrix[t] = matrix[k]
+        return unfolded_matrix
 
     def update_bmu(self, event_name, empty, frame_id):
         bmu = self.bmus[frame_id - 1]
