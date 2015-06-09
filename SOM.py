@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 05 21
+creation date: 2015 06 09
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -82,6 +82,7 @@ class SOM:
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
         self.bmus = None
+        self.representatives = None
         self.transition_matrix = None
         if radius_begin == None:
             self.radius_begin = [numpy.sqrt(self.X * self.Y) / 8., numpy.sqrt(self.X * self.Y) / 16.]
@@ -269,6 +270,27 @@ class SOM:
         MapFile.close()
         return self.smap
 
+    def save_data(self, outfile='som.dat', **kwargs):
+        print 'saving data in %s'%outfile
+        data = self.__dict__
+        out_dict = {}
+        if self.representatives is None:
+            self.get_representatives()
+        if self.graph.unfolded_umat is None:
+            self.graph.unfold_smap()
+        keys = {'bmus', 'representatives'}
+        for key, value in data.iteritems():
+            if key in keys:
+                out_dict[key] = value
+        out_dict['unfolded_umat'] = self.graph.unfolded_umat
+        out_dict['change_of_basis'] = self.graph.change_of_basis
+        for key, value in kwargs.iteritems():
+            out_dict[key] = value
+        f = open(outfile,'wb')
+        pickle.dump(out_dict, f, 2)
+        f.close()
+        print 'done'
+
     def neighbor_dim2_toric(self, p, s):
         """Efficient toric neighborhood function for 2D SOM.
         """
@@ -326,6 +348,7 @@ class SOM:
             if d < error_map[bmu]:
                 error_map[bmu] = d
                 representatives[bmu] = i
+        self.representatives = representatives
         return representatives
 
     def get_transition_matrix(self, lag=1, dwell_time=None):

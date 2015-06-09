@@ -24,6 +24,7 @@ class Graph:
             self.get_adjacency_matrix()
         self.change_of_basis = None
         self.community_map = None
+        self.unfolded_umat = None
 
     def get_adjacency_matrix(self):
         """
