@@ -13,6 +13,7 @@ import sys;
 
 sys.path.append('.')
 from plotdialog import PlotDialog
+from plotdialog import RMSD
 import numpy
 import Combine
 from chimera import update
@@ -27,6 +28,7 @@ import Midas
 class UmatPlot(PlotDialog):
     def __init__(self, movie):
         PlotDialog.__init__(self)
+        self.master = self._master
         self.movie = movie
         data = numpy.load('som.dat')
         self.matrix = data['unfolded_umat']
@@ -44,7 +46,7 @@ class UmatPlot(PlotDialog):
         self.figureCanvas.mpl_connect("key_release_event", self.offKey)
         self.keep_selection = False
         self.init_models = set(openModels.list())
-        self.i, self.j = None, None # current neuron
+        self.i, self.j = None, None  # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
         self.ctrl_pressed = False
@@ -57,8 +59,13 @@ class UmatPlot(PlotDialog):
             self.displayed_matrix = self.rep_map
         elif self.mapTypeOption.getvalue() == "RMSD from first frame":
             if self.rep_rmsd is None:
-                self.rmsd_per_representative()
-            self.displayed_matrix = self.rep_rmsd
+                dlg = RMSD(self.movie)  # the frame of reference to compute RMSD on
+                user_input = dlg.run(self.master)
+                if user_input is not None:
+                    frame_ref = user_input[0]
+                    self.rmsd_per_representative(frame_ref=frame_ref)
+            if self.rep_rmsd is not None:
+                self.displayed_matrix = self.rep_rmsd
         self._displayData()
 
 
@@ -72,7 +79,7 @@ class UmatPlot(PlotDialog):
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
 
-    def rmsd_per_representative(self):
+    def rmsd_per_representative(self, frame_ref=1):
         """
         compute the RMSD from the first frame for each representative
         :return:
@@ -83,14 +90,14 @@ class UmatPlot(PlotDialog):
         for i, frame_id in enumerate(rep_frames):
             if not numpy.isnan(frame_id):
                 frame_id = int(frame_id)
-                rmsd = self.compute_rmsd(frame_id+1)
+                rmsd = self.compute_rmsd(frame_id + 1, frame_ref)
             else:
                 rmsd = numpy.nan
-            self.status('Computing RMSD per cell: %.4f/1.0000, RMSD=%.2f'%(float(i)/total, rmsd))
+            self.status('Computing RMSD per cell: %.4f/1.0000, RMSD=%.2f' % (float(i) / total, rmsd))
             self.rep_rmsd.append(rmsd)
         self.rep_rmsd = numpy.asarray(self.rep_rmsd)
         nx, ny = self.rep_map.shape
-        self.rep_rmsd = self.rep_rmsd.reshape((nx,ny))
+        self.rep_rmsd = self.rep_rmsd.reshape((nx, ny))
 
     def rmsd_per_frame(self):
         """
@@ -98,10 +105,10 @@ class UmatPlot(PlotDialog):
         :return:
         """
         self.rmsd_list = []
-        for i in range(self.movie.startFrame, self.movie.endFrame+1):
+        for i in range(self.movie.startFrame, self.movie.endFrame + 1):
             self.rmsd_list.append(self.compute_rmsd(i))
 
-    def compute_rmsd(self, frame):
+    def compute_rmsd(self, frame, frame_ref=1):
         """
         compute the rmsd from the first frame for the given frame
         :param frame:
@@ -112,7 +119,6 @@ class UmatPlot(PlotDialog):
         ignoreHyds = True
         metalIons = False
         atoms = analysisAtoms(self.movie.model.Molecule(), useSel, ignoreBulk, ignoreHyds, metalIons)
-        frame_ref = 1
         self.movie._LoadFrame(frame_ref, makeCurrent=False)
         ref = numpyArrayFromAtoms(atoms, self.movie.findCoordSet(frame_ref))
         self.movie._LoadFrame(frame, makeCurrent=False)
@@ -154,7 +160,7 @@ class UmatPlot(PlotDialog):
         current_models = set(openModels.list())
         models_to_close = current_models - self.init_models
         openModels.close(models_to_close)
-        update.checkForChanges() # to avoid memory leaks (see: http://www.cgl.ucsf.edu/chimera/docs/ProgrammersGuide/faq.html)
+        update.checkForChanges()  # to avoid memory leaks (see: http://www.cgl.ucsf.edu/chimera/docs/ProgrammersGuide/faq.html)
 
     def display_frame(self, frame_id):
         self.movie.currentFrame.set(frame_id)
@@ -167,16 +173,16 @@ class UmatPlot(PlotDialog):
     def update_model_color(self):
         model_id = openModels.listIds()[-1][0]
         if not self.keep_selection:
-            Midas.color('orange red', '#%d'%model_id)
+            Midas.color('orange red', '#%d' % model_id)
         else:
-            Midas.color('forest green', '#%d'%model_id)
+            Midas.color('forest green', '#%d' % model_id)
             for model in self.init_models:
-                Midas.color('forest green', '#%d'%model.id)
+                Midas.color('forest green', '#%d' % model.id)
 
     def onPick(self, event):
 
 
-        if event.mouseevent.button==3 or self.ctrl_pressed:
+        if event.mouseevent.button == 3 or self.ctrl_pressed:
             self.keep_selection = True
         else:
             self.keep_selection = False
@@ -186,7 +192,7 @@ class UmatPlot(PlotDialog):
         else:
             if len(self.selected_neurons) == 1:
                 if self.i is not None and self.j is not None:
-                    self.add_model(name='%d,%d'%(self.i, self.j))
+                    self.add_model(name='%d,%d' % (self.i, self.j))
         x, y = event.mouseevent.xdata, event.mouseevent.ydata
         self.j, self.i = int(x), int(y)
         if (self.i, self.j) not in self.selected_neurons.keys():
@@ -225,4 +231,4 @@ movies = [inst for inst in manager.instances if isinstance(inst, MovieDialog)]
 if len(movies) != 1:
     raise AssertionError("not exactly one MD Movie")
 movie = movies[0]
-UmatPlot(movie) 
+UmatPlot(movie)
