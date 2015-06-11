@@ -26,15 +26,11 @@ class PlotDialog(MPLDialog):
         import Pmw, Tkinter
         # Option menu for map type
         self.mapChains = []
-        self.mapTypeOption = Pmw.RadioSelect(parent,
+        self.mapTypeOption = Pmw.OptionMenu(parent,
                                              labelpos='w',
                                              label_text='Display: ',
-                                             buttontype="radiobutton",
+                                             items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
                                              command=self.switch_matrix)
-        self.mapTypeOption.add("U-matrix")
-        self.mapTypeOption.add("Density")
-        self.mapTypeOption.add("Closest frame id")
-        self.mapTypeOption.add("RMSD")
         self.mapTypeOption.pack()
 
         from matplotlib.figure import Figure
