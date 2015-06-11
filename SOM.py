@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 09
+creation date: 2015 06 11
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -151,7 +151,7 @@ class SOM:
             else:
                 self.loadMap(smap)
             print "Shape of the SOM:%s" % str(self.smap.shape)
-        self.graph = Graph.Graph(smap=self.smap)
+        self.graph = None
 
     def random_map(self):
         print "Map initialization..."
@@ -271,6 +271,8 @@ class SOM:
         return self.smap
 
     def save_data(self, outfile='som.dat', **kwargs):
+        if self.graph is None:
+            self.graph = Graph.Graph(smap=self.smap)
         print 'saving data in %s'%outfile
         data = self.__dict__
         out_dict = {}
