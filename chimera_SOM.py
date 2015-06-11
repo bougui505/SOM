@@ -40,6 +40,7 @@ class UmatPlot(PlotDialog):
         self.selected_neurons = OrderedDict([])
         self.colors = []  # colors of the dot in the map
         self.subplot = self.add_subplot(1, 1, 1)
+        self.colorbar = None
         self._displayData()
         movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
@@ -173,7 +174,12 @@ class UmatPlot(PlotDialog):
             elif not self.keep_selection:
                 ax.scatter(x, y, c=self.colors[i], edgecolors='white')
         nx, ny = self.matrix.shape
-        ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        if self.colorbar is None:
+            self.colorbar = self.figure.colorbar(heatmap)
+        else:
+            self.colorbar.update_bruteforce(heatmap)
+        print dir(self.colorbar)
         self.figure.canvas.draw()
 
     def close_current_models(self):
