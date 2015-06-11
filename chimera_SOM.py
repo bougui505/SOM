@@ -56,18 +56,18 @@ class UmatPlot(PlotDialog):
 
 
     def switch_matrix(self, value):
-        if self.mapTypeOption.getvalue() == "U-matrix" or self.mapTypeOption.getvalue() is None:
+        if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
             self.displayed_matrix = self.matrix
-        elif self.mapTypeOption.getvalue() == "Density":
+        elif self.display_option.getvalue() == "Density":
             if self.density is None:
                 dlg = Density()  # Dialog
                 if dlg.run(self.master):
                     self.get_density()
             if self.density is not None:
                 self.displayed_matrix = self.density
-        elif self.mapTypeOption.getvalue() == "Closest frame id":
+        elif self.display_option.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
-        elif self.mapTypeOption.getvalue() == "RMSD":
+        elif self.display_option.getvalue() == "RMSD":
             if self.rep_rmsd is None:
                 dlg = RMSD(self.movie)  # the frame of reference to compute RMSD on
                 user_input = dlg.run(self.master)

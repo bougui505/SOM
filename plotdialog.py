@@ -25,13 +25,12 @@ class PlotDialog(MPLDialog):
     def fillInUI(self, parent):
         import Pmw, Tkinter
         # Option menu for map type
-        self.mapChains = []
-        self.mapTypeOption = Pmw.OptionMenu(parent,
+        self.display_option = Pmw.OptionMenu(parent,
                                              labelpos='w',
                                              label_text='Display: ',
                                              items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
                                              command=self.switch_matrix)
-        self.mapTypeOption.pack()
+        self.display_option.pack()
 
         from matplotlib.figure import Figure
 
