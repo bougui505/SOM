@@ -32,8 +32,9 @@ class PlotDialog(MPLDialog):
                                              buttontype="radiobutton",
                                              command=self.switch_matrix)
         self.mapTypeOption.add("U-matrix")
+        self.mapTypeOption.add("Density")
         self.mapTypeOption.add("Closest frame id")
-        self.mapTypeOption.add("RMSD from first frame")
+        self.mapTypeOption.add("RMSD")
         self.mapTypeOption.pack()
 
         from matplotlib.figure import Figure
@@ -80,7 +81,7 @@ class RMSD(ModalDialog):
         import Tkinter
         from chimera.tkoptions import IntOption, BooleanOption, FloatOption
 
-        Tkinter.Label(parent, text="Compute RMSD from a reference frame. This calculation can take SEVERAL MINUTES...",
+        Tkinter.Label(parent, text="Compute RMSD from a reference frame.\nThis calculation can take SEVERAL MINUTES...",
                       relief="ridge", bd=4).grid(row=0, column=0, columnspan=2, sticky="ew")
         startFrame = self.movie.startFrame
         endFrame = self.movie.endFrame
@@ -93,8 +94,27 @@ class RMSD(ModalDialog):
         ModalDialog.Cancel(self, value=(ref, ))
 
     # def Cancel(self):
-    #   ModalDialog.Cancel(self, value=None)
+    # ModalDialog.Cancel(self, value=None)
 
     def destroy(self):
         self.movie = None
         ModelessDialog.destroy(self)
+
+
+class Density(ModalDialog):
+    buttons = ('OK', 'Cancel')
+
+    def __init__(self):
+        self.perform_calculation = False
+        ModalDialog.__init__(self)
+
+    def fillInUI(self, parent):
+        import Tkinter
+
+        Tkinter.Label(parent,
+                      text="Compute the number of structures per neurons.\nThis calculation can take SEVERAL MINUTES...",
+                      relief="ridge", bd=4).pack()
+        self.perform_calculation = True
+
+    def OK(self):
+        ModalDialog.Cancel(self, value=(self.perform_calculation, ))

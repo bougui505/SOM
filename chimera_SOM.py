@@ -14,6 +14,7 @@ import sys;
 sys.path.append('.')
 from plotdialog import PlotDialog
 from plotdialog import RMSD
+from plotdialog import Density
 import numpy
 import Combine
 from chimera import update
@@ -49,15 +50,23 @@ class UmatPlot(PlotDialog):
         self.i, self.j = None, None  # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
+        self.density = None
         self.ctrl_pressed = False
 
 
     def switch_matrix(self, value):
         if self.mapTypeOption.getvalue() == "U-matrix" or self.mapTypeOption.getvalue() is None:
             self.displayed_matrix = self.matrix
+        elif self.mapTypeOption.getvalue() == "Density":
+            if self.density is None:
+                dlg = Density()  # Dialog
+                if dlg.run(self.master):
+                    self.get_density()
+            if self.density is not None:
+                self.displayed_matrix = self.density
         elif self.mapTypeOption.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
-        elif self.mapTypeOption.getvalue() == "RMSD from first frame":
+        elif self.mapTypeOption.getvalue() == "RMSD":
             if self.rep_rmsd is None:
                 dlg = RMSD(self.movie)  # the frame of reference to compute RMSD on
                 user_input = dlg.run(self.master)
@@ -67,6 +76,19 @@ class UmatPlot(PlotDialog):
             if self.rep_rmsd is not None:
                 self.displayed_matrix = self.rep_rmsd
         self._displayData()
+
+    def get_density(self):
+        """
+        Compute the number of structures per neuron
+        """
+        density = numpy.zeros_like(self.matrix)
+        total = len(self.bmus)
+        for i, e in enumerate(self.bmus):
+            self.status('Computing population per cell: %.4f/1.0000' % (float(i + 1) / total, ))
+            i, j = e
+            density[i, j] += 1
+        density[density == 0] = numpy.nan
+        self.density = density
 
 
     def unfold_matrix(self, matrix):
@@ -93,7 +115,7 @@ class UmatPlot(PlotDialog):
                 rmsd = self.compute_rmsd(frame_id + 1, frame_ref)
             else:
                 rmsd = numpy.nan
-            self.status('Computing RMSD per cell: %.4f/1.0000, RMSD=%.2f' % (float(i) / total, rmsd))
+            self.status('Computing RMSD per cell: %.4f/1.0000, RMSD=%.2f' % (float(i + 1) / total, rmsd))
             self.rep_rmsd.append(rmsd)
         self.rep_rmsd = numpy.asarray(self.rep_rmsd)
         nx, ny = self.rep_map.shape
