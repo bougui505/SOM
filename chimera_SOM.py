@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 09
+creation date: 2015 06 12
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -24,15 +24,16 @@ from chimera.match import matchPositions
 from Movie.analysis import analysisAtoms, AnalysisError
 from collections import OrderedDict
 import Midas
+import matplotlib
 
 
 class UmatPlot(PlotDialog):
     def __init__(self, movie):
-        PlotDialog.__init__(self)
-        self.master = self._master
         self.movie = movie
         data = numpy.load('som.dat')
         self.matrix = data['unfolded_umat']
+        PlotDialog.__init__(self, numpy.nanmin(self.matrix), numpy.nanmax(self.matrix))
+        self.master = self._master
         self.displayed_matrix = self.matrix
         self.change_of_basis = data['change_of_basis']
         self.rep_map = self.unfold_matrix(data['representatives'])  # map of representative structures
@@ -41,6 +42,7 @@ class UmatPlot(PlotDialog):
         self.colors = []  # colors of the dot in the map
         self.subplot = self.add_subplot(1, 1, 1)
         self.colorbar = None
+        self.cluster_map = None
         self._displayData()
         movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
@@ -76,6 +78,14 @@ class UmatPlot(PlotDialog):
                     self.rmsd_per_representative(frame_ref=frame_ref)
             if self.rep_rmsd is not None:
                 self.displayed_matrix = self.rep_rmsd
+        self._displayData()
+
+    def get_clusters(self, value):
+        """
+        Define clusters with the threshold given by the slider dialog (Cluster())
+        """
+        threshold = self.slider.get()
+        self.cluster_map = self.matrix <= threshold
         self._displayData()
 
     def get_density(self):
@@ -160,6 +170,8 @@ class UmatPlot(PlotDialog):
             ax.scatter(x, y, c='r', edgecolors='white')
             nx, ny = self.matrix.shape
             ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            if self.cluster_map is not None:
+                ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             self.figure.canvas.draw()
 
     def _displayData(self):
@@ -175,11 +187,12 @@ class UmatPlot(PlotDialog):
                 ax.scatter(x, y, c=self.colors[i], edgecolors='white')
         nx, ny = self.matrix.shape
         heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        if self.cluster_map is not None:
+            ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
         if self.colorbar is None:
             self.colorbar = self.figure.colorbar(heatmap)
         else:
             self.colorbar.update_bruteforce(heatmap)
-        print dir(self.colorbar)
         self.figure.canvas.draw()
 
     def close_current_models(self):

@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 10
+creation date: 2015 06 12
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -18,7 +18,12 @@ class PlotDialog(MPLDialog):
     title = "Self-Organizing Map"
     provideStatus = True
 
-    def __init__(self, showToolbar=True, **kw):
+    def __init__(self, min_value, max_value, showToolbar=True, **kw):
+        """
+        min_value and max_value are the limits for the slider on the U-matrix
+        """
+        self.min_value = min_value
+        self.max_value = max_value
         self.showToolbar = showToolbar
         MPLDialog.__init__(self, **kw)
 
@@ -31,6 +36,12 @@ class PlotDialog(MPLDialog):
                                              items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
                                              command=self.switch_matrix)
         self.display_option.pack()
+
+        # Slider for clustering
+        if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
+            resolution = (self.max_value - self.min_value)/1000
+            self.slider = Tkinter.Scale(parent, from_=self.min_value, to=self.max_value, command=self.get_clusters, orient='horizontal', label='Threshold on U-matrix', length=500, resolution=resolution)
+            self.slider.pack()
 
         from matplotlib.figure import Figure
 
