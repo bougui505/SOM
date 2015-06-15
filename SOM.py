@@ -287,6 +287,7 @@ class SOM:
                 out_dict[key] = value
         out_dict['unfolded_umat'] = self.graph.unfolded_umat
         out_dict['change_of_basis'] = self.graph.change_of_basis
+        out_dict['minimum_spanning_tree'] = self.graph.minimum_spanning_tree
         for key, value in kwargs.iteritems():
             out_dict[key] = value
         f = open(outfile,'wb')
