@@ -34,7 +34,8 @@ class UmatPlot(PlotDialog):
         self.init_som_shape = self.data['representatives'].shape # initial som shape
         self.matrix = self.data['unfolded_umat']
         self.minimum_spanning_tree = self.data['minimum_spanning_tree']
-        PlotDialog.__init__(self, numpy.nanmin(self.matrix), numpy.nanmax(self.matrix),
+        self.min_uvalue = numpy.nanmin(self.matrix)
+        PlotDialog.__init__(self, self.min_uvalue, numpy.nanmax(self.matrix),
                             self.dijkstra().max())
         self.master = self._master
         self.displayed_matrix = self.matrix
@@ -258,6 +259,7 @@ class UmatPlot(PlotDialog):
             if model_to_del not in self.init_models:
                 openModels.close([model_to_del])
                 del self.selected_neurons[(self.i, self.j)]
+        self.get_basin(None) # to display the basin around the selected cell
         self._displayData()
 
     def onKey(self, event):
@@ -273,10 +275,12 @@ class UmatPlot(PlotDialog):
         Define basin with the threshold given by the slider dialog
         """
         threshold = self.slider2.get()
-        if self.i is not None and self.j is not None:
+        if self.i is not None and self.j is not None and threshold > 0:
             cell = self.fold[(self.i, self.j)]
             self.cluster_map = self.unfold_matrix(self.dijkstra(starting_cell=cell, threshold=threshold) != numpy.inf)
-            self._displayData()
+        else:
+            self.get_clusters(None)
+        self._displayData()
 
     def dijkstra(self, starting_cell = None, threshold = numpy.inf):
         """
