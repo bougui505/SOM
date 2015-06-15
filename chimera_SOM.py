@@ -260,7 +260,7 @@ class UmatPlot(PlotDialog):
                 openModels.close([model_to_del])
                 del self.selected_neurons[(self.i, self.j)]
         self.get_basin(None) # to display the basin around the selected cell
-        self._displayData()
+        #self._displayData() # commented as it's already done by self.get_basin(None) above
 
     def onKey(self, event):
         if event.key == 'control':
