@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 12
+creation date: 2015 06 15
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -18,12 +18,14 @@ class PlotDialog(MPLDialog):
     title = "Self-Organizing Map"
     provideStatus = True
 
-    def __init__(self, min_value, max_value, showToolbar=True, **kw):
+    def __init__(self, min_value, max_value, max_path_value, showToolbar=True, **kw):
         """
         min_value and max_value are the limits for the slider on the U-matrix
+        max_path_value maximum path distance
         """
         self.min_value = min_value
         self.max_value = max_value
+        self.max_path_value = max_path_value
         self.showToolbar = showToolbar
         MPLDialog.__init__(self, **kw)
 
@@ -42,6 +44,8 @@ class PlotDialog(MPLDialog):
             resolution = (self.max_value - self.min_value)/1000
             self.slider = Tkinter.Scale(parent, from_=self.min_value, to=self.max_value, command=self.get_clusters, orient='horizontal', label='Threshold on U-matrix', length=500, resolution=resolution)
             self.slider.pack()
+            self.slider2 = Tkinter.Scale(parent, from_=0, to=self.max_path_value, command=self.get_basin, orient='horizontal', label='Threshold on U-matrix for basin flooding', length=500, resolution=resolution)
+            self.slider2.pack()
 
         from matplotlib.figure import Figure
 

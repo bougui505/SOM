@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 12
+creation date: 2015 06 15
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -30,19 +30,24 @@ import matplotlib
 class UmatPlot(PlotDialog):
     def __init__(self, movie):
         self.movie = movie
-        data = numpy.load('som.dat')
-        self.matrix = data['unfolded_umat']
-        PlotDialog.__init__(self, numpy.nanmin(self.matrix), numpy.nanmax(self.matrix))
+        self.data = numpy.load('som.dat')
+        self.init_som_shape = self.data['representatives'].shape # initial som shape
+        self.matrix = self.data['unfolded_umat']
+        self.minimum_spanning_tree = self.data['minimum_spanning_tree']
+        PlotDialog.__init__(self, numpy.nanmin(self.matrix), numpy.nanmax(self.matrix),
+                            numpy.nanmax(self.matrix)*self.init_som_shape[0])
         self.master = self._master
         self.displayed_matrix = self.matrix
-        self.change_of_basis = data['change_of_basis']
-        self.rep_map = self.unfold_matrix(data['representatives'])  # map of representative structures
-        self.bmus = numpy.asarray([self.change_of_basis[tuple(e)] for e in data['bmus']])
+        self.unfold = self.data['change_of_basis'] # to unfold the cell indexes
+        self.fold = {v:k for k, v in self.unfold.iteritems()} # to fold the cell indexes
+        self.rep_map = self.unfold_matrix(self.data['representatives'])  # map of representative structures
+        self.bmus = numpy.asarray([self.unfold[tuple(e)] for e in self.data['bmus']])
         self.selected_neurons = OrderedDict([])
         self.colors = []  # colors of the dot in the map
         self.subplot = self.add_subplot(1, 1, 1)
         self.colorbar = None
         self.cluster_map = None
+        self.basin_map = None
         self._displayData()
         movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
@@ -104,11 +109,11 @@ class UmatPlot(PlotDialog):
 
     def unfold_matrix(self, matrix):
         """
-        unfold the given matrix given self.change_of_basis
+        unfold the given matrix given self.unfold
         """
         unfolded_matrix = numpy.ones_like(self.matrix) * numpy.nan
-        for k in self.change_of_basis.keys():
-            t = self.change_of_basis[k]  # tuple
+        for k in self.unfold.keys():
+            t = self.unfold[k]  # tuple
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
 
@@ -189,6 +194,8 @@ class UmatPlot(PlotDialog):
         heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
+        if self.basin_map is not None:
+            ax.contour(self.basin_map, 1, colors='white', extent=(0, ny, 0, nx), origin='lower')
         if self.colorbar is None:
             self.colorbar = self.figure.colorbar(heatmap)
         else:
@@ -264,6 +271,45 @@ class UmatPlot(PlotDialog):
         if event.key == 'control':
             self.ctrl_pressed = False
 
+    def get_basin(self, value):
+        """
+        Define basin with the threshold given by the slider dialog
+        """
+        threshold = self.slider2.get()
+        if self.i is not None and self.j is not None:
+            cell = self.fold[(self.i, self.j)]
+            self.basin_map = self.unfold_matrix(self.dijkstra(starting_cell=cell, threshold=threshold) != numpy.inf)
+            self._displayData()
+
+    def dijkstra(self, starting_cell = None, threshold = numpy.inf):
+        """
+
+        Apply dijkstra distance transform to the SOM map.
+        threshold: interactive threshold for local clustering
+
+        """
+        ms_tree = self.minimum_spanning_tree
+        nx, ny = self.init_som_shape
+        nx2, ny2 = ms_tree.shape
+        visit_mask = numpy.zeros(nx2, dtype=bool)
+        m = numpy.ones(nx2) * numpy.inf
+        if starting_cell is None:
+            cc = numpy.unravel_index(ms_tree.argmin(), (nx2, ny2))[0]  # current cell
+        else:
+            cc = numpy.ravel_multi_index(starting_cell, (nx, ny))
+        m[cc] = 0
+        while (~visit_mask).sum() > 0:
+            neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
+            for e in neighbors:
+                d = ms_tree[cc, e] + m[cc]
+                if d < m[e]:
+                    m[e] = d
+            visit_mask[cc] = True
+            m_masked = numpy.ma.masked_array(m, visit_mask)
+            cc = m_masked.argmin()
+            if d > threshold:
+                break
+        return m.reshape((nx, ny))
 
 from chimera.extension import manager
 from Movie.gui import MovieDialog
