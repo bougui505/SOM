@@ -130,12 +130,18 @@ class Graph:
                                           axis=0)).reshape(umat_shape)
         return umat
 
-    def dijkstra(self, starting_cell = None):
+    def dijkstra(self, starting_cell = None, break_at_local_min = False):
         """
-        apply dijkstra distance transform to the SOM map
+
+        Apply dijkstra distance transform to the SOM map. If break_at_local_min
+        the dijkstra algorithm breaks at local minima: usefull to detect
+        local_minima and basins
+
         """
         if self.minimum_spanning_tree is None:
             self.get_minimum_spanning_tree()
+        if break_at_local_min:
+            umat = self.umatrix.flatten()
         ms_tree = self.minimum_spanning_tree
         nx, ny = self.smap.shape[:2]
         nx2, ny2 = ms_tree.shape
@@ -154,7 +160,11 @@ class Graph:
                     m[e] = d
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
+            if break_at_local_min:
+                u_value_prev = umat[cc]
             cc = m_masked.argmin()
+            if break_at_local_min and umat[cc] > u_value_prev:
+                break
         return m.reshape((nx, ny))
 
     @staticmethod
