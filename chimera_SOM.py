@@ -310,7 +310,7 @@ class UmatPlot(PlotDialog):
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
             cc = m_masked.argmin()
-            if d > threshold:
+            if m[m != numpy.inf].max() > threshold:
                 break
         return m.reshape((nx, ny))
 
