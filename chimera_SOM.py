@@ -47,7 +47,6 @@ class UmatPlot(PlotDialog):
         self.subplot = self.add_subplot(1, 1, 1)
         self.colorbar = None
         self.cluster_map = None
-        self.basin_map = None
         self._displayData()
         movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
@@ -177,8 +176,6 @@ class UmatPlot(PlotDialog):
             ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             if self.cluster_map is not None:
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
-            if self.basin_map is not None:
-                ax.contour(self.basin_map, 1, colors='white', extent=(0, ny, 0, nx), origin='lower')
             self.figure.canvas.draw()
 
     def _displayData(self):
@@ -196,8 +193,6 @@ class UmatPlot(PlotDialog):
         heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
-        if self.basin_map is not None:
-            ax.contour(self.basin_map, 1, colors='white', extent=(0, ny, 0, nx), origin='lower')
         if self.colorbar is None:
             self.colorbar = self.figure.colorbar(heatmap)
         else:
@@ -280,7 +275,7 @@ class UmatPlot(PlotDialog):
         threshold = self.slider2.get()
         if self.i is not None and self.j is not None:
             cell = self.fold[(self.i, self.j)]
-            self.basin_map = self.unfold_matrix(self.dijkstra(starting_cell=cell, threshold=threshold) != numpy.inf)
+            self.cluster_map = self.unfold_matrix(self.dijkstra(starting_cell=cell, threshold=threshold) != numpy.inf)
             self._displayData()
 
     def dijkstra(self, starting_cell = None, threshold = numpy.inf):
