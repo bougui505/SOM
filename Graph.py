@@ -232,12 +232,10 @@ class Graph:
     def best_partition(self):
         print "computing communities maximizing modularity"
         gnx = networkx.Graph()
-        if self.minimum_spanning_tree is None:
-            self.get_minimum_spanning_tree()
-        nx, ny = self.minimum_spanning_tree.shape
+        nx, ny = self.adjacency_matrix.shape
         for index in itertools.combinations(range(nx), 2):
             (i, j) = index
-            weight = self.minimum_spanning_tree[i, j]
+            weight = self.adjacency_matrix[i, j]
             if weight != numpy.inf and weight != 0:
                 gnx.add_edge(i, j, weight=weight)
         communities = community.best_partition(gnx)
