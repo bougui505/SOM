@@ -25,6 +25,7 @@ class Graph:
         self.change_of_basis = None
         self.community_map = None
         self.unfolded_umat = None
+        self.minimum_spanning_tree = None
 
     def get_adjacency_matrix(self):
         """
@@ -96,8 +97,7 @@ class Graph:
             sets.append(self.sets.pop(index))
         self.sets.append(sets[0].union(sets[1]))
 
-    @property
-    def minimum_spanning_tree(self):
+    def get_minimum_spanning_tree(self):
         """
         Kruskal's algorithm
         """
@@ -114,7 +114,7 @@ class Graph:
                 self.union(index_set1, index_set2)
                 minimum_spanning_tree[u, v] = self.adjacency_matrix[u, v]
                 minimum_spanning_tree[v, u] = self.adjacency_matrix[u, v]
-        return minimum_spanning_tree
+        self.minimum_spanning_tree = minimum_spanning_tree
 
     @property
     def umatrix(self):
@@ -130,16 +130,21 @@ class Graph:
                                           axis=0)).reshape(umat_shape)
         return umat
 
-    def dijkstra(self):
+    def dijkstra(self, starting_cell = None):
         """
         apply dijkstra distance transform to the SOM map
         """
+        if self.minimum_spanning_tree is None:
+            self.get_minimum_spanning_tree()
         ms_tree = self.minimum_spanning_tree
         nx, ny = self.smap.shape[:2]
         nx2, ny2 = ms_tree.shape
         visit_mask = numpy.zeros(nx2, dtype=bool)
         m = numpy.ones(nx2) * numpy.inf
-        cc = numpy.unravel_index(ms_tree.argmin(), (nx2, ny2))[0]  # current cell
+        if starting_cell is None:
+            cc = numpy.unravel_index(ms_tree.argmin(), (nx2, ny2))[0]  # current cell
+        else:
+            cc = starting_cell
         m[cc] = 0
         while (~visit_mask).sum() > 0:
             neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
@@ -245,6 +250,8 @@ class Graph:
         used as keys in the GML file
         """
         if graph is None:
+            if self.minimum_spanning_tree is None:
+                self.get_minimum_spanning_tree()
             ms_tree = self.minimum_spanning_tree
             graph = self.get_graph(ms_tree)
         outfile = open(outfilename, 'w')
