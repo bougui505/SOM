@@ -176,6 +176,7 @@ class UmatPlot(PlotDialog):
             nx, ny = self.matrix.shape
             ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             if self.cluster_map is not None:
+                ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             self.figure.canvas.draw()
 
@@ -193,6 +194,7 @@ class UmatPlot(PlotDialog):
         nx, ny = self.matrix.shape
         heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         if self.cluster_map is not None:
+            ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
         if self.colorbar is None:
             self.colorbar = self.figure.colorbar(heatmap)
