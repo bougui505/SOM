@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 11
+creation date: 2015 06 15
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -148,10 +148,11 @@ class SOM:
                                                                                                numpy.newaxis]
                         origrid = numpy.r_[origrid, rest]
                     self.smap = numpy.dot(origrid.transpose([1, 2, 0]), eivec.T) + inputmean
+                    self.graph = None
             else:
                 self.loadMap(smap)
+                self.graph = Graph.Graph(smap=self.smap)
             print "Shape of the SOM:%s" % str(self.smap.shape)
-        self.graph = None
 
     def random_map(self):
         print "Map initialization..."
