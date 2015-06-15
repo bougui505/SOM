@@ -177,6 +177,8 @@ class UmatPlot(PlotDialog):
             ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             if self.cluster_map is not None:
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
+            if self.basin_map is not None:
+                ax.contour(self.basin_map, 1, colors='white', extent=(0, ny, 0, nx), origin='lower')
             self.figure.canvas.draw()
 
     def _displayData(self):
