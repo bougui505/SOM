@@ -44,6 +44,7 @@ class PlotDialog(MPLDialog):
             resolution = (self.max_value - self.min_value)/1000
             self.slider = Tkinter.Scale(parent, from_=self.min_value, to=self.max_value, command=self.get_clusters, orient='horizontal', label='Threshold on U-matrix', length=500, resolution=resolution)
             self.slider.pack()
+            resolution = (self.max_path_value)/100000
             self.slider2 = Tkinter.Scale(parent, from_=0, to=self.max_path_value, command=self.get_basin, orient='horizontal', label='Threshold on U-matrix for basin flooding', length=500, resolution=resolution)
             self.slider2.pack()
 

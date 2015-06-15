@@ -35,7 +35,7 @@ class UmatPlot(PlotDialog):
         self.matrix = self.data['unfolded_umat']
         self.minimum_spanning_tree = self.data['minimum_spanning_tree']
         PlotDialog.__init__(self, numpy.nanmin(self.matrix), numpy.nanmax(self.matrix),
-                            numpy.nanmax(self.matrix)*self.init_som_shape[0])
+                            self.dijkstra().max())
         self.master = self._master
         self.displayed_matrix = self.matrix
         self.unfold = self.data['change_of_basis'] # to unfold the cell indexes
