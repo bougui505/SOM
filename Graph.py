@@ -144,7 +144,7 @@ class Graph:
         if starting_cell is None:
             cc = numpy.unravel_index(ms_tree.argmin(), (nx2, ny2))[0]  # current cell
         else:
-            cc = starting_cell
+            cc = numpy.ravel_multi_index(starting_cell, (nx, ny))
         m[cc] = 0
         while (~visit_mask).sum() > 0:
             neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
