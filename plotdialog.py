@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 15
+creation date: 2015 06 16
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -31,30 +31,13 @@ class PlotDialog(MPLDialog):
 
     def fillInUI(self, parent):
         import Pmw, Tkinter
-        # Option menu for map type
-        self.display_option = Pmw.OptionMenu(parent,
-                                             labelpos='w',
-                                             label_text='Display: ',
-                                             items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
-                                             command=self.switch_matrix)
-        self.display_option.pack()
 
-        # Slider for clustering
-        if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
-            resolution = (self.max_value - self.min_value)/1000
-            self.slider = Tkinter.Scale(parent, from_=self.min_value, to=self.max_value, command=self.get_clusters, orient='horizontal', label='Threshold on U-matrix', length=500, resolution=resolution)
-            self.slider.pack()
-            resolution = (self.max_path_value)/100000
-            self.slider2 = Tkinter.Scale(parent, from_=0, to=self.max_path_value, command=self.get_basin, orient='horizontal', label='Threshold on U-matrix for basin flooding', length=500, resolution=resolution)
-            self.slider2.pack()
-
+        # Main figure
         from matplotlib.figure import Figure
-
         self.figure = Figure()
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-
         fc = FigureCanvasTkAgg(self.figure, master=parent)
-        fc.get_tk_widget().pack(side="top", fill="both", expand=True)
+        fc.get_tk_widget().pack(side='top', fill='both', expand=True)
         self.figureCanvas = fc
         if self.showToolbar:
             nt = NavigationToolbar2TkAgg(fc, parent)
@@ -62,6 +45,30 @@ class PlotDialog(MPLDialog):
             self.navToolbar = nt
         else:
             self.navToolbar = None
+
+        # Sliders for clustering
+        resolution = (self.max_value - self.min_value)/1000
+        self.slider = Tkinter.Scale(parent, from_=self.min_value, to=self.max_value, command=self.get_clusters, orient='horizontal', label='Threshold on U-matrix', length=500, resolution=resolution)
+        self.slider.pack(side='top')
+        resolution = (self.max_path_value)/100000
+        self.slider2 = Tkinter.Scale(parent, from_=0, to=self.max_path_value, command=self.get_basin, orient='horizontal', label='Threshold on U-matrix for basin flooding', length=500, resolution=resolution)
+        self.slider2.pack(side='top')
+
+        # Option menu for map type
+        self.display_option = Pmw.OptionMenu(parent,
+                                             labelpos='w',
+                                             label_text='Display: ',
+                                             items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
+                                             command=self.switch_matrix)
+        self.display_option.pack(side='left')
+
+        # Option menu for selection mode
+        self.selection_mode = Pmw.OptionMenu(parent,
+                                             labelpos='w',
+                                             label_text='Selection mode: ',
+                                             items = ['Cell', 'Cluster'],
+                                             command=self.switch_matrix)
+        self.selection_mode.pack(side='left')
 
     def add_subplot(self, *args):
         return self.figure.add_subplot(*args)
