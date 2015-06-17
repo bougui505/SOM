@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 16
+creation date: 2015 06 17
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -63,12 +63,12 @@ class PlotDialog(MPLDialog):
         self.display_option.pack(side='left')
 
         # Option menu for selection mode
-        self.selection_mode = Pmw.OptionMenu(parent,
+        self.selection_mode_menu = Pmw.OptionMenu(parent,
                                              labelpos='w',
                                              label_text='Selection mode: ',
                                              items = ['Cell', 'Cluster'],
-                                             command=self.switch_matrix)
-        self.selection_mode.pack(side='left')
+                                             command=self.update_selection_mode)
+        self.selection_mode_menu.pack(side='left')
 
     def add_subplot(self, *args):
         return self.figure.add_subplot(*args)

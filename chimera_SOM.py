@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 15
+creation date: 2015 06 17
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -39,6 +39,7 @@ class UmatPlot(PlotDialog):
                             self.dijkstra().max())
         self.master = self._master
         self.displayed_matrix = self.matrix
+        self.selection_mode = 'Cell'
         self.unfold = self.data['change_of_basis'] # to unfold the cell indexes
         self.fold = {v:k for k, v in self.unfold.iteritems()} # to fold the cell indexes
         self.rep_map = self.unfold_matrix(self.data['representatives'])  # map of representative structures
@@ -48,6 +49,7 @@ class UmatPlot(PlotDialog):
         self.subplot = self.add_subplot(1, 1, 1)
         self.colorbar = None
         self.cluster_map = None
+        self.highlighted_cluster = None
         self._displayData()
         movie.triggers.addHandler(self.movie.NEW_FRAME_NUMBER, self.update_bmu, None)
         self.registerPickHandler(self.onPick)
@@ -60,7 +62,7 @@ class UmatPlot(PlotDialog):
         self.rep_rmsd = None
         self.density = None
         self.ctrl_pressed = False
-
+        self.motion_notify_event = None
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -84,6 +86,19 @@ class UmatPlot(PlotDialog):
             if self.rep_rmsd is not None:
                 self.displayed_matrix = self.rep_rmsd
         self._displayData()
+
+    def update_selection_mode(self, value):
+        """
+
+        Change the mouse behaviour for selection
+
+        """
+        self.selection_mode = self.selection_mode_menu.getvalue() # 'Cell' or 'Cluster'
+        if self.selection_mode == 'Cell':
+            self.figureCanvas.mpl_disconnect(self.motion_notify_event)
+            self.highlighted_cluster = None
+        elif self.selection_mode == 'Cluster':
+            self.motion_notify_event = self.figureCanvas.mpl_connect("motion_notify_event", self.highlight_cluster)
 
     def get_clusters(self, value):
         """
@@ -116,6 +131,16 @@ class UmatPlot(PlotDialog):
             t = self.unfold[k]  # tuple
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
+
+    def fold_matrix(self, matrix):
+        """
+        fold the given matrix given self.fold
+        """
+        folded_matrix = numpy.ones(self.init_som_shape) * numpy.nan
+        for k in self.fold.keys():
+            t = self.fold[k]  # tuple
+            folded_matrix[t] = matrix[k]
+        return folded_matrix
 
     def rmsd_per_representative(self, frame_ref=1):
         """
@@ -196,6 +221,12 @@ class UmatPlot(PlotDialog):
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
+        if self.highlighted_cluster is not None:
+            ax.contour(self.highlighted_cluster, 1, colors='white', linewidths=2.5,
+                        extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
+            ax.contour(self.highlighted_cluster, 1, colors='green', extent=(0, ny, 0, nx),
+                        origin='lower') # display the contours for cluster
+
         if self.colorbar is None:
             self.colorbar = self.figure.colorbar(heatmap)
         else:
@@ -228,41 +259,96 @@ class UmatPlot(PlotDialog):
                 Midas.color('forest green', '#%d' % model.id)
 
     def onPick(self, event):
+        if self.selection_mode == 'Cell': # Select unique cells
+            if event.mouseevent.button == 3 or self.ctrl_pressed:
+                self.keep_selection = True
+            else:
+                self.keep_selection = False
 
+            if not self.keep_selection:
+                self.close_current_models()
+            else:
+                if len(self.selected_neurons) == 1:
+                    if self.i is not None and self.j is not None:
+                        self.add_model(name='%d,%d' % (self.i, self.j))
+            x, y = event.mouseevent.xdata, event.mouseevent.ydata
+            self.j, self.i = int(x), int(y)
+            if (self.i, self.j) not in self.selected_neurons.keys():
+                frame_id = self.rep_map[self.i, self.j] + 1
+                if not numpy.isnan(frame_id):
+                    frame_id = int(frame_id)
+                    if self.keep_selection:
+                        self.colors.append('g')
+                    else:
+                        self.colors.append('r')
+                    self.display_frame(frame_id)
+                    if self.keep_selection:
+                        self.add_model(name='%d,%d' % (self.i, self.j))
+                    self.selected_neurons[(self.i, self.j)] = openModels.list()[-1]
+                    self.update_model_color()
+            else:
+                model_to_del = self.selected_neurons[(self.i, self.j)]
+                if model_to_del not in self.init_models:
+                    openModels.close([model_to_del])
+                    del self.selected_neurons[(self.i, self.j)]
+            self.get_basin(None) # to display the basin around the selected cell
+            #self._displayData() # commented as it's already done by self.get_basin(None) above
 
-        if event.mouseevent.button == 3 or self.ctrl_pressed:
-            self.keep_selection = True
-        else:
-            self.keep_selection = False
-
-        if not self.keep_selection:
-            self.close_current_models()
-        else:
-            if len(self.selected_neurons) == 1:
-                if self.i is not None and self.j is not None:
-                    self.add_model(name='%d,%d' % (self.i, self.j))
-        x, y = event.mouseevent.xdata, event.mouseevent.ydata
-        self.j, self.i = int(x), int(y)
-        if (self.i, self.j) not in self.selected_neurons.keys():
-            frame_id = self.rep_map[self.i, self.j] + 1
-            if not numpy.isnan(frame_id):
-                frame_id = int(frame_id)
-                if self.keep_selection:
-                    self.colors.append('g')
+    def highlight_cluster(self, event):
+        x, y = event.xdata, event.ydata
+        if x is not None and y is not None:
+            j, i = int(x), int(y)
+            if self.fold.has_key((i,j)):
+                cell = self.fold[(i, j)]
+                if self.cluster_map[i,j]:
+                    self.highlighted_cluster = self.pick_up_cluster((i,j))
                 else:
-                    self.colors.append('r')
-                self.display_frame(frame_id)
-                if self.keep_selection:
-                    self.add_model(name='%d,%d' % (self.i, self.j))
-                self.selected_neurons[(self.i, self.j)] = openModels.list()[-1]
-                self.update_model_color()
-        else:
-            model_to_del = self.selected_neurons[(self.i, self.j)]
-            if model_to_del not in self.init_models:
-                openModels.close([model_to_del])
-                del self.selected_neurons[(self.i, self.j)]
-        self.get_basin(None) # to display the basin around the selected cell
-        #self._displayData() # commented as it's already done by self.get_basin(None) above
+                    self.highlighted_cluster = None
+                self._displayData()
+
+    def neighbor_dim2_toric(self, p, s):
+        """Efficient toric neighborhood function for 2D SOM.
+        """
+        x, y = p
+        X, Y = s
+        xm = (x - 1) % X
+        ym = (y - 1) % Y
+        xp = (x + 1) % X
+        yp = (y + 1) % Y
+        return [(xm, ym), (xm, y), (xm, yp), (x, ym), (x, yp), (xp, ym), (xp, y), (xp, yp)]
+
+    def get_neighbors_of_area(self, cluster_map):
+        """
+        return the neighboring indices of an area defined by a boolean array
+        """
+        neighbors = []
+        shape = cluster_map.shape
+        for cell in numpy.asarray(numpy.where(cluster_map)).T:
+            for e in self.neighbor_dim2_toric(cell, shape):
+                if not cluster_map[e]:
+                    neighbors.append(e)
+        return neighbors
+
+
+    def pick_up_cluster(self, starting_cell):
+        """
+
+        pick up a cluster according to connexity
+
+        """
+        cluster_map = self.fold_matrix(self.cluster_map)
+        cell = self.fold[starting_cell]
+        visit_mask = numpy.zeros(self.init_som_shape, dtype=bool)
+        print visit_mask.shape, cluster_map.shape
+        visit_mask[cell] = True
+        checkpoint = True
+        while checkpoint:
+            checkpoint = False
+            for e in self.get_neighbors_of_area(visit_mask):
+                if cluster_map[e]:
+                    visit_mask[e] = True
+                    checkpoint = True
+        return self.unfold_matrix(visit_mask)
 
     def onKey(self, event):
         if event.key == 'control':
