@@ -293,17 +293,36 @@ class UmatPlot(PlotDialog):
                     del self.selected_neurons[(self.i, self.j)]
             self.get_basin(None) # to display the basin around the selected cell
             #self._displayData() # commented as it's already done by self.get_basin(None) above
+        elif self.selection_mode == 'Cluster' and event.mouseevent.button == 1:
+            self.close_current_models()
+            if self.highlighted_cluster is not None:
+                self.highlighted_cluster[numpy.isnan(self.highlighted_cluster)] = False
+                self.highlighted_cluster = numpy.bool_(self.highlighted_cluster)
+                frame_ids = self.rep_map[self.highlighted_cluster] + 1
+                frame_ids = frame_ids[~numpy.isnan(frame_ids)]
+                n = len(frame_ids)
+                if n > 10:
+                    frame_ids = frame_ids[::n/10] # take only ten representatives
+                for frame_id in frame_ids:
+                    frame_id = int(frame_id)
+                    self.display_frame(frame_id)
+                    self.add_model(name='cluster')
 
     def highlight_cluster(self, event):
         x, y = event.xdata, event.ydata
+        threshold = self.slider2.get() # threshold for slider 2
         if x is not None and y is not None:
-            j, i = int(x), int(y)
-            if self.fold.has_key((i,j)):
-                cell = self.fold[(i, j)]
-                if self.cluster_map[i,j]:
-                    self.highlighted_cluster = self.pick_up_cluster((i,j))
+            self.j, self.i = int(x), int(y)
+            if self.fold.has_key((self.i,self.j)):
+                if threshold > 0:
+                    self.get_basin(None, display=False)
+                    self.highlighted_cluster = self.cluster_map
                 else:
-                    self.highlighted_cluster = None
+                    cell = self.fold[(self.i, self.j)]
+                    if self.cluster_map[self.i,self.j]:
+                        self.highlighted_cluster = self.pick_up_cluster((self.i,self.j))
+                    else:
+                        self.highlighted_cluster = None
                 self._displayData()
 
     def neighbor_dim2_toric(self, p, s):
@@ -339,7 +358,6 @@ class UmatPlot(PlotDialog):
         cluster_map = self.fold_matrix(self.cluster_map)
         cell = self.fold[starting_cell]
         visit_mask = numpy.zeros(self.init_som_shape, dtype=bool)
-        print visit_mask.shape, cluster_map.shape
         visit_mask[cell] = True
         checkpoint = True
         while checkpoint:
@@ -358,17 +376,19 @@ class UmatPlot(PlotDialog):
         if event.key == 'control':
             self.ctrl_pressed = False
 
-    def get_basin(self, value):
+    def get_basin(self, value, display=True):
         """
         Define basin with the threshold given by the slider dialog
         """
         threshold = self.slider2.get()
-        if self.i is not None and self.j is not None and threshold > 0:
+        if self.i is not None and self.j is not None\
+            and threshold > 0 and self.fold.has_key((self.i, self.j)):
             cell = self.fold[(self.i, self.j)]
             self.cluster_map = self.unfold_matrix(self.dijkstra(starting_cell=cell, threshold=threshold) != numpy.inf)
         else:
             self.get_clusters(None)
-        self._displayData()
+        if display:
+            self._displayData()
 
     def dijkstra(self, starting_cell = None, threshold = numpy.inf):
         """
