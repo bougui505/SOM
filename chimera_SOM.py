@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 17
+creation date: 2015 06 19
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -15,6 +15,7 @@ sys.path.append('.')
 from plotdialog import PlotDialog
 from plotdialog import RMSD
 from plotdialog import Density
+from plotdialog import Projection
 import numpy
 import Combine
 from chimera import update
@@ -63,6 +64,7 @@ class UmatPlot(PlotDialog):
         self.density = None
         self.ctrl_pressed = False
         self.motion_notify_event = None
+        self.projections = {} # Dictionnary containing all the data projections made by the user
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -85,7 +87,41 @@ class UmatPlot(PlotDialog):
                     self.rmsd_per_representative(frame_ref=frame_ref)
             if self.rep_rmsd is not None:
                 self.displayed_matrix = self.rep_rmsd
+        else: # user defined projection
+            self.displayed_matrix = self.projections[self.display_option.getvalue()]
         self._displayData()
+
+    def project_data(self):
+        """
+
+        project data onto the map and add an entry to self.display_option to
+        visualize the resulting map
+
+        """
+        dlg = Projection() # dialog
+        user_input = dlg.run(self.master)
+        if user_input is not None:
+            item, filename = user_input
+        else:
+            item, filename = None, None
+        if item is not None and filename is not None:
+            if self.density is None:
+                dlg = Density()  # Dialog
+                if dlg.run(self.master):
+                    self.get_density()
+            if self.density is not None: # the user didn't cancel the density computation:
+                data = numpy.genfromtxt(filename)
+                print numpy.unique(data)
+                projection_map = numpy.zeros_like(self.matrix)
+                total = len(self.bmus)
+                for i, bmu in enumerate(self.bmus):
+                    self.status('Data projection: %.4f/1.0000' % (float(i + 1) / total, ))
+                    bmu = tuple(bmu)
+                    projection_map[bmu] += data[i]
+                projection_map = projection_map / self.density
+                self.display_option_items.append(item)
+                self.display_option.setitems(self.display_option_items)
+                self.projections[item] = projection_map
 
     def update_selection_mode(self, value):
         """

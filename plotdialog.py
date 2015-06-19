@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 17
+creation date: 2015 06 19
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -55,12 +55,18 @@ class PlotDialog(MPLDialog):
         self.slider2.pack(side='top')
 
         # Option menu for map type
+        self.display_option_items = ["U-matrix", "Density", "Closest frame id", "RMSD"]
         self.display_option = Pmw.OptionMenu(parent,
                                              labelpos='w',
                                              label_text='Display: ',
-                                             items = ["U-matrix", "Density", "Closest frame id", "RMSD"],
+                                             items = self.display_option_items,
                                              command=self.switch_matrix)
         self.display_option.pack(side='left')
+
+        # Button to add projection map
+        self.add_projection_button = Tkinter.Button(parent, text='Data projection',
+                                                    command=self.project_data)
+        self.add_projection_button.pack(side='left')
 
         # Option menu for selection mode
         self.selection_mode_menu = Pmw.OptionMenu(parent,
@@ -84,6 +90,32 @@ class PlotDialog(MPLDialog):
 
 
 from chimera.baseDialog import ModalDialog
+from tkFileDialog import askopenfilename
+
+class Projection(ModalDialog):
+    buttons = ('Cancel', 'Apply')
+
+    def __init__(self):
+        self.name = None
+        self.filename = None
+        ModalDialog.__init__(self)
+
+    def fillInUI(self, parent):
+        import Tkinter
+        from chimera.tkoptions import StringOption
+        Tkinter.Label(parent, text='Data projection',
+                        relief="ridge", bd=4).grid(row=0, column=0)
+        self.name = StringOption(parent, 1, "Name for the projection", 'Projection', None)
+        self.filename = Tkinter.Button(parent, text='Open data file',command=askopenfilename).grid(row=2, column=0)
+        self.filename = askopenfilename()
+
+    def Apply(self):
+        name = self.name.get()
+        ModalDialog.Cancel(self, value=(name, self.filename))
+
+    def destroy(self):
+        ModelessDialog.destroy(self)
+
 
 
 class RMSD(ModalDialog):
