@@ -56,6 +56,7 @@ class UmatPlot(PlotDialog):
         self.registerPickHandler(self.onPick)
         self.figureCanvas.mpl_connect("key_press_event", self.onKey)
         self.figureCanvas.mpl_connect("key_release_event", self.offKey)
+        self.figureCanvas.mpl_connect("scroll_event", self.slice_matrix)
         self.keep_selection = False
         self.init_models = set(openModels.list())
         self.i, self.j = None, None  # current neuron
@@ -65,6 +66,7 @@ class UmatPlot(PlotDialog):
         self.ctrl_pressed = False
         self.motion_notify_event = None
         self.projections = {} # Dictionnary containing all the data projections made by the user
+        self.slice_id = 0 # slice of the matrix to display for high dimensional data
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -248,8 +250,7 @@ class UmatPlot(PlotDialog):
             if len(self.displayed_matrix.shape) == 2: # two dimensional array
                 ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             else: # we must slice the matrix
-                slice_id = 0
-                ax.imshow(self.displayed_matrix[:,:,slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+                ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             if self.cluster_map is not None:
                 ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
@@ -270,8 +271,7 @@ class UmatPlot(PlotDialog):
         if len(self.displayed_matrix.shape) == 2: # two dimensional array
             heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         else: # we must slice the matrix
-            slice_id = 0
-            heatmap = ax.imshow(self.displayed_matrix[:,:,slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            heatmap = ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
@@ -325,28 +325,29 @@ class UmatPlot(PlotDialog):
                 if len(self.selected_neurons) == 1:
                     if self.i is not None and self.j is not None:
                         self.add_model(name='%d,%d' % (self.i, self.j))
-            x, y = event.mouseevent.xdata, event.mouseevent.ydata
-            self.j, self.i = int(x), int(y)
-            if (self.i, self.j) not in self.selected_neurons.keys():
-                frame_id = self.rep_map[self.i, self.j] + 1
-                if not numpy.isnan(frame_id):
-                    frame_id = int(frame_id)
-                    if self.keep_selection:
-                        self.colors.append('g')
-                    else:
-                        self.colors.append('r')
-                    self.display_frame(frame_id)
-                    if self.keep_selection:
-                        self.add_model(name='%d,%d' % (self.i, self.j))
-                    self.selected_neurons[(self.i, self.j)] = openModels.list()[-1]
-                    self.update_model_color()
-            else:
-                model_to_del = self.selected_neurons[(self.i, self.j)]
-                if model_to_del not in self.init_models:
-                    openModels.close([model_to_del])
-                    del self.selected_neurons[(self.i, self.j)]
-            self.get_basin(None) # to display the basin around the selected cell
-            #self._displayData() # commented as it's already done by self.get_basin(None) above
+            if event.mouseevent.button == 1 or event.mouseevent.button == 3:
+                x, y = event.mouseevent.xdata, event.mouseevent.ydata
+                self.j, self.i = int(x), int(y)
+                if (self.i, self.j) not in self.selected_neurons.keys():
+                    frame_id = self.rep_map[self.i, self.j] + 1
+                    if not numpy.isnan(frame_id):
+                        frame_id = int(frame_id)
+                        if self.keep_selection:
+                            self.colors.append('g')
+                        else:
+                            self.colors.append('r')
+                        self.display_frame(frame_id)
+                        if self.keep_selection:
+                            self.add_model(name='%d,%d' % (self.i, self.j))
+                        self.selected_neurons[(self.i, self.j)] = openModels.list()[-1]
+                        self.update_model_color()
+                else:
+                    model_to_del = self.selected_neurons[(self.i, self.j)]
+                    if model_to_del not in self.init_models:
+                        openModels.close([model_to_del])
+                        del self.selected_neurons[(self.i, self.j)]
+                self.get_basin(None) # to display the basin around the selected cell
+                #self._displayData() # commented as it's already done by self.get_basin(None) above
         elif self.selection_mode == 'Cluster' and event.mouseevent.button == 1:
             self.close_current_models()
             if self.highlighted_cluster is not None:
@@ -361,6 +362,25 @@ class UmatPlot(PlotDialog):
                     frame_id = int(frame_id)
                     self.display_frame(frame_id)
                     self.add_model(name='cluster')
+
+
+    def slice_matrix(self, event):
+        """
+        slice matrix when its dimension is larger than 2
+        """
+        n_dim = len(self.displayed_matrix.shape) # dimension of the displayed array
+        if n_dim > 2: # high dimensional array, we must scroll in dimensions !
+            n_features = self.displayed_matrix.shape[-1]
+            if event.button == 'up':
+                if self.slice_id < n_features - 1:
+                    self.slice_id += 1
+                    self.status('Matrix slice %d' % self.slice_id)
+                    self._displayData()
+            elif event.button == 'down':
+                if self.slice_id > 0:
+                    self.slice_id -= 1
+                    self.status('Matrix slice %d' % self.slice_id)
+                    self._displayData()
 
     def highlight_cluster(self, event):
         x, y = event.xdata, event.ydata
