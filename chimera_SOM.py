@@ -111,14 +111,24 @@ class UmatPlot(PlotDialog):
                     self.get_density()
             if self.density is not None: # the user didn't cancel the density computation:
                 data = numpy.genfromtxt(filename)
-                print numpy.unique(data)
-                projection_map = numpy.zeros_like(self.matrix)
+                try:
+                    n_features = len(data[0])
+                except TypeError:
+                    n_features = 1
+                if n_features == 1:
+                    projection_map = numpy.zeros_like(self.matrix)
+                else:
+                    nx, ny = self.matrix.shape
+                    projection_map = numpy.zeros((nx, ny, n_features))
                 total = len(self.bmus)
                 for i, bmu in enumerate(self.bmus):
                     self.status('Data projection: %.4f/1.0000' % (float(i + 1) / total, ))
                     bmu = tuple(bmu)
                     projection_map[bmu] += data[i]
-                projection_map = projection_map / self.density
+                if n_features == 1:
+                    projection_map = projection_map / self.density
+                else:
+                    projection_map = projection_map / self.density[:,:,None]
                 self.display_option_items.append(item)
                 self.display_option.setitems(self.display_option_items)
                 self.projections[item] = projection_map
@@ -235,7 +245,11 @@ class UmatPlot(PlotDialog):
             ax.clear()
             ax.scatter(x, y, c='r', edgecolors='white')
             nx, ny = self.matrix.shape
-            ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            if len(self.displayed_matrix.shape) == 2: # two dimensional array
+                ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            else: # we must slice the matrix
+                slice_id = 0
+                ax.imshow(self.displayed_matrix[:,:,slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
             if self.cluster_map is not None:
                 ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
@@ -253,7 +267,11 @@ class UmatPlot(PlotDialog):
             elif not self.keep_selection:
                 ax.scatter(x, y, c=self.colors[i], edgecolors='white')
         nx, ny = self.matrix.shape
-        heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        if len(self.displayed_matrix.shape) == 2: # two dimensional array
+            heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+        else: # we must slice the matrix
+            slice_id = 0
+            heatmap = ax.imshow(self.displayed_matrix[:,:,slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
