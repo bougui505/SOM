@@ -259,7 +259,6 @@ class UmatPlot(PlotDialog):
                 Midas.color('forest green', '#%d' % model.id)
 
     def onPick(self, event):
-        resolution= self.max_path_value/100 # 10x chosen arbitrarily
         if self.selection_mode == 'Cell': # Select unique cells
             if event.mouseevent.button == 3 or self.ctrl_pressed:
                 self.keep_selection = True
@@ -308,17 +307,6 @@ class UmatPlot(PlotDialog):
                     frame_id = int(frame_id)
                     self.display_frame(frame_id)
                     self.add_model(name='cluster')
-        #Scrolling to modify cluster size            
-        elif self.selection_mode == 'Cluster' and event.mouseevent.button == "up":  
-            self.slider2.set(self.slider2.get()+resolution)
-            self.get_basin(None,display=False)
-            self.highlight_cluster(event.mouseevent)
-            self._displayData()
-        elif self.selection_mode == 'Cluster' and event.mouseevent.button == "down":
-            self.slider2.set(self.slider2.get()-resolution)
-            self.get_basin(None,display=False)
-            self.highlight_cluster(event.mouseevent)
-            self._displayData()
 
     def highlight_cluster(self, event):
         x, y = event.xdata, event.ydata
