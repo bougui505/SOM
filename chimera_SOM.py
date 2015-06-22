@@ -32,6 +32,7 @@ import matplotlib
 class UmatPlot(PlotDialog):
     def __init__(self, movie):
         self.movie = movie
+        self.projections = {} # Dictionnary containing all the data projections made by the user
         self.data = numpy.load('som.dat')
         self.init_som_shape = self.data['representatives'].shape # initial som shape
         self.matrix = self.data['unfolded_umat']
@@ -65,9 +66,9 @@ class UmatPlot(PlotDialog):
         self.density = None
         self.ctrl_pressed = False
         self.motion_notify_event = None
-        self.projections = {} # Dictionnary containing all the data projections made by the user
         self.slice_id = 0 # slice of the matrix to display for high dimensional data
         self.plot1D = None # 1D plot for multidimensional features
+        self.feature_item = self.feature_selection.getvalue() # 1D feature to display
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -137,6 +138,8 @@ class UmatPlot(PlotDialog):
                     projection_map = projection_map / self.density
                 else:
                     projection_map = projection_map / self.density[:,:,None]
+                    self.feature_items.append(item) # add a 1D feature to display
+                    self.feature_selection.setitems(self.feature_items)
                 self.display_option_items.append(item)
                 self.display_option.setitems(self.display_option_items)
                 self.projections[item] = projection_map
@@ -278,17 +281,6 @@ class UmatPlot(PlotDialog):
             heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         else: # we must slice the matrix
             heatmap = ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
-            ### To display 1D features in a seperate plot
-            if self.i is not None and self.j is not None and self.density[self.i, self.j] > 0:
-                if self.plot1D is None:
-                    self.plot1D = Plot1D()
-                    self.subplot1D = self.plot1D.add_subplot(1, 1, 1)
-                self.subplot1D.clear()
-                ax = self.subplot1D
-                features = self.displayed_matrix[self.i,self.j].flatten()
-                ax.bar(numpy.arange(features.size), features, align='center')
-                self.plot1D.draw()
-            #############################################
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
@@ -303,6 +295,27 @@ class UmatPlot(PlotDialog):
         else:
             self.colorbar.update_bruteforce(heatmap)
         self.figure.canvas.draw()
+        self.display_features(None)
+
+
+    def display_features(self, value):
+        """
+
+        To display 1D features in a seperate plot
+
+        """
+        self.feature_item = self.feature_selection.getvalue() # 1D feature to display
+        if self.feature_item is not None and self.projections.has_key(self.feature_item):
+            feature_map = self.projections[self.feature_item]
+            if self.i is not None and self.j is not None and self.density[self.i, self.j] > 0:
+                if self.plot1D is None:
+                    self.plot1D = Plot1D()
+                    self.subplot1D = self.plot1D.add_subplot(1, 1, 1)
+                self.subplot1D.clear()
+                ax = self.subplot1D
+                features = feature_map[self.i,self.j].flatten()
+                ax.bar(numpy.arange(features.size), features, align='center')
+                self.plot1D.draw()
 
     def close_current_models(self):
         self.selected_neurons = OrderedDict([])

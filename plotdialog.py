@@ -85,6 +85,15 @@ class PlotDialog(MPLDialog):
                                                 command=self.slice_matrix)
         self.slice_selection.pack(side='left')
 
+        # Option to select features to display in 1D
+        self.feature_items = [None, ]
+        self.feature_selection = Pmw.OptionMenu(parent,
+                                                labelpos='w',
+                                                label_text='Display features: ',
+                                                items = self.feature_items,
+                                                command=self.display_features)
+        self.feature_selection.pack(side='left')
+
     def add_subplot(self, *args):
         return self.figure.add_subplot(*args)
 
