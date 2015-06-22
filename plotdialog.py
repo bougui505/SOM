@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 19
+creation date: 2015 06 22
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -75,6 +75,15 @@ class PlotDialog(MPLDialog):
                                              items = ['Cell', 'Cluster'],
                                              command=self.update_selection_mode)
         self.selection_mode_menu.pack(side='left')
+
+        # Option to select a slice to display
+        self.slice_items = [0, ]
+        self.slice_selection = Pmw.OptionMenu(parent,
+                                                labelpos='w',
+                                                label_text='Slice: ',
+                                                items = self.slice_items,
+                                                command=self.slice_matrix)
+        self.slice_selection.pack(side='left')
 
     def add_subplot(self, *args):
         return self.figure.add_subplot(*args)

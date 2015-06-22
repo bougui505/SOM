@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 19
+creation date: 2015 06 22
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -56,7 +56,6 @@ class UmatPlot(PlotDialog):
         self.registerPickHandler(self.onPick)
         self.figureCanvas.mpl_connect("key_press_event", self.onKey)
         self.figureCanvas.mpl_connect("key_release_event", self.offKey)
-        self.figureCanvas.mpl_connect("scroll_event", self.slice_matrix)
         self.keep_selection = False
         self.init_models = set(openModels.list())
         self.i, self.j = None, None  # current neuron
@@ -71,6 +70,7 @@ class UmatPlot(PlotDialog):
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
             self.displayed_matrix = self.matrix
+            self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "Density":
             if self.density is None:
                 dlg = Density()  # Dialog
@@ -78,8 +78,10 @@ class UmatPlot(PlotDialog):
                     self.get_density()
             if self.density is not None:
                 self.displayed_matrix = self.density
+            self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
+            self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "RMSD":
             if self.rep_rmsd is None:
                 dlg = RMSD(self.movie)  # the frame of reference to compute RMSD on
@@ -89,8 +91,10 @@ class UmatPlot(PlotDialog):
                     self.rmsd_per_representative(frame_ref=frame_ref)
             if self.rep_rmsd is not None:
                 self.displayed_matrix = self.rep_rmsd
+            self.slice_matrix(None) # to update the slicer menu
         else: # user defined projection
             self.displayed_matrix = self.projections[self.display_option.getvalue()]
+            self.slice_matrix(None) # to update the slicer menu
         self._displayData()
 
     def project_data(self):
@@ -364,23 +368,22 @@ class UmatPlot(PlotDialog):
                     self.add_model(name='cluster')
 
 
-    def slice_matrix(self, event):
+    def slice_matrix(self, value):
         """
         slice matrix when its dimension is larger than 2
         """
         n_dim = len(self.displayed_matrix.shape) # dimension of the displayed array
-        if n_dim > 2: # high dimensional array, we must scroll in dimensions !
+        if n_dim > 2: # high dimensional array, we must slice in dimensions !
             n_features = self.displayed_matrix.shape[-1]
-            if event.button == 'up':
-                if self.slice_id < n_features - 1:
-                    self.slice_id += 1
-                    self.status('Matrix slice %d' % self.slice_id)
-                    self._displayData()
-            elif event.button == 'down':
-                if self.slice_id > 0:
-                    self.slice_id -= 1
-                    self.status('Matrix slice %d' % self.slice_id)
-                    self._displayData()
+            if len(self.slice_items) != n_features:
+                self.slice_items = range(n_features)
+                self.slice_selection.setitems(self.slice_items)
+            self.slice_id = self.slice_selection.getvalue()
+            self._displayData()
+        else:
+            self.slice_items = [0, ]
+            self.slice_selection.setitems(self.slice_items)
+
 
     def highlight_cluster(self, event):
         x, y = event.xdata, event.ydata
