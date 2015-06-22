@@ -16,6 +16,7 @@ from plotdialog import PlotDialog
 from plotdialog import RMSD
 from plotdialog import Density
 from plotdialog import Projection
+from plotdialog import Plot1D
 import numpy
 import Combine
 from chimera import update
@@ -66,6 +67,7 @@ class UmatPlot(PlotDialog):
         self.motion_notify_event = None
         self.projections = {} # Dictionnary containing all the data projections made by the user
         self.slice_id = 0 # slice of the matrix to display for high dimensional data
+        self.plot1D = None # 1D plot for multidimensional features
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -276,6 +278,17 @@ class UmatPlot(PlotDialog):
             heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
         else: # we must slice the matrix
             heatmap = ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            ### To display 1D features in a seperate plot
+            if self.i is not None and self.j is not None and self.density[self.i, self.j] > 0:
+                if self.plot1D is None:
+                    self.plot1D = Plot1D()
+                    self.subplot1D = self.plot1D.add_subplot(1, 1, 1)
+                self.subplot1D.clear()
+                ax = self.subplot1D
+                features = self.displayed_matrix[self.i,self.j].flatten()
+                ax.bar(numpy.arange(features.size), features, align='center')
+                self.plot1D.draw()
+            #############################################
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster

@@ -177,3 +177,34 @@ class Density(ModalDialog):
 
     def OK(self):
         ModalDialog.Cancel(self, value=(self.perform_calculation, ))
+
+class Plot1D(MPLDialog):
+    """
+    plot 1D profile of the selected cell
+    """
+    title = "Self-Organizing Map"
+    provideStatus = True
+
+    def __init__(self, **kw):
+        """
+        min_value and max_value are the limits for the slider on the U-matrix
+        max_path_value maximum path distance
+        """
+        MPLDialog.__init__(self, **kw)
+
+    def fillInUI(self, parent):
+        from matplotlib.figure import Figure
+        self.figure = Figure()
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+        fc = FigureCanvasTkAgg(self.figure, master=parent)
+        fc.get_tk_widget().pack(side='top', fill='both', expand=True)
+        self.figureCanvas = fc
+
+    def add_subplot(self, *args):
+        return self.figure.add_subplot(*args)
+
+    def delaxes(self, ax):
+        self.figure.delaxes(ax)
+
+    def draw(self):
+        self.figureCanvas.draw()
