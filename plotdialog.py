@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 22
+creation date: 2015 06 23
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -110,6 +110,7 @@ class PlotDialog(MPLDialog):
 from chimera.baseDialog import ModalDialog
 from tkFileDialog import askopenfilename
 
+import Tkinter
 class Projection(ModalDialog):
     buttons = ('Cancel', 'Apply')
 
@@ -119,13 +120,17 @@ class Projection(ModalDialog):
         ModalDialog.__init__(self)
 
     def fillInUI(self, parent):
-        import Tkinter
         from chimera.tkoptions import StringOption
         Tkinter.Label(parent, text='Data projection',
                         relief="ridge", bd=4).grid(row=0, column=0)
         self.name = StringOption(parent, 1, "Name for the projection", 'Projection', None)
-        self.filename = Tkinter.Button(parent, text='Open data file',command=askopenfilename).grid(row=2, column=0)
+        self.filename = Tkinter.Button(parent, text='Open data file',
+                                        command=lambda: self.get_filename(parent)).grid(row=2, column=0)
+
+    def get_filename(self, parent):
         self.filename = askopenfilename()
+        Tkinter.Label(parent, text='Filename: %s'%self.filename,
+                            relief="ridge", bd=4).grid(row=2, column=1)
 
     def Apply(self):
         name = self.name.get()
