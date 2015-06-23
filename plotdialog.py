@@ -126,6 +126,10 @@ class Projection(ModalDialog):
         self.name = StringOption(parent, 1, "Name for the projection", 'Projection', None)
         self.filename = Tkinter.Button(parent, text='Open data file',
                                         command=lambda: self.get_filename(parent)).grid(row=2, column=0)
+        self.read_header = Tkinter.BooleanVar()
+        self.check_header = Tkinter.Checkbutton(parent,
+                                                text="Read header to define names for n-dim features",
+                                                var=self.read_header).grid(row=3, column=0)
 
     def get_filename(self, parent):
         self.filename = askopenfilename()
@@ -134,7 +138,7 @@ class Projection(ModalDialog):
 
     def Apply(self):
         name = self.name.get()
-        ModalDialog.Cancel(self, value=(name, self.filename))
+        ModalDialog.Cancel(self, value=(name, self.filename, self.read_header.get()))
 
     def destroy(self):
         ModelessDialog.destroy(self)

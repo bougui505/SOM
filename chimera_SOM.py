@@ -110,7 +110,7 @@ class UmatPlot(PlotDialog):
         dlg = Projection() # dialog
         user_input = dlg.run(self.master)
         if user_input is not None:
-            item, filename = user_input
+            item, filename, read_header = user_input
         else:
             item, filename = None, None
         if item is not None and filename is not None:
@@ -119,7 +119,12 @@ class UmatPlot(PlotDialog):
                 if dlg.run(self.master):
                     self.get_density()
             if self.density is not None: # the user didn't cancel the density computation:
-                data = numpy.genfromtxt(filename)
+                if not read_header:
+                    data = numpy.genfromtxt(filename)
+                    self.feature_names = OrderedDict([(str(i), i) for i in range(data[0].size)]) # feature names for slice
+                else:
+                    data = numpy.genfromtxt(filename, names=True)
+                    self.feature_names = OrderedDict([(name, i) for i, name in enumerate(data.dtype.names)]) # feature names for slice
                 try:
                     n_features = len(data[0])
                 except TypeError:
@@ -135,7 +140,10 @@ class UmatPlot(PlotDialog):
                 for i, bmu in enumerate(self.bmus):
                     self.status('Data projection: %.4f/1.0000' % (float(i + 1) / total, ))
                     bmu = tuple(bmu)
-                    projection_map[bmu] += data[i]
+                    if n_features > 1:
+                        projection_map[bmu] += numpy.asarray(list(data[i]), dtype=float)
+                    else:
+                        projection_map[bmu] += data[i]
                 if n_features == 1:
                     projection_map = projection_map / self.density
                 else:
@@ -145,7 +153,10 @@ class UmatPlot(PlotDialog):
                 for i, bmu in enumerate(self.bmus):
                     self.status('Computing standard deviation: %.4f/1.0000' % (float(i + 1) / total, ))
                     bmu = tuple(bmu)
-                    std_map[bmu] += (data[i]-projection_map[bmu])**2
+                    if n_features > 1:
+                        std_map[bmu] += (numpy.asarray(list(data[i]), dtype=float)-projection_map[bmu])**2
+                    else:
+                        std_map[bmu] += (data[i]-projection_map[bmu])**2
                 if n_features == 1:
                     std_map = numpy.sqrt(std_map / self.density)
                 else:
@@ -330,6 +341,8 @@ class UmatPlot(PlotDialog):
                     std_features = std_map[self.i,self.j].flatten()
                     ax.bar(numpy.arange(features.size), features, yerr=std_features,
                             align='center')
+                    ax.set_xticks(numpy.arange(features.size))
+                    ax.set_xticklabels(self.feature_names.keys(), rotation=75)
                     self.plot1D.draw()
                 elif self.selection_mode == 'Cluster':
                     if self.highlighted_cluster is not None:
@@ -340,6 +353,8 @@ class UmatPlot(PlotDialog):
                         std_features = std_map[self.highlighted_cluster].mean(axis=0)
                         ax.bar(numpy.arange(mean_features.size), mean_features, yerr=std_features,
                                             align='center')
+                        ax.set_xticks(numpy.arange(mean_features.size))
+                        ax.set_xticklabels(self.feature_names.keys(), rotation=75)
                         self.plot1D.draw()
 
     def close_current_models(self):
@@ -427,9 +442,9 @@ class UmatPlot(PlotDialog):
         if n_dim > 2: # high dimensional array, we must slice in dimensions !
             n_features = self.displayed_matrix.shape[-1]
             if len(self.slice_items) != n_features:
-                self.slice_items = range(n_features)
+                self.slice_items = self.feature_names.keys()
                 self.slice_selection.setitems(self.slice_items)
-            self.slice_id = self.slice_selection.getvalue()
+            self.slice_id = self.feature_names[self.slice_selection.getvalue()] # to get the slice index of the corresponding slice name
             self._displayData()
         else:
             self.slice_items = [0, ]
