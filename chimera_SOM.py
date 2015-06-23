@@ -60,6 +60,7 @@ class UmatPlot(PlotDialog):
         self.figureCanvas.mpl_connect("key_release_event", self.offKey)
         self.keep_selection = False
         self.init_models = set(openModels.list())
+        self.movie_id = movie.model.id
         self.i, self.j = None, None  # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
@@ -376,11 +377,12 @@ class UmatPlot(PlotDialog):
     def update_model_color(self):
         model_id = openModels.listIds()[-1][0]
         if not self.keep_selection:
-            Midas.color('orange red', '#%d' % model_id)
+            Midas.color('orange red', '#%d' % self.movie_id)
         else:
             Midas.color('forest green', '#%d' % model_id)
-            for model in self.init_models:
-                Midas.color('forest green', '#%d' % model.id)
+            Midas.color('byhet', '#%d' % model_id)
+            Midas.color('forest green', '#%d' % self.movie_id)
+        Midas.color('byhet', '#%d' % self.movie_id)
 
     def onPick(self, event):
         if self.selection_mode == 'Cell': # Select unique cells
