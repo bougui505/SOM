@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 22
+creation date: 2015 06 23
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -96,7 +96,7 @@ class UmatPlot(PlotDialog):
                 self.displayed_matrix = self.rep_rmsd
             self.slice_matrix(None) # to update the slicer menu
         else: # user defined projection
-            self.displayed_matrix = self.projections[self.display_option.getvalue()]
+            self.displayed_matrix = self.projections[self.display_option.getvalue()][0] # 0 is the projection, 1 is the standard deviation
             self.slice_matrix(None) # to update the slicer menu
         self._displayData()
 
@@ -126,9 +126,11 @@ class UmatPlot(PlotDialog):
                     n_features = 1
                 if n_features == 1:
                     projection_map = numpy.zeros_like(self.matrix)
+                    std_map = numpy.zeros_like(self.matrix) # for standard deviation
                 else:
                     nx, ny = self.matrix.shape
                     projection_map = numpy.zeros((nx, ny, n_features))
+                    std_map = numpy.zeros((nx, ny, n_features)) # for standard deviation
                 total = len(self.bmus)
                 for i, bmu in enumerate(self.bmus):
                     self.status('Data projection: %.4f/1.0000' % (float(i + 1) / total, ))
@@ -140,9 +142,17 @@ class UmatPlot(PlotDialog):
                     projection_map = projection_map / self.density[:,:,None]
                     self.feature_items.append(item) # add a 1D feature to display
                     self.feature_selection.setitems(self.feature_items)
+                for i, bmu in enumerate(self.bmus):
+                    self.status('Computing standard deviation: %.4f/1.0000' % (float(i + 1) / total, ))
+                    bmu = tuple(bmu)
+                    std_map[bmu] += (data[i]-projection_map[bmu])**2
+                if n_features == 1:
+                    std_map = numpy.sqrt(std_map / self.density)
+                else:
+                    std_map = numpy.sqrt(std_map / self.density[:,:,None])
                 self.display_option_items.append(item)
                 self.display_option.setitems(self.display_option_items)
-                self.projections[item] = projection_map
+                self.projections[item] = (projection_map, std_map)
 
     def update_selection_mode(self, value):
         """
@@ -306,16 +316,31 @@ class UmatPlot(PlotDialog):
         """
         self.feature_item = self.feature_selection.getvalue() # 1D feature to display
         if self.feature_item is not None and self.projections.has_key(self.feature_item):
-            feature_map = self.projections[self.feature_item]
+            feature_map = self.projections[self.feature_item][0] # 0 is the projection, 1 is the standard deviation
+            std_map = self.projections[self.feature_item][1] # 0 is the projection, 1 is the standard deviation
+
             if self.i is not None and self.j is not None and self.density[self.i, self.j] > 0:
                 if self.plot1D is None:
                     self.plot1D = Plot1D()
                     self.subplot1D = self.plot1D.add_subplot(1, 1, 1)
                 self.subplot1D.clear()
                 ax = self.subplot1D
-                features = feature_map[self.i,self.j].flatten()
-                ax.bar(numpy.arange(features.size), features, align='center')
-                self.plot1D.draw()
+                if self.selection_mode == 'Cell':
+                    features = feature_map[self.i,self.j].flatten()
+                    std_features = std_map[self.i,self.j].flatten()
+                    ax.bar(numpy.arange(features.size), features, yerr=std_features,
+                            align='center')
+                    self.plot1D.draw()
+                elif self.selection_mode == 'Cluster':
+                    if self.highlighted_cluster is not None:
+                        self.highlighted_cluster[numpy.isnan(self.highlighted_cluster)] = False
+                        self.highlighted_cluster = numpy.logical_and(numpy.bool_(self.highlighted_cluster),
+                                                                    self.density > 0)
+                        mean_features = feature_map[self.highlighted_cluster].mean(axis=0)
+                        std_features = std_map[self.highlighted_cluster].mean(axis=0)
+                        ax.bar(numpy.arange(mean_features.size), mean_features, yerr=std_features,
+                                            align='center')
+                        self.plot1D.draw()
 
     def close_current_models(self):
         self.selected_neurons = OrderedDict([])
