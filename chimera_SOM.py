@@ -122,10 +122,10 @@ class UmatPlot(PlotDialog):
             if self.density is not None: # the user didn't cancel the density computation:
                 if not read_header:
                     data = numpy.genfromtxt(filename)
-                    self.feature_names = OrderedDict([(str(i), i) for i in range(data[0].size)]) # feature names for slice
+                    feature_names = OrderedDict([(str(i), i) for i in range(data[0].size)]) # feature names for slice
                 else:
                     data = numpy.genfromtxt(filename, names=True)
-                    self.feature_names = OrderedDict([(name, i) for i, name in enumerate(data.dtype.names)]) # feature names for slice
+                    feature_names = OrderedDict([(name, i) for i, name in enumerate(data.dtype.names)]) # feature names for slice
                 try:
                     n_features = len(data[0])
                 except TypeError:
@@ -164,7 +164,7 @@ class UmatPlot(PlotDialog):
                     std_map = numpy.sqrt(std_map / self.density[:,:,None])
                 self.display_option_items.append(item)
                 self.display_option.setitems(self.display_option_items)
-                self.projections[item] = (projection_map, std_map)
+                self.projections[item] = (projection_map, std_map, feature_names)
 
     def update_selection_mode(self, value):
         """
@@ -330,6 +330,7 @@ class UmatPlot(PlotDialog):
         if self.feature_item is not None and self.projections.has_key(self.feature_item):
             feature_map = self.projections[self.feature_item][0] # 0 is the projection, 1 is the standard deviation
             std_map = self.projections[self.feature_item][1] # 0 is the projection, 1 is the standard deviation
+            feature_names = self.projections[self.feature_item][2] # 2 is the names of the features
 
             if self.i is not None and self.j is not None and self.density[self.i, self.j] > 0:
                 if self.plot1D is None:
@@ -352,7 +353,7 @@ class UmatPlot(PlotDialog):
                             ax.bar(x, features, yerr=std_features,
                                     align='center', width=width/n, color='g') # green for the other
                     ax.set_xticks(numpy.arange(features.size))
-                    ax.set_xticklabels(self.feature_names.keys(), rotation=75)
+                    ax.set_xticklabels(feature_names.keys(), rotation=75)
                     self.plot1D.draw()
                 elif self.selection_mode == 'Cluster':
                     if self.highlighted_cluster is not None:
@@ -364,7 +365,7 @@ class UmatPlot(PlotDialog):
                         ax.bar(numpy.arange(mean_features.size), mean_features, yerr=std_features,
                                             align='center')
                         ax.set_xticks(numpy.arange(mean_features.size))
-                        ax.set_xticklabels(self.feature_names.keys(), rotation=75)
+                        ax.set_xticklabels(feature_names.keys(), rotation=75)
                         self.plot1D.draw()
 
     def close_current_models(self):
@@ -451,11 +452,12 @@ class UmatPlot(PlotDialog):
         """
         n_dim = len(self.displayed_matrix.shape) # dimension of the displayed array
         if n_dim > 2: # high dimensional array, we must slice in dimensions !
+            feature_names = self.projections[self.display_option.getvalue()][2]
             n_features = self.displayed_matrix.shape[-1]
             if len(self.slice_items) != n_features:
-                self.slice_items = self.feature_names.keys()
+                self.slice_items = feature_names.keys()
                 self.slice_selection.setitems(self.slice_items)
-            self.slice_id = self.feature_names[self.slice_selection.getvalue()] # to get the slice index of the corresponding slice name
+            self.slice_id = feature_names[self.slice_selection.getvalue()] # to get the slice index of the corresponding slice name
             self._displayData()
         else:
             self.slice_items = [0, ]
