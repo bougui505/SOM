@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 23
+creation date: 2015 06 24
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -338,10 +338,19 @@ class UmatPlot(PlotDialog):
                 self.subplot1D.clear()
                 ax = self.subplot1D
                 if self.selection_mode == 'Cell':
-                    features = feature_map[self.i,self.j].flatten()
-                    std_features = std_map[self.i,self.j].flatten()
-                    ax.bar(numpy.arange(features.size), features, yerr=std_features,
-                            align='center')
+                    width = .8 # width of the bar of the barplot
+                    n = len(self.selected_neurons)
+                    for i, neuron in enumerate(self.selected_neurons):
+                        features = feature_map[neuron].flatten()
+                        std_features = std_map[neuron].flatten()
+                        nx = features.size
+                        x = numpy.arange(nx) + i*width/n
+                        if i == 0:
+                            ax.bar(x, features, yerr=std_features,
+                                    align='center', width=width/n, color='r') # red barplot for the first selected neuron
+                        else:
+                            ax.bar(x, features, yerr=std_features,
+                                    align='center', width=width/n, color='g') # green for the other
                     ax.set_xticks(numpy.arange(features.size))
                     ax.set_xticklabels(self.feature_names.keys(), rotation=75)
                     self.plot1D.draw()
