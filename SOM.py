@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 18
+creation date: 2015 06 25
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -269,6 +269,7 @@ class SOM:
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
         pickle.dump(Map, MapFile)  # Write Map into file map.dat
         MapFile.close()
+        self.graph = Graph.Graph(smap=self.smap)
         return self.smap
 
     def save_data(self, outfile='som.dat', **kwargs):
