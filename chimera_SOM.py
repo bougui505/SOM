@@ -3,7 +3,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 24
+creation date: 2015 06 25
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -27,6 +27,7 @@ from Movie.analysis import analysisAtoms, AnalysisError
 from collections import OrderedDict
 import Midas
 import matplotlib
+import pickle
 
 
 class UmatPlot(PlotDialog):
@@ -70,6 +71,7 @@ class UmatPlot(PlotDialog):
         self.slice_id = 0 # slice of the matrix to display for high dimensional data
         self.plot1D = None # 1D plot for multidimensional features
         self.feature_item = self.feature_selection.getvalue() # 1D feature to display
+        self.load_projections() # Loading user defined projections into plugin
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -165,6 +167,40 @@ class UmatPlot(PlotDialog):
                 self.display_option_items.append(item)
                 self.display_option.setitems(self.display_option_items)
                 self.projections[item] = (projection_map, std_map, feature_names)
+        self.save_projections()
+
+    def save_projections(self, outfile='som.dat'):
+        """
+
+        Save projections into som.dat file
+
+        """
+        self.status('saving data in %s'%outfile)
+        self.data['projections'] = self.projections
+        self.data['density'] = self.density
+        f = open(outfile,'wb')
+        pickle.dump(self.data, f, 2)
+        f.close()
+        self.status('done')
+
+    def load_projections(self):
+        """
+
+        Load projection into plugin. Read data from self.data.
+
+        """
+        if self.data.has_key('density'):
+            self.density = self.data['density']
+        if self.data.has_key('projections'):
+            self.projections = self.data['projections']
+            for item in self.projections.keys():
+                self.status('Loading projection: %s'%item)
+                # update the display menu
+                self.display_option_items.append(item)
+                self.display_option.setitems(self.display_option_items)
+                if len(self.projections[item][0].shape) > 2:
+                    self.feature_items.append(item) # add a 1D feature to display
+                    self.feature_selection.setitems(self.feature_items)
 
     def update_selection_mode(self, value):
         """
