@@ -3,19 +3,19 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 01 10 2013
+creation date: 2015 07 10
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
 """
-        
 import sys
 import numpy
+import os
 
 frFileName = sys.argv[1]
 
 fr=open(frFileName)
-basename = frFileName.split('.')[0]
+basename = os.path.splitext(frFileName)[0]
 fw=open('%s.coord'%basename,'w')
 
 record=False
