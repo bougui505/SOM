@@ -143,6 +143,35 @@ class Projection(ModalDialog):
     def destroy(self):
         ModelessDialog.destroy(self)
 
+class SelectClusterMode(ModalDialog):
+    buttons = ('Frames', 'Density')
+
+    def __init__(self, movie):
+        self.movie = movie
+        self.volgridspacing = None
+        ModalDialog.__init__(self)
+
+    def fillInUI(self, parent):
+        import Tkinter
+        from chimera.tkoptions import IntOption, BooleanOption, FloatOption
+
+        Tkinter.Label(parent, text="Please select visualization mode",
+                      relief="ridge", bd=4).grid(row=0, column=0, columnspan=2, sticky="ew")
+        startFrame = 10
+        endFrame = 0.1
+        self.volgridspacing = IntOption(parent, 1, "Volume grid Spacing", startFrame, None, min=startFrame, max=endFrame, width=6)
+
+    def Frames(self):
+        volgridspacing = self.volgridspacing.get()
+        ModalDialog.Cancel(self, value=(volgridspacing, "Frames"))
+
+    def Density(self):
+        volgridspacing = self.volgridspacing.get()
+        ModalDialog.Cancel(self, value=(volgridspacing, "Density"))
+
+    def destroy(self):
+        self.movie = None
+        ModelessDialog.destroy(self)
 
 
 class RMSD(ModalDialog):

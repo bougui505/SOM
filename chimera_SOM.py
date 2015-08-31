@@ -14,6 +14,7 @@ import sys;
 sys.path.append('.')
 from plotdialog import PlotDialog
 from plotdialog import RMSD
+from plotdialog import SelectClusterMode
 from plotdialog import Density
 from plotdialog import Projection
 from plotdialog import Plot1D
@@ -28,6 +29,10 @@ from collections import OrderedDict
 import Midas
 import matplotlib
 import pickle
+import chimera
+
+from chimera import runCommand
+
 
 
 class UmatPlot(PlotDialog):
@@ -72,6 +77,7 @@ class UmatPlot(PlotDialog):
         self.plot1D = None # 1D plot for multidimensional features
         self.feature_item = self.feature_selection.getvalue() # 1D feature to display
         self.load_projections() # Loading user defined projections into plugin
+        self.clustermode = (1,'Frames') # to display either Density map or ensemble of frames
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -213,6 +219,11 @@ class UmatPlot(PlotDialog):
             self.figureCanvas.mpl_disconnect(self.motion_notify_event)
             self.highlighted_cluster = None
         elif self.selection_mode == 'Cluster':
+            #dialog box to select cluster mode
+            dlg = SelectClusterMode(self.movie)  
+            params=dlg.run(self.master)
+            if params is not None:
+                self.clustermode = params
             self.motion_notify_event = self.figureCanvas.mpl_connect("motion_notify_event", self.highlight_cluster)
 
     def get_clusters(self, value):
@@ -474,12 +485,28 @@ class UmatPlot(PlotDialog):
                 frame_ids = self.rep_map[self.highlighted_cluster] + 1
                 frame_ids = frame_ids[~numpy.isnan(frame_ids)]
                 n = len(frame_ids)
-                if n > 10:
-                    frame_ids = frame_ids[::n/10] # take only ten representatives
-                for frame_id in frame_ids:
-                    frame_id = int(frame_id)
-                    self.display_frame(frame_id)
-                    self.add_model(name='cluster')
+                if self.clustermode[1] == "Frames":
+                    if n > 10:
+                        frame_ids = frame_ids[::n/10] # take only ten representatives
+                    for frame_id in frame_ids:
+                        frame_id = int(frame_id)
+                        self.display_frame(frame_id)
+                        self.add_model(name='cluster')
+                elif self.clustermode[1] == 'Density':
+                    if n > 100:
+                        frame_ids = frame_ids[::n/100] # take only 100 representatives
+                    trajMol = self.movie.model._mol
+
+                    if chimera.selection.currentEmpty():
+                        #something to select all atoms
+                        runCommand("select #%d" % self.movie_id)
+                    atoms = [a for a in chimera.selection.currentAtoms() if a.molecule == trajMol]    
+                    name="ClusterDensityMap"
+                    self.computeVolume(atoms, frame_ids=frame_ids,volumeName=name, spacing=self.clustermode[0])
+                    model_id=openModels.listIds()[-1][0]
+                    #Midas.color('aquamarine,s', '#%d' %model_id)
+                    runCommand("volume #%d level 50. color aquamarine style surface" %model_id)
+
 
 
     def slice_matrix(self, value):
@@ -611,6 +638,108 @@ class UmatPlot(PlotDialog):
             if m[m != numpy.inf].max() > threshold:
                 break
         return m.reshape((nx, ny))
+
+    
+    def computeVolume(self, atoms, frame_ids, volumeName=None, spacing=0.5, radiiTreatment="ignored"):
+        #function taken from Movie/gui.py and tweaked to compute volume based on an array of frame_ids
+        from Matrix import xform_matrix
+        gridData = {}
+        from math import floor
+        from numpy import array, float32, concatenate
+        from _contour import affine_transform_vertices
+        insideDeltas = {}
+        include = {}
+        sp2 = spacing * spacing
+        for fn in frame_ids:
+            cs = self.movie.findCoordSet(fn)
+            if not cs:
+                self.movie.status("Loading frame %d" % fn)
+                self.movie._LoadFrame(int(fn), makeCurrent=False)
+                cs = self.movie.findCoordSet(fn)
+
+            self.movie.status("Processing frame %d" % fn)
+            pts = array([a.coord(cs) for a in atoms], float32)
+            if self.movie.holdingSteady:
+                if bound is not None:
+                    steadyPoints = array([a.coord(cs)
+                        for a in steadyAtoms], float32)
+                    closeIndices = find_close_points(
+                        BOXES_METHOD, steadyPoints,
+                        #otherPoints, bound)[1]
+                        pts, bound)[1]
+                    pts = pts[closeIndices]
+                try:
+                    xf, inv = self.movie.transforms[fn]
+                except KeyError:
+                    xf, inv = self.movie.steadyXform(cs=cs)
+                    self.movie.transforms[fn] = (xf, inv)
+                xf = xform_matrix(xf)
+                affine_transform_vertices(pts, xf)
+                affine_transform_vertices(pts, inverse)
+            if radiiTreatment != "ignored":
+                ptArrays = [pts]
+                for pt, radius in zip(pts, [a.radius for a in atoms]):
+                    if radius not in insideDeltas:
+                        mul = 1
+                        deltas = []
+                        rad2 = radius * radius
+                        while mul * spacing <= radius:
+                            for dx in range(-mul, mul+1):
+                                for dy in range(-mul, mul+1):
+                                    for dz in range(-mul, mul+1):
+                                        if radiiTreatment == "uniform" \
+                                        and min(dx, dy, dz) > -mul and max(dx, dy, dz) < mul:
+                                            continue
+                                        key = tuple(sorted([abs(dx), abs(dy), abs(dz)]))
+                                        if key not in include.setdefault(radius, {}):
+                                            include[radius][key] = (dx*dx + dy*dy + dz*dz
+                                                    ) * sp2 <= rad2
+                                        if include[radius][key]:
+                                            deltas.append([d*spacing for d in (dx,dy,dz)])
+                            mul += 1
+                        insideDeltas[radius] = array(deltas)
+                        if len(deltas) < 10:
+                            print deltas
+                    if insideDeltas[radius].size > 0:
+                        ptArrays.append(pt + insideDeltas[radius])
+                pts = concatenate(ptArrays)
+            # add a half-voxel since volume positions are
+            # considered to be at the center of their voxel
+            from numpy import floor, zeros
+            pts = floor(pts/spacing + 0.5).astype(int)
+            for pt in pts:
+                center = tuple(pt)
+                gridData[center] = gridData.get(center, 0) + 1
+
+        # generate volume
+        self.movie.status("Generating volume")
+        axisData = zip(*tuple(gridData.keys()))
+        minXyz = [min(ad) for ad in axisData]
+        maxXyz = [max(ad) for ad in axisData]
+        # allow for zero-padding on both ends
+        dims = [maxXyz[axis] - minXyz[axis] + 3 for axis in range(3)]
+        from numpy import zeros, transpose
+        volume = zeros(dims, int)
+        for index, val in gridData.items():
+            adjIndex = tuple([index[i] - minXyz[i] + 1
+                            for i in range(3)])
+            volume[adjIndex] = val
+        from VolumeData import Array_Grid_Data
+        gd = Array_Grid_Data(volume.transpose(),
+                    # the "cushion of zeros" means d-1...
+                    [(d-1) * spacing for d in minXyz],
+                    [spacing] * 3)
+        if volumeName is None:
+            volumeName = self.movie.ensemble.name
+        gd.name = volumeName
+
+        # show volume
+        self.movie.status("Showing volume")
+        import VolumeViewer
+        dataRegion = VolumeViewer.volume_from_grid_data(gd)
+        vd = VolumeViewer.volumedialog.volume_dialog(create=True)
+        vd.message("Volume can be saved from File menu")
+        self.movie.status("Volume shown")
 
 from chimera.extension import manager
 from Movie.gui import MovieDialog
