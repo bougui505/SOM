@@ -157,9 +157,10 @@ class SelectClusterMode(ModalDialog):
 
         Tkinter.Label(parent, text="Please select visualization mode",
                       relief="ridge", bd=4).grid(row=0, column=0, columnspan=2, sticky="ew")
-        startFrame = 10
-        endFrame = 0.1
-        self.volgridspacing = IntOption(parent, 1, "Volume grid Spacing", startFrame, None, min=startFrame, max=endFrame, width=6)
+        minspacing = 1
+        maxspacing = 15
+        defaultspacing=10
+        self.volgridspacing = FloatOption(parent, 1, "Volume grid Spacing", defaultspacing, None, min=minspacing, max=maxspacing, width=6)
 
     def Frames(self):
         volgridspacing = self.volgridspacing.get()
