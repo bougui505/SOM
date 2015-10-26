@@ -262,7 +262,7 @@ class SOM:
                 rate = self.learningRate(t, trainingPhase)
                 bmu = self.findBMU(k, Map)
                 self.apply_learning(Map, k, bmu, self.radiusFunction(t, trainingPhase),
-                                    rate)
+                                    self.learning)
                 if verbose:
                     pbar.update(t)
             if verbose:
