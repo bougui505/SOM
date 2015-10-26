@@ -259,8 +259,10 @@ class SOM:
                     kv = range(len(self.inputvectors))
                     random.shuffle(kv)
                     k = kv.pop()
-                self.apply_learning(Map, k, self.findBMU(k, Map), self.radiusFunction(t, trainingPhase),
-                                    self.learningRate(t, trainingPhase))
+                rate = self.learningRate(t, trainingPhase)
+                bmu = self.findBMU(k, Map)
+                self.apply_learning(Map, k, bmu, self.radiusFunction(t, trainingPhase),
+                                    rate)
                 if verbose:
                     pbar.update(t)
             if verbose:
