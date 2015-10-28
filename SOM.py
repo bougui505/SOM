@@ -4,7 +4,7 @@
 """
 author: Guillaume Bouvier
 email: guillaume.bouvier@ens-cachan.org
-creation date: 2015 06 25
+creation date: 2015 10 28
 license: GNU GPL
 Please feel free to use and modify this, but keep the above information.
 Thanks!
@@ -58,9 +58,14 @@ class SOM:
             X                : integer, width of Kohonen map
             Y                : integer, height of Kohonen map
             number_of_phases : integer, number of training phases
+
+    optional_features is a numpy array that is not used for the training.
+    However this matrix is used to build an other map in the same manner than
+    the SOM map
+
     """
 
-    def __init__(self, inputvectors, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
+    def __init__(self, inputvectors, optional_features=None, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
@@ -78,6 +83,9 @@ class SOM:
         self.randomInit = randomInit
         self.X = X
         self.Y = Y
+        self.optional_features = optional_features
+        if optional_features is not None:
+            self.feature_map = numpy.zeros((self.X, self.Y, self.optional_features[0].size))
         self.number_of_phase = number_of_phases
         self.alpha_begin = alpha_begin
         self.alpha_end = alpha_end
@@ -237,6 +245,8 @@ class SOM:
         radmap = rate * numpy.exp(- distance ** 2 / (2. * radius) ** 2)
         adjmap = (smap - vector) * radmap[..., None]
         smap -= adjmap
+        if self.optional_features is not None:
+            self.feature_map -= (self.feature_map - self.optional_features[k]) * radmap[..., None]
 
     def learn(self, verbose=False):
         Map = self.smap
@@ -271,6 +281,8 @@ class SOM:
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
         pickle.dump(Map, MapFile)  # Write Map into file map.dat
         MapFile.close()
+        if self.optional_features is not None:
+            numpy.save('feature_map', self.feature_map)
         self.graph = Graph.Graph(smap=self.smap)
         return self.smap
 
