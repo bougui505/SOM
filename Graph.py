@@ -236,7 +236,10 @@ class Graph:
         if self.change_of_basis is None:
             self.unfold_smap()
         folding_dict = {v:k for (k,v) in self.change_of_basis.items()}
-        folded_matrix = numpy.ones(self.smap.shape[:-1]) * numpy.nan
+        if len(matrix.shape) == len(self.smap.shape[:-1]): # for 2D array
+            folded_matrix = numpy.ones(self.smap.shape[:-1]) * numpy.nan
+        else:
+            folded_matrix = numpy.ones(self.smap.shape[:-1] + (matrix.shape[-1],)) * numpy.nan
         for k in folding_dict.keys():
             t = folding_dict[k] # tuple
             folded_matrix[t] = matrix[k]
