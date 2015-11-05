@@ -229,6 +229,20 @@ class Graph:
             unfolded_matrix[t] = matrix[k]
         return unfolded_matrix
 
+    def fold_matrix(self, matrix):
+        """
+        fold the given matrix given self.change_of_basis
+        """
+        if self.change_of_basis is None:
+            self.unfold_smap()
+        folding_dict = {v:k for (k,v) in self.change_of_basis.items()}
+        folded_matrix = numpy.ones(self.smap.shape[:-1]) * numpy.nan
+        for k in folding_dict.keys():
+            t = folding_dict[k] # tuple
+            folded_matrix[t] = matrix[k]
+        return folded_matrix
+
+
     def best_partition(self):
         print "computing communities maximizing modularity"
         gnx = networkx.Graph()
