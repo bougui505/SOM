@@ -68,6 +68,11 @@ class PlotDialog(MPLDialog):
                                                     command=self.project_data)
         self.add_projection_button.pack(side='left')
 
+        # Button to load experimental data
+        self.add_data_button = Tkinter.Button(parent, text='Experimental data',
+                                           command = self.add_experimental_data)
+        self.add_data_button.pack(side='left')
+
         # Option menu for selection mode
         self.selection_mode_menu = Pmw.OptionMenu(parent,
                                              labelpos='w',
@@ -139,6 +144,32 @@ class Projection(ModalDialog):
     def Apply(self):
         name = self.name.get()
         ModalDialog.Cancel(self, value=(name, self.filename, self.read_header.get()))
+
+    def destroy(self):
+        ModelessDialog.destroy(self)
+
+class Add_experimental_data(ModalDialog):
+    buttons = ('Cancel', 'Apply')
+
+    def __init__(self):
+        self.name = None
+        self.filename = None
+        ModalDialog.__init__(self)
+
+    def fillInUI(self, parent):
+        from chimera.tkoptions import StringOption
+        Tkinter.Label(parent, text='Experimental data',
+                        relief="ridge", bd=4).grid(row=0, column=0)
+        self.filename = Tkinter.Button(parent, text='Open data file',
+                                        command=lambda: self.get_filename(parent)).grid(row=2, column=0)
+
+    def get_filename(self, parent):
+        self.filename = askopenfilename()
+        Tkinter.Label(parent, text='Filename: %s'%self.filename,
+                            relief="ridge", bd=4).grid(row=2, column=1)
+
+    def Apply(self):
+        ModalDialog.Cancel(self, value=(self.filename,))
 
     def destroy(self):
         ModelessDialog.destroy(self)

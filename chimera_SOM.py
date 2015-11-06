@@ -17,6 +17,7 @@ from plotdialog import RMSD
 from plotdialog import SelectClusterMode
 from plotdialog import Density
 from plotdialog import Projection
+from plotdialog import Add_experimental_data
 from plotdialog import Plot1D
 import numpy
 import Combine
@@ -176,6 +177,42 @@ class UmatPlot(PlotDialog):
                 self.display_option.setitems(self.display_option_items)
                 self.projections[item] = (projection_map, std_map, feature_names)
         self.save_projections()
+
+    def add_experimental_data(self):
+        """
+
+        Add experimental data to perform data driven clustering. The clustering
+        threshold is based on the deviation between the selected neurons of the
+        map and the experimental values (chi based).
+
+        When experimental data are loaded, the feature_map is used to obtain
+        the chi_map. The chi value between each cell of the chi_map is computed
+        against the experimental_data.
+
+        """
+        dlg = Add_experimental_data() # dialog
+        user_input = dlg.run(self.master) # (filename,)
+        filename = user_input[0]
+
+        # The filename containing the experimental data should be a 2-column
+        # filename containing data for the first column and standard deviation
+        # for the second one.
+
+        experimental_data = numpy.genfromtxt(filename)
+        self.experimental_intensities = experimental_data[:,0]
+        self.experimental_std = experimental_data[:,1]
+        feature_map = self.data['projections']['feature_map'][0]
+        delta_map = self.experimental_intensities - feature_map
+        if (self.experimental_std == numpy.zeros_like(self.experimental_std)).all(): # zero std
+            std = numpy.ones_like(self.experimental_std)
+        else:
+            std = self.experimental_std
+        chi_map = numpy.sqrt( (delta_map**2 / std**2).sum(axis=2)/\
+                    len(self.experimental_intensities) )
+        feature_names = OrderedDict([(str(i), i) for i in range(self.experimental_intensities.size)])
+        self.display_option_items.append('chi_map')
+        self.display_option.setitems(self.display_option_items)
+        self.projections['chi_map'] = (chi_map, numpy.zeros_like(chi_map), feature_names)
 
     def save_projections(self, outfile='som.dat'):
         """
