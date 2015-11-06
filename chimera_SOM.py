@@ -72,7 +72,7 @@ class UmatPlot(PlotDialog):
         self.i, self.j = None, None  # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
-        self.density = None
+        self.density = self.data['density']
         self.ctrl_pressed = False
         self.motion_notify_event = None
         self.slice_id = 0 # slice of the matrix to display for high dimensional data

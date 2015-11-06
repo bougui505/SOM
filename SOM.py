@@ -93,6 +93,7 @@ class SOM:
         self.alpha_end = alpha_end
         self.bmus = None
         self.representatives = None
+        self.density = None
         self.transition_matrix = None
         if radius_begin == None:
             self.radius_begin = [numpy.sqrt(self.X * self.Y) / 8., numpy.sqrt(self.X * self.Y) / 16.]
@@ -302,6 +303,8 @@ class SOM:
         for key, value in data.iteritems():
             if key in keys:
                 out_dict[key] = value
+        # self.density is computed with self.get_representatives()
+        out_dict['density'] = self.graph.unfold_matrix(self.density)
         out_dict['unfolded_umat'] = self.graph.unfolded_umat
         out_dict['change_of_basis'] = self.graph.change_of_basis
         out_dict['minimum_spanning_tree'] = self.graph.minimum_spanning_tree
@@ -377,9 +380,11 @@ class SOM:
         if self.bmus is None:
             self.find_bmus()
         error_map = numpy.ones(self.smap.shape[:-1]) * numpy.inf
+        self.density = numpy.zeros(self.smap.shape[:-1])
         representatives = numpy.ones_like(error_map) * numpy.nan
         for i, bmu in enumerate(self.bmus):
             bmu = tuple(bmu)
+            self.density[bmu] += 1
             d = scipy.spatial.distance.euclidean(self.inputvectors[i], self.smap[bmu])
             if d < error_map[bmu]:
                 error_map[bmu] = d
