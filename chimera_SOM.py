@@ -464,14 +464,27 @@ class UmatPlot(PlotDialog):
                     ax.set_xticklabels(feature_names.keys(), rotation=75)
                     self.plot1D.draw()
                 elif self.selection_mode == 'Cluster':
+                    width = .8 # width of the bar of the barplot
+                    n = 1
+                    nx = feature_map.shape[-1]
+                    if self.experimental_intensities is not None:
+                        n+=1 # One more bar plot
                     if self.highlighted_cluster is not None:
+                        if self.experimental_intensities is None:
+                            x = numpy.arange(nx)
+                        else: # plot experimental data
+                            x = numpy.arange(nx)
+                            ax.bar(x, self.experimental_intensities,
+                                   yerr=self.experimental_std, align='center',
+                                   width=width/n, color='#D62D20')
+                            x = numpy.arange(nx) + width/n
                         self.highlighted_cluster[numpy.isnan(self.highlighted_cluster)] = False
                         self.highlighted_cluster = numpy.logical_and(numpy.bool_(self.highlighted_cluster),
                                                                     self.density > 0)
                         mean_features = feature_map[self.highlighted_cluster].mean(axis=0)
                         std_features = std_map[self.highlighted_cluster].mean(axis=0)
-                        ax.bar(numpy.arange(mean_features.size), mean_features, yerr=std_features,
-                                            align='center')
+                        ax.bar(x, mean_features, yerr=std_features,
+                                            align='center', width=width/n)
                         ax.set_xticks(numpy.arange(mean_features.size))
                         ax.set_xticklabels(feature_names.keys(), rotation=75)
                         self.plot1D.draw()
