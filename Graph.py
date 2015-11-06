@@ -26,6 +26,8 @@ class Graph:
         self.community_map = None
         self.unfolded_umat = None
         self.minimum_spanning_tree = None
+        self.local_minima = None # Local minima of the U-matrix in the unfolded
+                                 # space
 
     def get_adjacency_matrix(self):
         """
@@ -216,6 +218,28 @@ class Graph:
         self.unfolded_smap = unfolded_smap
         self.unfolded_umat = unfolded_umat
         self.change_of_basis = change_of_basis
+
+    def detect_local_minima(self):
+        """
+        Compute the local minima of the U-matrix in the unfolded space
+        """
+        if self.change_of_basis is None:
+            self.unfold_smap
+        arr = self.umatrix
+        X,Y = arr.shape
+        lminima = []
+        for i in range(X):
+            for j in range(Y):
+                pos = (i,j)
+                neighbors = self.neighbor_dim2_toric(pos, (X,Y))
+                nvalues = numpy.asarray( [ arr[e[0],e[1]] for e in neighbors] )
+                if (arr[i,j] <= nvalues).all():
+                    lminima.append((i,j))
+        lminima = [self.change_of_basis[e] for e in lminima] # to be in the
+                                                # basis of the unfolded map
+        lminima = numpy.asarray(lminima)
+        lminima = (lminima[:,0], lminima[:,1])
+        self.local_minima = lminima
 
     def unfold_matrix(self, matrix):
         """

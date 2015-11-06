@@ -65,7 +65,7 @@ class SOM:
 
     """
 
-    def __init__(self, inputvectors, optional_features=None, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
+    def __init__(self, inputvectors, optional_features=None, feature_map=None, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
@@ -84,6 +84,7 @@ class SOM:
         self.X = X
         self.Y = Y
         self.optional_features = optional_features
+        self.feature_map = feature_map
         if optional_features is not None:
             self.feature_map = numpy.zeros((self.X, self.Y, self.optional_features[0].size))
         self.number_of_phase = number_of_phases
@@ -303,6 +304,9 @@ class SOM:
         out_dict['unfolded_umat'] = self.graph.unfolded_umat
         out_dict['change_of_basis'] = self.graph.change_of_basis
         out_dict['minimum_spanning_tree'] = self.graph.minimum_spanning_tree
+        if self.graph.local_minima is None:
+            self.graph.detect_local_minima()
+        out_dict['local_minima'] = self.graph.local_minima
         for key, value in kwargs.iteritems():
             out_dict[key] = value
         f = open(outfile,'wb')
