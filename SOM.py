@@ -307,6 +307,8 @@ class SOM:
         if self.graph.local_minima is None:
             self.graph.detect_local_minima()
         out_dict['local_minima'] = self.graph.local_minima
+        if self.feature_map is not None:
+            out_dict['feature_map'] = self.feature_map
         for key, value in kwargs.iteritems():
             out_dict[key] = value
         f = open(outfile,'wb')
