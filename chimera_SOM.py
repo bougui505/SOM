@@ -81,6 +81,7 @@ class UmatPlot(PlotDialog):
         self.feature_item = self.feature_selection.getvalue() # 1D feature to display
         self.load_projections() # Loading user defined projections into plugin
         self.clustermode = (1,'Frames') # to display either Density map or ensemble of frames
+        self.experimental_intensities = None
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -439,11 +440,20 @@ class UmatPlot(PlotDialog):
                 if self.selection_mode == 'Cell':
                     width = .8 # width of the bar of the barplot
                     n = len(self.selected_neurons)
+                    if self.experimental_intensities is not None:
+                        n+=1 # One more bar plot
                     for i, neuron in enumerate(self.selected_neurons):
                         features = feature_map[neuron].flatten()
                         std_features = std_map[neuron].flatten()
                         nx = features.size
-                        x = numpy.arange(nx) + i*width/n
+                        if self.experimental_intensities is None:
+                            x = numpy.arange(nx) + i*width/n
+                        else: # plot experimental data
+                            x = numpy.arange(nx)
+                            ax.bar(x, self.experimental_intensities,
+                                   yerr=self.experimental_std, align='center',
+                                   width=width/n, color='#D62D20')
+                            x = numpy.arange(nx) + (i+1)*width/n
                         if i == 0:
                             ax.bar(x, features, yerr=std_features,
                                     align='center', width=width/n, color='r') # red barplot for the first selected neuron
