@@ -247,7 +247,11 @@ class Graph:
         """
         if self.change_of_basis is None:
             self.unfold_smap()
-        unfolded_matrix = numpy.ones_like(self.unfolded_umat) * numpy.nan
+        if len(matrix.shape) == 2: # 2D array
+            unfolded_matrix = numpy.ones_like(self.unfolded_umat) * numpy.nan
+        else: # 3D array
+            out_shape = self.unfolded_umat.shape + (matrix[0,0,:].size,)
+            unfolded_matrix = numpy.ones(out_shape) * numpy.nan
         for k in self.change_of_basis.keys():
             t = self.change_of_basis[k]  # tuple
             unfolded_matrix[t] = matrix[k]

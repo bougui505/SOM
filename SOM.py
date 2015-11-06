@@ -308,7 +308,8 @@ class SOM:
             self.graph.detect_local_minima()
         out_dict['local_minima'] = self.graph.local_minima
         if self.feature_map is not None:
-            out_dict['feature_map'] = self.feature_map
+            # Save the feature map in the unfolded space
+            out_dict['feature_map'] = self.graph.unfold_matrix(self.feature_map)
         for key, value in kwargs.iteritems():
             out_dict[key] = value
         f = open(outfile,'wb')
