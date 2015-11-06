@@ -43,6 +43,8 @@ class UmatPlot(PlotDialog):
         self.init_som_shape = self.data['representatives'].shape # initial som shape
         self.matrix = self.data['unfolded_umat']
         self.minimum_spanning_tree = self.data['minimum_spanning_tree']
+        self.local_minima = self.data['local_minima'] # Local minima positions of
+                                                      # the unfolded U-matrix
         self.min_uvalue = numpy.nanmin(self.matrix)
         PlotDialog.__init__(self, self.min_uvalue, numpy.nanmax(self.matrix),
                             self.dijkstra().max())
@@ -327,8 +329,14 @@ class UmatPlot(PlotDialog):
             nx, ny = self.matrix.shape
             if len(self.displayed_matrix.shape) == 2: # two dimensional array
                 ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+                ax.scatter(self.local_minima[1]+.5, self.local_minima[0]+.5,
+                           c='#FFA700', alpha=.5) # Plot the local minima
+                                                  # of the U-matrix
             else: # we must slice the matrix
                 ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+                ax.scatter(self.local_minima[1]+.5, self.local_minima[0]+.5,
+                           c='#FFA700', alpha=.5) # Plot the local minima
+                                                  # of the U-matrix
             if self.cluster_map is not None:
                 ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
                 ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
@@ -348,8 +356,14 @@ class UmatPlot(PlotDialog):
         nx, ny = self.matrix.shape
         if len(self.displayed_matrix.shape) == 2: # two dimensional array
             heatmap = ax.imshow(self.displayed_matrix, interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            ax.scatter(self.local_minima[1]+.5, self.local_minima[0]+.5,
+                       c='#FFA700', alpha=.5) # Plot the local minima
+                                              # of the U-matrix
         else: # we must slice the matrix
             heatmap = ax.imshow(self.displayed_matrix[:,:,self.slice_id], interpolation='nearest', extent=(0, ny, nx, 0), picker=True)
+            ax.scatter(self.local_minima[1]+.5, self.local_minima[0]+.5,
+                       c='#FFA700', alpha=.5) # Plot the local minima
+                                              # of the U-matrix
         if self.cluster_map is not None:
             ax.contour(self.cluster_map, 1, colors='white', linewidths=2.5, extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
             ax.contour(self.cluster_map, 1, colors='red', extent=(0, ny, 0, nx), origin='lower') # display the contours for cluster
