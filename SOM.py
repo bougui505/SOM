@@ -17,6 +17,7 @@ import itertools
 import scipy.spatial
 from scipy.ndimage.morphology import distance_transform_edt
 from multiprocessing import Pool
+from collections import OrderedDict
 import Graph
 
 
@@ -308,8 +309,17 @@ class SOM:
             self.graph.detect_local_minima()
         out_dict['local_minima'] = self.graph.local_minima
         if self.feature_map is not None:
-            # Save the feature map in the unfolded space
-            out_dict['feature_map'] = self.graph.unfold_matrix(self.feature_map)
+            # Save the feature map in the unfolded space as a projection
+            if not out_dict.has_key('projections'):
+                out_dict['projections'] = {}
+            feature_map = self.graph.unfold_matrix(self.feature_map)
+            feature_names = OrderedDict([(str(i), i) for i in
+                                        range(feature_map[0,0,:].size)])
+            # For the moment no standard deviation (std) is computed.
+            # A std of zeros is put in place
+            out_dict['projections']['feature_map'] = (feature_map,
+                                                numpy.zeros_like(feature_map),
+                                                feature_names)
         for key, value in kwargs.iteritems():
             out_dict[key] = value
         f = open(outfile,'wb')
