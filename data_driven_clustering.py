@@ -6,6 +6,7 @@
 # 2015-11-06 16:40:02 (UTC+0100)
 
 import numpy
+import basic_progress_reporting as bprogress
 
 class DDclust:
     def __init__(self, experimental_data, minimum_spanning_tree, feature_map, change_of_basis):
@@ -99,7 +100,20 @@ class DDclust:
                     len(self.experimental_std))
         return chi
 
-    def get_data_driven_cluster(self, starting_cell):
+    def get_data_driven_cluster(self, starting_cell, unfolded = True):
+        """
+
+        For a given cell, find the cluster that minimize chi.
+
+        • chi_profile: chi values along the flooding from the starting cell
+
+        • threshold: flooding value that minimize chi
+
+        • cluster: numpy array that gives the cell minimizing chi. This array
+        is given in the unfolded space, by default. Set unfolded to False if
+        you want the folded matrix.
+
+        """
         dj = self.dijkstra(starting_cell=starting_cell)
         sorter = dj.flatten().argsort()
         feature_sorted = self.feature_map.reshape(numpy.prod(self.folded_shape),
@@ -117,5 +131,32 @@ class DDclust:
         cluster[selection] = 1
         cluster[numpy.bool_(1-selection)] = 0
         cluster = cluster[numpy.argsort(sorter)].reshape(50,50)
-        cluster = self.unfold_matrix(cluster)
+        if unfolded:
+            cluster = self.unfold_matrix(cluster)
         return chi_profile, threshold, cluster
+
+    def get_minimal_chi_cluster(self):
+        """
+
+        Exhaustive search of the connected space that minimize chi
+
+        """
+        ni, nj = self.folded_shape
+        chi_min = numpy.inf
+        visited_nodes = numpy.zeros(self.folded_shape, dtype=bool)
+        progress = bprogress.Progress(ni*nj)
+        for i in range(ni):
+            for j in range(nj):
+                progress.count()
+                #if not visited_nodes[i,j]:
+                chi_profile, threshold, cluster =\
+                               self.get_data_driven_cluster(starting_cell=(i,j), unfolded=False)
+                visited_nodes += cluster
+                chi = chi_profile[threshold]
+                if chi < chi_min:
+                    chi_min = chi
+                    chi_profile_min = chi_profile
+                    threshold_min = threshold
+                    cluster_min = cluster
+        cluster_min = self.unfold_matrix(cluster_min)
+        return chi_profile_min, threshold_min, cluster_min
