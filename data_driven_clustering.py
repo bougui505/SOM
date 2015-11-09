@@ -6,7 +6,7 @@
 # 2015-11-06 16:40:02 (UTC+0100)
 
 import numpy
-import basic_progress_reporting as bprogress
+import progress_reporting as Progress
 
 class DDclust:
     def __init__(self, experimental_data, minimum_spanning_tree, feature_map, change_of_basis):
@@ -144,7 +144,9 @@ class DDclust:
         ni, nj = self.folded_shape
         chi_min = numpy.inf
         visited_nodes = numpy.zeros(self.folded_shape, dtype=bool)
-        progress = bprogress.Progress(ni*nj)
+        progress = Progress.Progress(ni*nj)
+        chis = []
+        thresholds = []
         for i in range(ni):
             for j in range(nj):
                 progress.count()
@@ -153,10 +155,12 @@ class DDclust:
                                self.get_data_driven_cluster(starting_cell=(i,j), unfolded=False)
                 visited_nodes += cluster
                 chi = chi_profile[threshold]
+                chis.append(chi)
+                thresholds.append(threshold)
                 if chi < chi_min:
                     chi_min = chi
                     chi_profile_min = chi_profile
                     threshold_min = threshold
                     cluster_min = cluster
         cluster_min = self.unfold_matrix(cluster_min)
-        return chi_profile_min, threshold_min, cluster_min
+        return chi_profile_min, threshold_min, cluster_min, chis, thresholds
