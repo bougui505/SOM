@@ -18,11 +18,13 @@ class DDclust:
         • minimum_spanning_tree: the minimum spanning tree of the SOM map
 
         • feature_map: the map containing the data to compare with experimental
-        ones
+        ones. The map is given in the unfolded space.
 
         • change_of_basis: the dictionnary to fold or unfold the map
 
         All the calculations are made in the folded space
+
+        Return the cluster map in the unfolded space.
 
         """
         self.minimum_spanning_tree = minimum_spanning_tree
@@ -42,7 +44,11 @@ class DDclust:
         """
         unfold the given matrix given self.unfold
         """
-        unfolded_matrix = numpy.ones(self.unfolded_shape + (self.feature_dim,)) * numpy.nan
+        if len(matrix.shape) > 2:
+            unfolded_matrix = numpy.ones(self.unfolded_shape +
+                                         (self.feature_dim,)) * numpy.nan
+        else:
+             unfolded_matrix = numpy.ones(self.unfolded_shape) * numpy.nan
         for k in self.unfold.keys():
             t = self.unfold[k]  # tuple
             unfolded_matrix[t] = matrix[k]
@@ -99,16 +105,17 @@ class DDclust:
         feature_sorted = self.feature_map.reshape(numpy.prod(self.folded_shape),
                                                   self.feature_dim)[sorter]
         s = 0
-        moving_average = []
+        chi_profile = []
         for i,e in enumerate(feature_sorted):
             s += e
             m = s / (i+1)
-            moving_average.append(self.get_chi(m))
+            chi_profile.append(self.get_chi(m))
         # Get the cluster on the map
-        threshold = numpy.argmin(moving_average)
+        threshold = numpy.argmin(chi_profile)
         cluster = dj.flatten()[sorter]
         selection = numpy.arange(len(cluster)) < threshold
         cluster[selection] = 1
         cluster[numpy.bool_(1-selection)] = 0
         cluster = cluster[numpy.argsort(sorter)].reshape(50,50)
-        return moving_average[threshold], threshold, cluster
+        cluster = self.unfold_matrix(cluster)
+        return chi_profile, threshold, cluster
