@@ -142,25 +142,49 @@ class DDclust:
 
         """
         ni, nj = self.folded_shape
-        chi_min = numpy.inf
-        visited_nodes = numpy.zeros(self.folded_shape, dtype=bool)
-        progress = Progress.Progress(ni*nj)
-        chis = []
-        thresholds = []
+        progress = Progress.Progress(ni*nj, label = 'chi minimization')
+        clusters = numpy.zeros((ni*nj,)+self.folded_shape)
+        k = 0
         for i in range(ni):
             for j in range(nj):
                 progress.count()
-                #if not visited_nodes[i,j]:
                 chi_profile, threshold, cluster =\
                                self.get_data_driven_cluster(starting_cell=(i,j), unfolded=False)
-                visited_nodes += cluster
                 chi = chi_profile[threshold]
-                chis.append(chi)
-                thresholds.append(threshold)
-                if chi < chi_min:
-                    chi_min = chi
-                    chi_profile_min = chi_profile
-                    threshold_min = threshold
-                    cluster_min = cluster
-        cluster_min = self.unfold_matrix(cluster_min)
-        return chi_profile_min, threshold_min, cluster_min, chis, thresholds
+                cluster[cluster == 1] = chi
+                clusters[k] = cluster
+                k += 1
+        return clusters
+
+    def combine_clusters(self, clusters):
+        """
+
+        • clusters: output of get_minimal_chi_cluster. Array of shape (ni*nj,
+        ni, nj), with (ni, nj) = self.folded_shape
+
+        ‣ return: A cluster array:
+
+            • If the clusters along axis=0 are not overlaid, the clusters are
+            kept in the output.
+
+            • If the clusters create a connected space, only the cluster with
+            the minimal chi is kept.
+
+        """
+        clusters = numpy.ma.masked_array(clusters, clusters==0)
+        sorter = clusters.min(axis=(1,2)).argsort()
+        clusters = clusters[sorter] # sort cluster
+        n = clusters.shape[0]
+        progress = Progress.Progress(n, label = "Combining clusters", delta = 10)
+        for k in range(n):
+            progress.count()
+            cluster = clusters[k].flatten()
+            ind = numpy.where(cluster == cluster.min())[0]
+            s = clusters[k+1:].shape
+            overlaid = numpy.ma.count((clusters[k+1:].reshape((s[0], numpy.prod(s[1:])))[:,ind]),axis=1) > 0 # overlaid clusters
+            overlaid_clusters = clusters[k+1:][overlaid]
+            clusters[k+1:][overlaid] = numpy.zeros_like(clusters[k+1:][overlaid])
+            clusters = numpy.ma.masked_array(clusters, clusters==0)
+        n, ni, nj = clusters.shape
+        clusters = clusters[numpy.ma.count(clusters.reshape(n, ni*nj), axis=1) > 0] # keep only slices with clusters
+        return clusters
