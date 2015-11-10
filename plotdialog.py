@@ -257,6 +257,24 @@ class Density(ModalDialog):
     def OK(self):
         ModalDialog.Cancel(self, value=(self.perform_calculation, ))
 
+class Data_driven_clustering(ModalDialog):
+    buttons = ('OK', 'Cancel')
+
+    def __init__(self):
+        self.perform_calculation = False
+        ModalDialog.__init__(self)
+
+    def fillInUI(self, parent):
+        import Tkinter
+
+        Tkinter.Label(parent,
+                      text="Compute the data driven clustering.\nThis calculation can take SEVERAL MINUTES...",
+                      relief="ridge", bd=4).pack()
+        self.perform_calculation = True
+
+    def OK(self):
+        ModalDialog.Cancel(self, value=(self.perform_calculation, ))
+
 class Plot1D(MPLDialog):
     """
     plot 1D profile of the selected cell

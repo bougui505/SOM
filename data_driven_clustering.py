@@ -176,7 +176,7 @@ class DDclust:
         clusters = clusters[sorter] # sort cluster
         n = clusters.shape[0]
         progress = Progress.Progress(n, label = "Combining clusters", delta = 10)
-        for k in range(n):
+        for k in range(n-1):
             progress.count()
             cluster = clusters[k].flatten()
             ind = numpy.where(cluster == cluster.min())[0]

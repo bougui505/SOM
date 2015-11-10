@@ -16,6 +16,7 @@ from plotdialog import PlotDialog
 from plotdialog import RMSD
 from plotdialog import SelectClusterMode
 from plotdialog import Density
+from plotdialog import Data_driven_clustering
 from plotdialog import Projection
 from plotdialog import Add_experimental_data
 from plotdialog import Plot1D
@@ -31,6 +32,7 @@ import Midas
 import matplotlib
 import pickle
 import chimera
+import data_driven_clustering as Ddc
 
 from chimera import runCommand
 
@@ -73,6 +75,8 @@ class UmatPlot(PlotDialog):
         self.i, self.j = None, None  # current neuron
         self.rmsd_list = None
         self.rep_rmsd = None
+        self.experimental_data_filename = None
+        self.data_driven_clusters = None
         self.density = self.data['density']
         self.ctrl_pressed = False
         self.motion_notify_event = None
@@ -95,6 +99,22 @@ class UmatPlot(PlotDialog):
             if self.density is not None:
                 self.displayed_matrix = self.density
             self.slice_matrix(None) # to update the slicer menu
+        elif self.display_option.getvalue() == "Data driven clustering":
+            if self.data_driven_clusters is None:
+                dlg = Data_driven_clustering() # Dialog
+                if dlg.run(self.master):
+                    ddc = Ddc.DDclust(self.experimental_data_filename,
+                                      self.minimum_spanning_tree,
+                                      self.data['projections']['feature_map'][0],
+                                      self.unfold)
+                    clusters = ddc.get_minimal_chi_cluster()
+                    combined_clusters = ddc.combine_clusters(clusters)
+                    self.data_driven_clusters = ddc.unfold_matrix(combined_clusters.sum(axis=0))
+                    self.data['data_driven_clusters'] = self.data_driven_clusters
+                    self.save_projections() # save the resulting matrix
+            if self.data_driven_clusters is not None:
+                self.displayed_matrix = self.data_driven_clusters
+                self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
             self.slice_matrix(None) # to update the slicer menu
@@ -194,6 +214,7 @@ class UmatPlot(PlotDialog):
         dlg = Add_experimental_data() # dialog
         user_input = dlg.run(self.master) # (filename,)
         filename = user_input[0]
+        self.experimental_data_filename = filename
 
         # The filename containing the experimental data should be a 2-column
         # filename containing data for the first column and standard deviation
@@ -212,6 +233,8 @@ class UmatPlot(PlotDialog):
                     len(self.experimental_intensities) )
         feature_names = OrderedDict([(str(i), i) for i in range(self.experimental_intensities.size)])
         self.display_option_items.append('chi_map')
+        self.display_option.setitems(self.display_option_items)
+        self.display_option_items.append('Data driven clustering')
         self.display_option.setitems(self.display_option_items)
         self.projections['chi_map'] = (chi_map, numpy.zeros_like(chi_map), feature_names)
         self.save_experimental_data()
@@ -240,6 +263,11 @@ class UmatPlot(PlotDialog):
         if self.data.has_key('experimental_data'):
             self.experimental_intensities = self.data['experimental_data'][0]
             self.experimental_std = self.data['experimental_data'][1]
+            if self.data.has_key('data_driven_clusters'):
+                self.data_driven_clusters = self.data['data_driven_clusters']
+                # update the display menu
+                self.display_option_items.append('Data driven clustering')
+                self.display_option.setitems(self.display_option_items)
         else:
             self.experimental_intensities = None
             self.experimental_std = None
