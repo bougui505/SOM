@@ -110,11 +110,13 @@ class UmatPlot(PlotDialog):
                     clusters = ddc.get_minimal_chi_cluster()
                     combined_clusters = ddc.combine_clusters(clusters)
                     self.data_driven_clusters = ddc.unfold_matrix(combined_clusters.sum(axis=0))
+                    self.data_driven_clusters = numpy.nan_to_num(self.data_driven_clusters)
                     self.data['data_driven_clusters'] = self.data_driven_clusters
                     self.save_projections() # save the resulting matrix
             if self.data_driven_clusters is not None:
-                self.displayed_matrix = self.data_driven_clusters
-                self.slice_matrix(None) # to update the slicer menu
+                self.cluster_map = (self.data_driven_clusters != 0)
+                #self.displayed_matrix = self.data_driven_clusters
+                #self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
             self.slice_matrix(None) # to update the slicer menu
