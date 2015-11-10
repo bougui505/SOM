@@ -80,8 +80,8 @@ class UmatPlot(PlotDialog):
         self.plot1D = None # 1D plot for multidimensional features
         self.feature_item = self.feature_selection.getvalue() # 1D feature to display
         self.load_projections() # Loading user defined projections into plugin
+        self.load_experimental_data() # Loading experimental data into plugin, if present
         self.clustermode = (1,'Frames') # to display either Density map or ensemble of frames
-        self.experimental_intensities = None
 
     def switch_matrix(self, value):
         if self.display_option.getvalue() == "U-matrix" or self.display_option.getvalue() is None:
@@ -214,6 +214,35 @@ class UmatPlot(PlotDialog):
         self.display_option_items.append('chi_map')
         self.display_option.setitems(self.display_option_items)
         self.projections['chi_map'] = (chi_map, numpy.zeros_like(chi_map), feature_names)
+        self.save_experimental_data()
+        self.save_projections()
+
+    def save_experimental_data(self, outfile='som.dat'):
+        """
+
+        Save experimental data into outfile (som.dat)
+
+        """
+        self.status('saving data in %s'%outfile)
+        self.data['experimental_data'] = (self.experimental_intensities,
+                                          self.experimental_std)
+        f = open(outfile,'wb')
+        pickle.dump(self.data, f, 2)
+        f.close()
+        self.status('done')
+
+    def load_experimental_data(self):
+        """
+
+        Load experimental data into plugin, if present
+
+        """
+        if self.data.has_key('experimental_data'):
+            self.experimental_intensities = self.data['experimental_data'][0]
+            self.experimental_std = self.data['experimental_data'][1]
+        else:
+            self.experimental_intensities = None
+            self.experimental_std = None
 
     def save_projections(self, outfile='som.dat'):
         """
