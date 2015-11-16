@@ -500,13 +500,17 @@ class UmatPlot(PlotDialog):
                 if self.selection_mode == 'Cell':
                     width = .8 # width of the bar of the barplot
                     n = len(self.selected_neurons)
-                    if self.experimental_intensities is not None:
+                    plot_experimental_data = False
+                    if self.experimental_intensities is not None and\
+                                            self.feature_item == 'feature_map':
                         n+=1 # One more bar plot
+                        plot_experimental_data = True
                     for i, neuron in enumerate(self.selected_neurons):
                         features = feature_map[neuron].flatten()
                         std_features = std_map[neuron].flatten()
                         nx = features.size
-                        if self.experimental_intensities is None:
+                        if self.experimental_intensities is None or\
+                                                    not plot_experimental_data:
                             x = numpy.arange(nx) + i*width/n
                         else: # plot experimental data
                             x = numpy.arange(nx)
@@ -527,10 +531,14 @@ class UmatPlot(PlotDialog):
                     width = .8 # width of the bar of the barplot
                     n = 1
                     nx = feature_map.shape[-1]
-                    if self.experimental_intensities is not None:
+                    plot_experimental_data = False
+                    if self.experimental_intensities is not None and\
+                                            self.feature_item == 'feature_map':
                         n+=1 # One more bar plot
+                        plot_experimental_data = True
                     if self.highlighted_cluster is not None:
-                        if self.experimental_intensities is None:
+                        if self.experimental_intensities is None or\
+                                                    not plot_experimental_data:
                             x = numpy.arange(nx)
                         else: # plot experimental data
                             x = numpy.arange(nx)
