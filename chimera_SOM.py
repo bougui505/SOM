@@ -713,21 +713,32 @@ class UmatPlot(PlotDialog):
     def pick_up_cluster(self, starting_cell):
         """
 
-        pick up a cluster according to connexity
+        • pick up a cluster according to connexity for U-matrix based clustering
+
+        • For data_driven clusters: pick up cluster from chi values of
+        self.data_driven_clusters
 
         """
-        cluster_map = self.fold_matrix(self.cluster_map)
-        cell = self.fold[starting_cell]
-        visit_mask = numpy.zeros(self.init_som_shape, dtype=bool)
-        visit_mask[cell] = True
-        checkpoint = True
-        while checkpoint:
-            checkpoint = False
-            for e in self.get_neighbors_of_area(visit_mask):
-                if cluster_map[e]:
-                    visit_mask[e] = True
-                    checkpoint = True
-        return self.unfold_matrix(visit_mask)
+        data_driven_selection = False
+        if self.data_driven_clusters is not None:
+            if (self.cluster_map == (self.data_driven_clusters != 0)).all():
+                data_driven_selection = True
+        if not data_driven_selection:
+            cluster_map = self.fold_matrix(self.cluster_map)
+            cell = self.fold[starting_cell]
+            visit_mask = numpy.zeros(self.init_som_shape, dtype=bool)
+            visit_mask[cell] = True
+            checkpoint = True
+            while checkpoint:
+                checkpoint = False
+                for e in self.get_neighbors_of_area(visit_mask):
+                    if cluster_map[e]:
+                        visit_mask[e] = True
+                        checkpoint = True
+            return self.unfold_matrix(visit_mask)
+        else: # Data driven clusters
+            return self.data_driven_clusters == self.data_driven_clusters[starting_cell]
+
 
     def onKey(self, event):
         if event.key == 'control':
