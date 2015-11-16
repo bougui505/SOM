@@ -115,8 +115,9 @@ class UmatPlot(PlotDialog):
                     self.save_projections() # save the resulting matrix
             if self.data_driven_clusters is not None:
                 self.cluster_map = (self.data_driven_clusters != 0)
-                #self.displayed_matrix = self.data_driven_clusters
-                #self.slice_matrix(None) # to update the slicer menu
+                self.displayed_matrix = numpy.ma.masked_array(self.data_driven_clusters,
+                                                self.data_driven_clusters == 0)
+                self.slice_matrix(None) # to update the slicer menu
         elif self.display_option.getvalue() == "Closest frame id":
             self.displayed_matrix = self.rep_map
             self.slice_matrix(None) # to update the slicer menu
