@@ -130,7 +130,7 @@ class DDclust:
         selection = numpy.arange(len(cluster)) < threshold
         cluster[selection] = 1
         cluster[numpy.bool_(1-selection)] = 0
-        cluster = cluster[numpy.argsort(sorter)].reshape(50,50)
+        cluster = cluster[numpy.argsort(sorter)].reshape(self.folded_shape)
         if unfolded:
             cluster = self.unfold_matrix(cluster)
         return chi_profile, threshold, cluster
