@@ -426,6 +426,6 @@ class SOM:
         """
         if self.transition_matrix is None:
             self.get_transition_matrix(lag=lag, dwell_time=dwell_time)
-        self.kinetic_graph = Graph.Graph(smap = self.smap, adjacency_matrix=self.transition_matrix)
+        self.kinetic_graph = Graph.Graph(smap = self.smap, adjacency_matrix=1/self.transition_matrix)
         self.kinetic_graph.best_partition()
         self.kinetic_graph.community_map = self.kinetic_graph.community_map.reshape(self.smap.shape[:-1])

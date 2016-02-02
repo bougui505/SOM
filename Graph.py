@@ -154,6 +154,7 @@ class Graph:
         else:
             cc = numpy.ravel_multi_index(starting_cell, (nx, ny))
         m[cc] = 0
+        n_visited_cell = -1
         while (~visit_mask).sum() > 0:
             neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
             for e in neighbors:
@@ -162,6 +163,11 @@ class Graph:
                     m[e] = d
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
+            if n_visited_cell == visit_mask.sum():
+                break # break the loop if no more visited cells
+                # Usefull when there is unreachable cells
+            else:
+                n_visited_cell = visit_mask.sum()
             if break_at_local_min:
                 u_value_prev = umat[cc]
             cc = m_masked.argmin()
