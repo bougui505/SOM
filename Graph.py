@@ -132,12 +132,16 @@ class Graph:
                                           axis=0)).reshape(umat_shape)
         return umat
 
-    def dijkstra(self, starting_cell = None, break_at_local_min = False):
+    def dijkstra(self, starting_cell = None, break_at_local_min = False,
+                 get_predecessors = False):
         """
 
         Apply dijkstra distance transform to the SOM map. If break_at_local_min
         the dijkstra algorithm breaks at local minima: usefull to detect
         local_minima and basins
+
+        If get_predecessors is True, the function returns also the dictionnary
+        of predecessor. That is usefull to compute the shortest path.
 
         """
         if self.minimum_spanning_tree is None:
@@ -155,12 +159,14 @@ class Graph:
             cc = numpy.ravel_multi_index(starting_cell, (nx, ny))
         m[cc] = 0
         n_visited_cell = -1
+        P = {}  # dictionary of predecessors
         while (~visit_mask).sum() > 0:
             neighbors = [e for e in numpy.where(ms_tree[cc] != numpy.inf)[0] if not visit_mask[e]]
             for e in neighbors:
                 d = ms_tree[cc, e] + m[cc]
                 if d < m[e]:
                     m[e] = d
+                    P[e] = cc
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
             if n_visited_cell == visit_mask.sum():
@@ -173,7 +179,29 @@ class Graph:
             cc = m_masked.argmin()
             if break_at_local_min and umat[cc] > u_value_prev:
                 break
-        return m.reshape((nx, ny))
+        if get_predecessors:
+            return m.reshape((nx, ny)), P
+        else:
+            return m.reshape((nx, ny))
+
+    def shortestPath(self, start, end):
+        """
+        Find a single shortest path from the given start vertex
+        to the given end vertex.
+        The output is a list of the vertices in order along
+        the shortest path.
+        """
+        D,P = self.dijkstra(starting_cell=start, get_predecessors=True)
+        Path = []
+        nx, ny = self.smap.shape[:2]
+        start = numpy.ravel_multi_index(start, (nx,ny))
+        end = numpy.ravel_multi_index(end, (nx,ny))
+        while 1:
+            Path.append(end)
+            if end == start: break
+            end = P[end]
+        Path.reverse()
+        return Path
 
     @staticmethod
     def get_neighbors_of_set(indices):
