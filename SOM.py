@@ -415,8 +415,7 @@ class SOM:
                 modulo = k2 % dwell_time
             if modulo != 0:
                 transition_matrix[numpy.ravel_multi_index(bmu1, shape), numpy.ravel_multi_index(bmu2, shape)] += 1
-        transition_matrix = transition_matrix / density.flatten()
-        transition_matrix[:, density.flatten() == 0] = 0
+        transition_matrix = transition_matrix
         self.transition_matrix = transition_matrix
 
     def get_kinetic_communities(self, lag=1, dwell_time=None):
