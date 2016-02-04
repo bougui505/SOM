@@ -401,6 +401,7 @@ class SOM:
         :type lag: int
         :return:
         """
+        print "Computing the transition matrix..."
         if self.bmus is None:
             self.find_bmus()
         shape = self.smap.shape[:-1]
@@ -417,6 +418,7 @@ class SOM:
                 transition_matrix[numpy.ravel_multi_index(bmu1, shape), numpy.ravel_multi_index(bmu2, shape)] += 1
         transition_matrix = transition_matrix
         self.transition_matrix = transition_matrix
+        print "done"
 
     def get_kinetic_communities(self, lag=1, dwell_time=None):
         """
@@ -425,6 +427,8 @@ class SOM:
         """
         if self.transition_matrix is None:
             self.get_transition_matrix(lag=lag, dwell_time=dwell_time)
+        print "Computing the kinetic communities..."
         self.kinetic_graph = Graph.Graph(smap = self.smap, adjacency_matrix=1/self.transition_matrix)
         self.kinetic_graph.best_partition()
         self.kinetic_graph.community_map = self.kinetic_graph.community_map.reshape(self.smap.shape[:-1])
+        print "done"
