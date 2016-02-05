@@ -70,6 +70,7 @@ class SOM:
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
                  randomInit=True, autoSizeMap=False, n_process=1):
+        self.kinetic_graph = None
         self.n_process = n_process
         if self.n_process > 1:
             self.pool = Pool(processes=self.n_process)
