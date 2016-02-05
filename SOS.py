@@ -115,3 +115,17 @@ class SOS:
             return numpy.unravel_index(index, (X, Y))
         else:
             return numpy.unravel_index(index, (X, Y)), cdist[0, index]
+
+    def get_transition_path(self):
+        """
+        It returns the frame ids for the transition path between self.bmu_1 and
+        self.bmu_2.
+        """
+        if self.som.kinetic_graph is None:
+            self.som.get_kinetic_communities()
+        path_som = self.som.kinetic_graph.shortestPath(self.bmu_1, self.bmu_2)
+        if self.som.representatives is None:
+            self.som.get_representatives()
+        transition_path = numpy.int_([self.som.representatives.flatten()[e]\
+                                         for e in path_som])
+        return transition_path
