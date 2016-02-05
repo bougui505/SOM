@@ -57,7 +57,7 @@ class equilibration:
         self.simulation.minimizeEnergy()
         print("done")
 
-    def equilibrate(self, number_of_steps=1000000, report_interval=1000,
+    def equilibrate(self, number_of_steps=15000, report_interval=10,
                     filename_output_pdb="equilibrated.pdb",
                     filename_output_log="openmm_equilibration.log"):
         print("Equilibrating...")
@@ -110,7 +110,7 @@ class production():
         self.simulation.context.setVelocitiesToTemperature(temperature)
         print("done")
 
-    def run(self, number_of_steps=1000000, report_interval=100,
+    def run(self, number_of_steps=40, report_interval=1,
                     filename_output_dcd="trajectory.dcd",
                     filename_output_log="openmm_production.log"):
         print("MD production running...")
