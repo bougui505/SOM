@@ -10,17 +10,20 @@ sys.path.append("/home/bougui/lib/SOM")
 import SOM
 import MD
 from MDAnalysis import Universe, Timeseries, collection
+import MDAnalysis
 import numpy
+import os
 
 class SOS:
     """
     SOM based implementation of the String Of Swarms method.
     """
-    def __init__(self, pdb_1=None, pdb_2= None, smap=None, inputmat=None):
+    def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None, inputmat=None):
         """
         args:
         • pdb_1: filename of the pdb for the starting structure of the path
         • pdb_2: filename of the pdb for the ending structure of the path
+        • dcd: Optional dcd trajectory used to generate the smap given as argument
         • smap: SOM map
         • inputmat: input matrix that has been used for SOM training
           (array of phi-psi dihedrals in complex numbers)
@@ -32,6 +35,7 @@ class SOS:
         """
         self.pdb_1 = pdb_1
         self.pdb_2 = pdb_2
+        self.dcd = dcd
         self.smap = smap
         if self.pdb_1 is not None and self.smap is not None:
             self.bmu_1 = self.find_bmu(self.get_dihedrals_from_pdb(self.pdb_1))
@@ -128,4 +132,32 @@ class SOS:
             self.som.get_representatives()
         transition_path = numpy.int_([self.som.representatives.flatten()[e]\
                                          for e in path_som])
+        self.transition_path = transition_path
         return transition_path
+
+    def get_pdbs(self):
+        """
+        Return 1 pdb file per frame id
+        """
+
+        dcd = self.dcd
+        frame_ids = self.transition_path
+
+        if not os.path.isdir('pdb'):
+            os.mkdir('pdb')
+
+        aa = numpy.argsort(frame_ids)
+
+        sorted_frame_list = list(frame_ids[aa][::-1])
+        u = MDAnalysis.Universe(self.pdb_1, dcd)
+        i = 0
+        for ts in u.trajectory:
+            try:
+                if ts.frame == sorted_frame_list[-1]:
+                    OUTPDB = "pdb/%d.pdb"%aa[i]
+                    pdb = MDAnalysis.Writer(OUTPDB, multiframe=False)
+                    pdb.write(u)
+                    print "got frame %d"%sorted_frame_list.pop()
+                    i += 1
+            except IndexError:
+                break
