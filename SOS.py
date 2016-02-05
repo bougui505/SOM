@@ -13,6 +13,7 @@ from MDAnalysis import Universe, Timeseries, collection
 import MDAnalysis
 import numpy
 import os
+import glob
 
 class SOS:
     """
@@ -158,8 +159,36 @@ class SOS:
                 if ts.frame == sorted_frame_list[-1]:
                     OUTPDB = "pdb/%d.pdb"%aa[i]
                     pdb = MDAnalysis.Writer(OUTPDB, multiframe=False)
-                    pdb.write(u)
+                    pdb.write(u.select_atoms('segid A')) # Only protein without waters and ions
                     print "got frame %d"%sorted_frame_list.pop()
                     i += 1
             except IndexError:
                 break
+
+    def run_MD(self, platform_name='OpenCL'):
+        if not os.path.isdir('log'):
+            os.mkdir('log')
+        if not os.path.isdir('dcd'):
+            os.mkdir('dcd')
+        for pdb in glob.glob('pdb/*.pdb'):
+            print "Equilibrating %s"%pdb
+            # Equilibration
+            md_eq = MD.equilibration(pdb)
+            md_eq.add_solvent()
+            md_eq.create_system(platform_name=platform_name)
+            md_eq.minimize()
+            pdb_eq = os.path.splitext(pdb[0])[0]+'_eq.pdb'
+            log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
+            md_eq.equilibrate(filename_output_pdb=pdb_eq,
+                              filename_output_log= log_eq)
+            print "done"
+            # Production
+            for i in range(10):
+                print "MD %d for %s"%(i, pdb)
+                md_prod = MD.production(pdb_eq)
+                md_prod.create_system(platform_name=platform_name)
+                dcd_prod = 'dcd/'+os.path.splitext(os.path.basename(pdb))[0]+'_%d.dcd'%i
+                log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
+                md_prod.run(filename_output_dcd=dcd_prod,
+                            filename_output_log=log_prod)
+                print "done"
