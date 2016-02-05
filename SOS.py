@@ -55,7 +55,9 @@ class SOS:
 
         self.metric = 'euclidean'
 
-    def get_dihedrals(self, pdb, dcd):
+    def get_dihedrals(self):
+        pdb = self.pdb_1
+        dcd = self.dcd
         print "Computing dihedrals"
         universe = Universe(pdb, dcd)
         protein = universe.select_atoms('protein')
