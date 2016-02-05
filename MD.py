@@ -57,7 +57,7 @@ class equilibration:
         self.simulation.minimizeEnergy()
         print("done")
 
-    def equilibrate(self, number_of_steps=15000, report_interval=10,
+    def equilibrate(self, number_of_steps=15000, report_interval=1000,
                     filename_output_pdb="equilibrated.pdb",
                     filename_output_log="openmm_equilibration.log"):
         print("Equilibrating...")
