@@ -14,6 +14,7 @@ import MDAnalysis
 import numpy
 import os
 import glob
+import progress_reporting as Progress
 
 class SOS:
     """
@@ -170,7 +171,9 @@ class SOS:
             os.mkdir('log')
         if not os.path.isdir('dcd'):
             os.mkdir('dcd')
-        for pdb in glob.glob('pdb/*.pdb'):
+        pdb_list = glob.glob('pdb/*.pdb')
+        progress = Progress.Progress(len(pdb_list), delta=1)
+        for pdb in pdb_list:
             print "Equilibrating %s"%pdb
             # Equilibration
             md_eq = MD.equilibration(pdb)
@@ -192,3 +195,4 @@ class SOS:
                 md_prod.run(filename_output_dcd=dcd_prod,
                             filename_output_log=log_prod)
                 print "done"
+            progress.count()
