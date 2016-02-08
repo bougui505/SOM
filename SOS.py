@@ -177,7 +177,7 @@ class SOS:
             md_eq.add_solvent()
             md_eq.create_system(platform_name=platform_name)
             md_eq.minimize()
-            pdb_eq = os.path.splitext(pdb[0])[0]+'_eq.pdb'
+            pdb_eq = os.path.splitext(pdb)[0]+'_eq.pdb'
             log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
             md_eq.equilibrate(filename_output_pdb=pdb_eq,
                               filename_output_log= log_eq)
