@@ -15,12 +15,53 @@ import numpy
 import os
 import glob
 import progress_reporting as Progress
+from multiprocessing import Pool
+
+def run_simulation(pdb):
+
+    def exists_and_not_empty(filename):
+        if os.path.exists(filename):
+            if  os.stat(filename).st_size > 0:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    print "Equilibrating %s"%pdb
+    pdb_eq = os.path.splitext(pdb)[0][:-3]+'_eq.pdb'
+    if  exists_and_not_empty(pdb_eq):
+        print "%s file exists and is not empty"%pdb_eq
+    else:
+        # Equilibration
+        md_eq = MD.equilibration(pdb)
+        md_eq.add_solvent()
+        md_eq.create_system(platform_name='OpenCL')
+        md_eq.minimize()
+        log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
+        md_eq.equilibrate(filename_output_pdb=pdb_eq,
+                          filename_output_log= log_eq)
+        print "done"
+    # Production
+    for i in range(10):
+        dcd_prod = 'dcd/'+os.path.splitext(os.path.basename(pdb))[0][:-3]+'_%d.dcd'%i
+        if exists_and_not_empty(dcd_prod):
+            print "%s file exists and is not empty"%dcd_prod
+        else:
+            print "MD %d for %s"%(i, pdb)
+            md_prod = MD.production(pdb_eq)
+            md_prod.create_system(platform_name='OpenCL')
+            log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
+            md_prod.run(filename_output_dcd=dcd_prod,
+                        filename_output_log=log_prod)
+            print "done"
+
 
 class SOS:
     """
     SOM based implementation of the String Of Swarms method.
     """
-    def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None, inputmat=None):
+    def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None, inputmat=None, n_process=1):
         """
         args:
         • pdb_1: filename of the pdb for the starting structure of the path
@@ -29,6 +70,7 @@ class SOS:
         • smap: SOM map
         • inputmat: input matrix that has been used for SOM training
           (array of phi-psi dihedrals in complex numbers)
+        • n_process: number of parallel process to run
         attributes:
         • desc1: descriptor for pdb_1
         • desc2: descriptor for pdb_2
@@ -39,6 +81,7 @@ class SOS:
         self.pdb_2 = pdb_2
         self.dcd = dcd
         self.smap = smap
+        self.pool = Pool(processes=n_process)
         if self.pdb_1 is not None and self.smap is not None:
             self.bmu_1 = self.find_bmu(self.get_dihedrals_from_pdb(self.pdb_1))
         else:
@@ -167,46 +210,13 @@ class SOS:
                 break
 
     def run_MD(self, platform_name='OpenCL'):
-        def exists_and_not_empty(filename):
-            if os.path.exists(filename):
-                if  os.stat(pdb_eq).st_size > 0:
-                    return True
-                else:
-                    return False
-            else:
-                return False
         if not os.path.isdir('log'):
             os.mkdir('log')
         if not os.path.isdir('dcd'):
             os.mkdir('dcd')
         pdb_list = glob.glob('pdb/*_in.pdb')
-        progress = Progress.Progress(len(pdb_list), delta=1)
-        for pdb in pdb_list:
-            print "Equilibrating %s"%pdb
-            pdb_eq = os.path.splitext(pdb)[0][:-3]+'_eq.pdb'
-            if  exists_and_not_empty(pdb_eq):
-                print "%s file exists and is not empty"%pdb_eq
-            else:
-                # Equilibration
-                md_eq = MD.equilibration(pdb)
-                md_eq.add_solvent()
-                md_eq.create_system(platform_name=platform_name)
-                md_eq.minimize()
-                log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
-                md_eq.equilibrate(filename_output_pdb=pdb_eq,
-                                  filename_output_log= log_eq)
-                print "done"
-            # Production
-            for i in range(10):
-                dcd_prod = 'dcd/'+os.path.splitext(os.path.basename(pdb))[0][:-3]+'_%d.dcd'%i
-                if exists_and_not_empty(dcd_prod):
-                    print "%s file exists and is not empty"%dcd_prod
-                else:
-                    print "MD %d for %s"%(i, pdb)
-                    md_prod = MD.production(pdb_eq)
-                    md_prod.create_system(platform_name=platform_name)
-                    log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
-                    md_prod.run(filename_output_dcd=dcd_prod,
-                                filename_output_log=log_prod)
-                    print "done"
-            progress.count()
+        #progress = Progress.Progress(len(pdb_list), delta=1)
+        #for pdb in pdb_list:
+        #    run_simulation(pdb)
+        #    progress.count()
+        pools = self.pool.map(run_simulation, pdb_list)
