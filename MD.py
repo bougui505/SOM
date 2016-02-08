@@ -121,5 +121,12 @@ class production():
             kineticEnergy=True, totalEnergy=True, temperature=True, volume=True,
             density=True, progress=True, remainingTime=True, speed=True,
             totalSteps=number_of_steps, separator='\t'))
-        self.simulation.step(number_of_steps)
+        try_again = True
+        while try_again:
+            try:
+                self.simulation.step(number_of_steps)
+                try_again = False
+            except Exception:
+                print("OpenMM exception caught (Exception: Particle coordinate is nan)")
+                print ("Trying again...")
         print("done")
