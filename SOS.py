@@ -158,7 +158,7 @@ class SOS:
         for ts in u.trajectory:
             try:
                 if ts.frame == sorted_frame_list[-1]:
-                    OUTPDB = "pdb/%d.pdb"%aa[i]
+                    OUTPDB = "pdb/%d_in.pdb"%aa[i]
                     pdb = MDAnalysis.Writer(OUTPDB, multiframe=False)
                     pdb.write(u.select_atoms('segid A')) # Only protein without waters and ions
                     print "got frame %d"%sorted_frame_list.pop()
@@ -167,32 +167,46 @@ class SOS:
                 break
 
     def run_MD(self, platform_name='OpenCL'):
+        def exists_and_not_empty(filename):
+            if os.path.exists(filename):
+                if  os.stat(pdb_eq).st_size > 0:
+                    return True
+                else:
+                    return False
+            else:
+                return False
         if not os.path.isdir('log'):
             os.mkdir('log')
         if not os.path.isdir('dcd'):
             os.mkdir('dcd')
-        pdb_list = glob.glob('pdb/*.pdb')
+        pdb_list = glob.glob('pdb/*_in.pdb')
         progress = Progress.Progress(len(pdb_list), delta=1)
         for pdb in pdb_list:
             print "Equilibrating %s"%pdb
-            # Equilibration
-            md_eq = MD.equilibration(pdb)
-            md_eq.add_solvent()
-            md_eq.create_system(platform_name=platform_name)
-            md_eq.minimize()
-            pdb_eq = os.path.splitext(pdb)[0]+'_eq.pdb'
-            log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
-            md_eq.equilibrate(filename_output_pdb=pdb_eq,
-                              filename_output_log= log_eq)
-            print "done"
+            pdb_eq = os.path.splitext(pdb)[0][:-3]+'_eq.pdb'
+            if  exists_and_not_empty(pdb_eq):
+                print "%s file exists and is not empty"%pdb_eq
+            else:
+                # Equilibration
+                md_eq = MD.equilibration(pdb)
+                md_eq.add_solvent()
+                md_eq.create_system(platform_name=platform_name)
+                md_eq.minimize()
+                log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
+                md_eq.equilibrate(filename_output_pdb=pdb_eq,
+                                  filename_output_log= log_eq)
+                print "done"
             # Production
             for i in range(10):
-                print "MD %d for %s"%(i, pdb)
-                md_prod = MD.production(pdb_eq)
-                md_prod.create_system(platform_name=platform_name)
-                dcd_prod = 'dcd/'+os.path.splitext(os.path.basename(pdb))[0]+'_%d.dcd'%i
-                log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
-                md_prod.run(filename_output_dcd=dcd_prod,
-                            filename_output_log=log_prod)
-                print "done"
+                dcd_prod = 'dcd/'+os.path.splitext(os.path.basename(pdb))[0][:-3]+'_%d.dcd'%i
+                if exists_and_not_empty(dcd_prod):
+                    print "%s file exists and is not empty"%dcd_prod
+                else:
+                    print "MD %d for %s"%(i, pdb)
+                    md_prod = MD.production(pdb_eq)
+                    md_prod.create_system(platform_name=platform_name)
+                    log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
+                    md_prod.run(filename_output_dcd=dcd_prod,
+                                filename_output_log=log_prod)
+                    print "done"
             progress.count()
