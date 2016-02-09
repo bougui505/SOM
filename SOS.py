@@ -61,7 +61,8 @@ class SOS:
     """
     SOM based implementation of the String Of Swarms method.
     """
-    def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None, inputmat=None, n_process=1):
+    def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None,
+                 inputmat=None, n_process=1, optional_features=None):
         """
         args:
         • pdb_1: filename of the pdb for the starting structure of the path
@@ -92,7 +93,8 @@ class SOS:
             self.bmu_2 = None
         self.inputmat = inputmat
         if self.smap is not None and self.inputmat is not None:
-            self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process)
+            self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
+                               optional_features=optional_features)
             self.som.graph.unfold_smap()
             self.som.get_kinetic_communities()
         else:
@@ -100,9 +102,11 @@ class SOS:
 
         self.metric = 'euclidean'
 
-    def get_dihedrals(self):
-        pdb = self.pdb_1
-        dcd = self.dcd
+    def get_dihedrals(self, pdb=None, dcd=None):
+        if pdb is None:
+            pdb = self.pdb_1
+        if dcd is None:
+            dcd = self.dcd
         print "Computing dihedrals"
         universe = Universe(pdb, dcd)
         protein = universe.select_atoms('protein')
@@ -123,9 +127,14 @@ class SOS:
         if self.inputmat is None:
             self.inputmat = descriptors
         else:
-            self.inputmat = r_[self.inputmat, descriptors]
-        print "Shape of the dihedral array: %dx%d"%inputmat
+            self.inputmat = numpy.r_[self.inputmat, descriptors]
+        self.som.inputvectors = self.inputmat
+        self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
+        self.som.iterations = [self.som.n_input, self.som.n_input * 2]
+
+        print "Shape of the dihedral array: %dx%d"%self.inputmat.shape
         print "done"
+        return descriptors
 
     def get_dihedrals_from_pdb(self, pdb):
         universe = Universe(pdb)

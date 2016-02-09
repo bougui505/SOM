@@ -356,11 +356,13 @@ class SOM:
             umatrix[point] = cdist.mean()
         return umatrix
 
-    def find_bmus(self):
+    def find_bmus(self, inputvectors = None):
+        if inputvectors is None:
+            inputvectors = self.inputvectors
         n_split = self.cardinal / 100
         if n_split < self.n_process:
             n_split = self.n_process
-        sub_arrays = numpy.array_split(self.inputvectors, n_split)
+        sub_arrays = numpy.array_split(inputvectors, n_split)
         sub_arrays = [a for a in sub_arrays if a.size > 0]
         if self.pool is not None:
             pools = self.pool.map(get_bmus, [(a, self.smap, self.is_complex) for a in sub_arrays])
@@ -393,7 +395,8 @@ class SOM:
         self.representatives = representatives
         return representatives
 
-    def get_transition_matrix(self, lag=1, dwell_time=None):
+    def get_transition_matrix(self, lag=1, dwell_time=None, bmus=None,
+                              verbose=True):
         """
         Compute the transition matrix. Relevant only for time series input data.
         lag is the lag time.
@@ -402,24 +405,29 @@ class SOM:
         :type lag: int
         :return:
         """
-        print "Computing the transition matrix..."
-        if self.bmus is None:
-            self.find_bmus()
+        if verbose:
+            print "Computing the transition matrix..."
+        if bmus is None:
+            if self.bmus is None:
+                bmus = self.find_bmus()
+            else:
+                bmus = self.bmus
         shape = self.smap.shape[:-1]
         n = numpy.product(shape)
         transition_matrix = numpy.zeros((n, n))
         density = numpy.zeros(shape, dtype=int)
         modulo = 1
-        for k1, k2 in zip(range(self.n_input), range(lag, self.n_input)):
-            bmu1, bmu2 = self.bmus[k1], self.bmus[k2]
+        for k1, k2 in zip(range(len(bmus)), range(lag, len(bmus))):
+            bmu1, bmu2 = bmus[k1], bmus[k2]
             density[tuple(bmu1)] += 1
             if dwell_time is not None:
                 modulo = k2 % dwell_time
             if modulo != 0:
                 transition_matrix[numpy.ravel_multi_index(bmu1, shape), numpy.ravel_multi_index(bmu2, shape)] += 1
-        transition_matrix = transition_matrix
         self.transition_matrix = transition_matrix
-        print "done"
+        if verbose:
+            print "done"
+        return transition_matrix
 
     def get_kinetic_communities(self, lag=1, dwell_time=None):
         """
