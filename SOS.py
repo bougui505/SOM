@@ -36,7 +36,7 @@ def run_simulation(pdb):
         # Equilibration
         md_eq = MD.equilibration(pdb)
         md_eq.add_solvent()
-        md_eq.create_system(platform_name='OpenCL')
+        md_eq.create_system(platform_name='CPU')
         md_eq.minimize()
         log_eq = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_eq.log'
         md_eq.equilibrate(filename_output_pdb=pdb_eq,
@@ -50,7 +50,7 @@ def run_simulation(pdb):
         else:
             print "MD %d for %s"%(i, pdb)
             md_prod = MD.production(pdb_eq)
-            md_prod.create_system(platform_name='OpenCL')
+            md_prod.create_system(platform_name='CPU')
             log_prod = 'log/'+os.path.splitext(os.path.basename(pdb))[0]+'_prod_%d.log'%i
             md_prod.run(filename_output_dcd=dcd_prod,
                         filename_output_log=log_prod)
@@ -92,7 +92,7 @@ class SOS:
             self.bmu_2 = None
         self.inputmat = inputmat
         if self.smap is not None and self.inputmat is not None:
-            self.som = SOM.SOM(inputmat, smap=self.smap)
+            self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process)
             self.som.graph.unfold_smap()
             self.som.get_kinetic_communities()
         else:

@@ -18,6 +18,7 @@ class equilibration:
     """
     def __init__(self, filename_pdb, forcefield_name='amber99sb.xml',
                  water_model_name='tip3p.xml'):
+        self.filename_pdb = filename_pdb
         self.pdb = app.PDBFile(filename_pdb)
         self.modeller = app.Modeller(self.pdb.topology, self.pdb.positions)
         self.forcefield = app.ForceField(forcefield_name, water_model_name)
@@ -40,37 +41,52 @@ class equilibration:
                     collision_rate=1.0/unit.picoseconds,
                     timestep=2.0*unit.femtoseconds, platform_name='OpenCL'):
         #print("Creating system...")
-        self.system = self.forcefield.createSystem(self.modeller.topology,
-            nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,
-            constraints=constraints, rigidWater=rigidWater,
-            ewaldErrorTolerance=ewaldErrorTolerance)
-        self.integrator = mm.LangevinIntegrator(temperature, collision_rate,
-                                                timestep)
-        self.platform = mm.Platform.getPlatformByName(platform_name)
-        self.simulation = app.Simulation(self.modeller.topology, self.system,
-                                        self.integrator, self.platform)
-        self.simulation.context.setPositions(self.modeller.positions)
-        self.simulation.context.setVelocitiesToTemperature(temperature)
+        try:
+            self.system = self.forcefield.createSystem(self.modeller.topology,
+                nonbondedMethod=nonbondedMethod, nonbondedCutoff=nonbondedCutoff,
+                constraints=constraints, rigidWater=rigidWater,
+                ewaldErrorTolerance=ewaldErrorTolerance)
+            self.integrator = mm.LangevinIntegrator(temperature, collision_rate,
+                                                    timestep)
+            self.platform = mm.Platform.getPlatformByName(platform_name)
+            self.platform.setPropertyDefaultValue('CpuThreads', '1')
+            self.simulation = app.Simulation(self.modeller.topology, self.system,
+                                            self.integrator, self.platform)
+            self.simulation.context.setPositions(self.modeller.positions)
+            self.simulation.context.setVelocitiesToTemperature(temperature)
+        except Exception:
+            print("OpenMM exception caught in create_system function for equilibration")
+            print("Simulation is cancelled for %s"%self.filename_pdb)
+            pass
         #print("done")
 
     def minimize(self):
         #print("Minimizing...")
-        self.simulation.minimizeEnergy()
+        try:
+            self.simulation.minimizeEnergy()
+        except:
+            print("OpenMM exception caught in create_system function for minimization")
+            print("Simulation is cancelled for %s"%self.filename_pdb)
         #print("done")
 
     def equilibrate(self, number_of_steps=15000, report_interval=1000,
                     filename_output_pdb="equilibrated.pdb",
                     filename_output_log="openmm_equilibration.log"):
         #print("Equilibrating...")
-        self.simulation.reporters.append(app.StateDataReporter(filename_output_log,
-            report_interval, step=True, time=True, potentialEnergy=True,
-            kineticEnergy=True, totalEnergy=True, temperature=True, volume=True,
-            density=True, progress=True, remainingTime=True, speed=True,
-            totalSteps=number_of_steps, separator='\t'))
-        self.simulation.step(number_of_steps)
-        positions = self.simulation.context.getState(getPositions=True).getPositions()
-        app.PDBFile.writeFile(self.simulation.topology, positions,
-                              open(filename_output_pdb, 'w'))
+        try:
+            self.simulation.reporters.append(app.StateDataReporter(filename_output_log,
+                report_interval, step=True, time=True, potentialEnergy=True,
+                kineticEnergy=True, totalEnergy=True, temperature=True, volume=True,
+                density=True, progress=True, remainingTime=True, speed=True,
+                totalSteps=number_of_steps, separator='\t'))
+            self.simulation.step(number_of_steps)
+            positions = self.simulation.context.getState(getPositions=True).getPositions()
+            app.PDBFile.writeFile(self.simulation.topology, positions,
+                                  open(filename_output_pdb, 'w'))
+        except Exception:
+            print("OpenMM exception caught in equilibration")
+            print("Simulation is cancelled for %s"%self.filename_pdb)
+            pass
         #print("done")
 
 class production():
@@ -78,6 +94,7 @@ class production():
     """
     def __init__(self, filename_pdb, forcefield_name='amber99sb.xml',
                  water_model_name='tip3p.xml'):
+        self.filename_pdb = filename_pdb
         self.pdb = app.PDBFile(filename_pdb)
         self.modeller = app.Modeller(self.pdb.topology, self.pdb.positions)
         self.forcefield = app.ForceField(forcefield_name, water_model_name)
@@ -106,13 +123,14 @@ class production():
             self.integrator = mm.LangevinIntegrator(temperature, collision_rate,
                                                     timestep)
             self.platform = mm.Platform.getPlatformByName(platform_name)
+            self.platform.setPropertyDefaultValue('CpuThreads', '1')
             self.simulation = app.Simulation(self.modeller.topology, self.system,
                                             self.integrator, self.platform)
             self.simulation.context.setPositions(self.modeller.positions)
             self.simulation.context.setVelocitiesToTemperature(temperature)
         except Exception:
-            print("OpenMM exception caught in create_system function")
-            print("Simulation is cancelled")
+            print("OpenMM exception caught in create_system function for production")
+            print("Simulation is cancelled for %s"%self.filename_pdb)
             pass
         #print("done")
 
@@ -131,6 +149,6 @@ class production():
             self.simulation.step(number_of_steps)
         except Exception:
             print("OpenMM exception caught in production")
-            print("Simulation is cancelled")
+            print("Simulation is cancelled for %s"%self.filename_pdb)
             pass
         #print("done")
