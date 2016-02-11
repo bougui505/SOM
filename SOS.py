@@ -8,7 +8,11 @@
 import sys
 sys.path.append("/home/bougui/lib/SOM")
 import SOM
-import MD
+try:
+    import MD
+except ImportError:
+    print "It looks like simtk.openmm is not installed..."
+    print "You won't be able to run MD simulation."
 from MDAnalysis import Universe, Timeseries, collection
 import MDAnalysis
 import numpy
