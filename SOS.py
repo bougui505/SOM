@@ -117,6 +117,7 @@ class SOS:
         universe = Universe(pdb, dcd)
         protein = universe.select_atoms('protein')
         n_residue = protein.n_residues
+        print "Number of residue: %d"%n_residue
         collection.clear()
         for i in range(1, n_residue - 1):
             phi_sel = universe.residues[i].phi_selection()
@@ -125,19 +126,21 @@ class SOS:
             collection.addTimeseries(Timeseries.Dihedral(psi_sel))
         collection.compute(universe.trajectory)
         phi_psi_array = collection.data.T
+        descriptors_shape = phi_psi_array.shape
         descriptors = numpy.asarray(
-                zip(numpy.cos(phi_psi_array[:,0]) + 1j * numpy.sin(phi_psi_array[:,0]),
-                    numpy.cos(phi_psi_array[:,1]) + 1j * numpy.sin(phi_psi_array[:,1]))
-                )
+                zip(numpy.cos(phi_psi_array[:,0::2]) + 1j * numpy.sin(phi_psi_array[:,0::2]),
+                    numpy.cos(phi_psi_array[:,1::2]) + 1j * numpy.sin(phi_psi_array[:,1::2]))
+                ).reshape(descriptors_shape)
 
         if self.inputmat is None:
             self.inputmat = descriptors
         else:
             self.inputmat = numpy.r_[self.inputmat, descriptors]
-        self.som.inputvectors = self.inputmat
-        self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
-        self.som.iterations = [self.som.n_input, self.som.n_input * 2]
-
+        if self.som is not None:
+            self.som.inputvectors = self.inputmat
+            self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
+            self.som.iterations = [self.som.n_input, self.som.n_input * 2]
+        print self.inputmat.shape
         print "Shape of the dihedral array: %dx%d"%self.inputmat.shape
         print "done"
         return descriptors
