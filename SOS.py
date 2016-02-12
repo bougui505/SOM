@@ -140,7 +140,6 @@ class SOS:
             self.som.inputvectors = self.inputmat
             self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
             self.som.iterations = [self.som.n_input, self.som.n_input * 2]
-        print self.inputmat.shape
         print "Shape of the dihedral array: %dx%d"%self.inputmat.shape
         print "done"
         return descriptors
@@ -157,9 +156,9 @@ class SOS:
             phi_psi_array.append(numpy.deg2rad(psi_sel.dihedral.value()))
         phi_psi_array = numpy.asarray(phi_psi_array)
         descriptors = numpy.asarray(
-                [numpy.cos(phi_psi_array[0]) + 1j * numpy.sin(phi_psi_array[0]),
-                    numpy.cos(phi_psi_array[1]) + 1j * numpy.sin(phi_psi_array[1])]
-                )
+                [numpy.cos(phi_psi_array[0::2]) + 1j * numpy.sin(phi_psi_array[0::2]),
+                    numpy.cos(phi_psi_array[1::2]) + 1j * numpy.sin(phi_psi_array[1::2])]
+                ).flatten()
         return descriptors
 
     def find_bmu(self, v, return_distance = False):
@@ -167,7 +166,7 @@ class SOS:
             Find the Best Matching Unit for the input vector v
         """
         self.is_complex = False
-        if v.dtype == numpy.asarray(numpy.complex(1, 1)).dtype:
+        if numpy.iscomplex(v).all():
             self.is_complex = True
         if numpy.ma.isMaskedArray(self.smap):
             self.smap = self.smap.filled(numpy.inf)
