@@ -67,7 +67,7 @@ class SOS:
     """
     def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None,
                  inputmat=None, n_process=1, optional_features=None,
-                 feature_map=None, som_data=None):
+                 feature_map=None, som_data=None, dwell_time=None):
         """
         args:
         • pdb_1: filename of the pdb for the starting structure of the path
@@ -78,6 +78,10 @@ class SOS:
           (array of phi-psi dihedrals in complex numbers)
         • n_process: number of parallel process to run
         • som_data: som.dat file to load som attributes
+        • dwell_time: this parameter is required when two ore more trajectories
+        are concatenated. It's typically the length of a unique trajectory.
+        This length must be the same for all concatenated trajectories.
+
         attributes:
         • desc1: descriptor for pdb_1
         • desc2: descriptor for pdb_2
@@ -103,7 +107,7 @@ class SOS:
                                optional_features=optional_features,
                                feature_map=feature_map, som_data=som_data)
             self.som.graph.unfold_smap()
-            self.som.get_kinetic_communities()
+            self.som.get_kinetic_communities(dwell_time = dwell_time)
         else:
             self.som = None
 
