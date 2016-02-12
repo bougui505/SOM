@@ -93,6 +93,18 @@ class SOS:
         self.dcd = dcd
         self.smap = smap
         self.pool = Pool(processes=n_process)
+        self.inputmat = inputmat
+        if self.smap is not None and self.inputmat is not None:
+            self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
+                               optional_features=optional_features,
+                               feature_map=feature_map, som_data=som_data)
+            self.som.graph.unfold_smap()
+            self.som.get_kinetic_communities(dwell_time = dwell_time)
+            self.som.kinetic_graph.get_minimum_spanning_tree()
+        else:
+            self.som = None
+
+        self.metric = 'euclidean'
         if self.pdb_1 is not None and self.smap is not None:
             self.bmu_1 = self.find_bmu(self.get_dihedrals_from_pdb(self.pdb_1))
         else:
@@ -101,17 +113,6 @@ class SOS:
             self.bmu_2 = self.find_bmu(self.get_dihedrals_from_pdb(self.pdb_2))
         else:
             self.bmu_2 = None
-        self.inputmat = inputmat
-        if self.smap is not None and self.inputmat is not None:
-            self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
-                               optional_features=optional_features,
-                               feature_map=feature_map, som_data=som_data)
-            self.som.graph.unfold_smap()
-            self.som.get_kinetic_communities(dwell_time = dwell_time)
-        else:
-            self.som = None
-
-        self.metric = 'euclidean'
 
     def get_dihedrals(self, pdb=None, dcd=None):
         if pdb is None:
@@ -168,7 +169,8 @@ class SOS:
 
     def find_bmu(self, v, return_distance = False):
         """
-            Find the Best Matching Unit for the input vector v
+            Find the Best Matching Unit for the input vector v.
+            Ensure that the BMU found lie on the minimum spanning tree.
         """
         self.is_complex = False
         if numpy.iscomplex(v).all():
@@ -176,13 +178,18 @@ class SOS:
         if numpy.ma.isMaskedArray(self.smap):
             self.smap = self.smap.filled(numpy.inf)
         X, Y, cardinal = self.smap.shape
+        smap_reshaped = numpy.reshape(self.smap, (X * Y, cardinal))
+        mstree = self.som.kinetic_graph.minimum_spanning_tree
+        ms_tree_cells = numpy.where(numpy.logical_and(
+                                    (mstree == numpy.inf).all(axis=0),
+                                    (mstree == numpy.inf).all(axis=1)))[0]
+        for i in ms_tree_cells:
+            smap_reshaped[i] = numpy.inf
         if not self.is_complex:
             cdist = scipy.spatial.distance.cdist(numpy.reshape(v, (1, len(v))),
-                                                 numpy.reshape(self.smap, (X * Y, cardinal)), self.metric)
+                                                 smap_reshaped, self.metric)
         else:
-            shape = self.smap.shape
-            neurons = reduce(lambda x, y: x * y, shape[:-1], 1)
-            cdist = numpy.sqrt(( numpy.abs(self.smap.reshape((neurons, shape[-1])) - v[None]) ** 2 ).sum(axis=1))
+            cdist = numpy.sqrt(( numpy.abs(smap_reshaped - v[None]) ** 2 ).sum(axis=1))
         index = cdist.argmin()
         if not return_distance:
             return numpy.unravel_index(index, (X, Y))
