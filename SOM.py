@@ -69,7 +69,7 @@ class SOM:
     def __init__(self, inputvectors, optional_features=None, feature_map=None, X=50, Y=50, number_of_phases=2, iterations=None, alpha_begin=[.50, .25],
                  alpha_end=[.25, 0.], radius_begin=None, radius_end=None, inputnames=None,
                  randomUnit=None, smap=None, metric='euclidean', toricMap=True,
-                 randomInit=True, autoSizeMap=False, n_process=1):
+                 randomInit=True, autoSizeMap=False, som_data=None, n_process=1):
         self.kinetic_graph = None
         self.n_process = n_process
         if self.n_process > 1:
@@ -165,6 +165,8 @@ class SOM:
                 self.loadMap(smap)
                 self.graph = Graph.Graph(smap=self.smap)
             print "Shape of the SOM:%s" % str(self.smap.shape)
+        if som_data is not None:
+            self.load_data(som_data)
 
     def random_map(self):
         print "Map initialization..."
@@ -329,6 +331,15 @@ class SOM:
         f = open(outfile,'wb')
         pickle.dump(out_dict, f, 2)
         f.close()
+        print 'done'
+
+    def load_data(self, data_file):
+        """
+        For the moment, it loads only the bmus...
+        """
+        data_dict = numpy.load(data_file)
+        print 'loading data from %s'%data_file
+        self.bmus = data_dict['bmus']
         print 'done'
 
     def neighbor_dim2_toric(self, p, s):

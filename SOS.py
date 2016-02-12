@@ -67,7 +67,7 @@ class SOS:
     """
     def __init__(self, pdb_1=None, pdb_2= None, dcd=None, smap=None,
                  inputmat=None, n_process=1, optional_features=None,
-                 feature_map=None):
+                 feature_map=None, som_data=None):
         """
         args:
         • pdb_1: filename of the pdb for the starting structure of the path
@@ -77,6 +77,7 @@ class SOS:
         • inputmat: input matrix that has been used for SOM training
           (array of phi-psi dihedrals in complex numbers)
         • n_process: number of parallel process to run
+        • som_data: som.dat file to load som attributes
         attributes:
         • desc1: descriptor for pdb_1
         • desc2: descriptor for pdb_2
@@ -100,7 +101,7 @@ class SOS:
         if self.smap is not None and self.inputmat is not None:
             self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
                                optional_features=optional_features,
-                               feature_map=feature_map)
+                               feature_map=feature_map, som_data=som_data)
             self.som.graph.unfold_smap()
             self.som.get_kinetic_communities()
         else:
