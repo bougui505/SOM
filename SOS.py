@@ -211,13 +211,14 @@ class SOS:
         self.transition_path = transition_path
         return transition_path
 
-    def get_pdbs(self):
+    def get_pdbs(self, frame_ids = None):
         """
         Return 1 pdb file per frame id
         """
 
         dcd = self.dcd
-        frame_ids = self.transition_path
+        if frame_ids == None:
+            frame_ids = self.transition_path
 
         if not os.path.isdir('pdb'):
             os.mkdir('pdb')
@@ -237,6 +238,28 @@ class SOS:
                     i += 1
             except IndexError:
                 break
+
+    def find_new_starting_points(self, start=None, end=None):
+        """
+        Find dead ends in kinetic path to launch new MD simulations from points
+        identified.
+        """
+        if start == None:
+            start = self.bmu_1
+        if end == None:
+            end = self.bmu_2
+        stops = []
+        for start_end in [(start,end), (end,start)]:
+            start, end = start_end
+            path = self.som.graph.shortestPath(start, end)
+            m = self.som.kinetic_graph.dijkstra(start)
+            stop = start
+            for end in path[1:]:
+                end = numpy.unravel_index(end, self.som.smap.shape[:-1])
+                if m[end] != numpy.inf:
+                    stop =end
+            stops.append(stop)
+        return stops
 
     def run_MD(self, platform_name='OpenCL'):
         if not os.path.isdir('log'):
