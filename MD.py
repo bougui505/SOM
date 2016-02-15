@@ -50,7 +50,7 @@ class equilibration:
                                                 timestep)
         self.platform = mm.Platform.getPlatformByName(platform_name)
         if platform_name == 'CPU':
-            self.platform.setPropertyDefaultValue('CpuThreads', '1')
+            self.platform.setPropertyDefaultValue('CpuThreads', '%s'%CpuThreads)
         self.simulation = app.Simulation(self.modeller.topology, self.system,
                                         self.integrator, self.platform)
         self.simulation.context.setPositions(self.modeller.positions)
@@ -112,7 +112,7 @@ class production():
                                                 timestep)
         self.platform = mm.Platform.getPlatformByName(platform_name)
         if platform_name == 'CPU':
-            self.platform.setPropertyDefaultValue('CpuThreads', '1')
+            self.platform.setPropertyDefaultValue('CpuThreads', '%s'%CpuThreads)
         self.simulation = app.Simulation(self.modeller.topology, self.system,
                                         self.integrator, self.platform)
         self.simulation.context.setPositions(self.modeller.positions)
