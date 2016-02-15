@@ -39,7 +39,8 @@ class equilibration:
                     constraints=app.AllBonds, rigidWater=True,
                     ewaldErrorTolerance=0.0005, temperature=300*unit.kelvin,
                     collision_rate=1.0/unit.picoseconds,
-                    timestep=2.0*unit.femtoseconds, platform_name='OpenCL'):
+                    timestep=2.0*unit.femtoseconds, platform_name='OpenCL',
+                    CpuThreads=1):
         #print("Creating system...")
         try:
             self.system = self.forcefield.createSystem(self.modeller.topology,
@@ -49,7 +50,8 @@ class equilibration:
             self.integrator = mm.LangevinIntegrator(temperature, collision_rate,
                                                     timestep)
             self.platform = mm.Platform.getPlatformByName(platform_name)
-            self.platform.setPropertyDefaultValue('CpuThreads', '1')
+            if platform_name == 'CPU':
+                self.platform.setPropertyDefaultValue('CpuThreads', '%s'%CpuThreads)
             self.simulation = app.Simulation(self.modeller.topology, self.system,
                                             self.integrator, self.platform)
             self.simulation.context.setPositions(self.modeller.positions)
@@ -108,7 +110,8 @@ class production():
                     constraints=None, rigidWater=True,
                     ewaldErrorTolerance=0.0005, temperature=300*unit.kelvin,
                     collision_rate=1.0/unit.picoseconds,
-                    timestep=1.0*unit.femtoseconds, platform_name='OpenCL'):
+                    timestep=1.0*unit.femtoseconds, platform_name='OpenCL',
+                    CpuThreads=1):
         """
         Same function as in equilibration class except for the following default values:
         • constraints = None
@@ -123,7 +126,8 @@ class production():
             self.integrator = mm.LangevinIntegrator(temperature, collision_rate,
                                                     timestep)
             self.platform = mm.Platform.getPlatformByName(platform_name)
-            self.platform.setPropertyDefaultValue('CpuThreads', '1')
+            if platform_name == 'CPU':
+                self.platform.setPropertyDefaultValue('CpuThreads', '%s'%CpuThreads)
             self.simulation = app.Simulation(self.modeller.topology, self.system,
                                             self.integrator, self.platform)
             self.simulation.context.setPositions(self.modeller.positions)
