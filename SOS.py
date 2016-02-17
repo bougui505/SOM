@@ -95,6 +95,7 @@ class SOS:
         self.pool = Pool(processes=n_process)
         self.n_process = n_process
         self.inputmat = inputmat
+        self.dwell_time = dwell_time
         if self.smap is not None and self.inputmat is not None:
             self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
                                optional_features=optional_features,
@@ -106,6 +107,10 @@ class SOS:
             self.som = None
 
         self.metric = 'euclidean'
+        self.set_bmu1_bmu2()
+
+
+    def set_bmu1_bmu2(self):
         if self.pdb_1 is not None and self.smap is not None:
             self.bmu_1 = self.find_bmu(self.get_dihedrals_from_pdb(self.pdb_1))
         else:
@@ -145,6 +150,7 @@ class SOS:
             self.inputmat = numpy.r_[self.inputmat, descriptors]
         if self.som is None:
             self.som = SOM.SOM(self.inputmat, n_process = self.n_process)
+            self.smap = self.som.smap
         if self.som is not None:
             self.som.inputvectors = self.inputmat
             self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
@@ -247,6 +253,13 @@ class SOS:
         Find dead ends in kinetic path to launch new MD simulations from points
         identified.
         """
+        if self.bmu_1 is None or self.bmu_2 is None:
+            # Ensure that the som is updated
+            self.smap = self.som.smap
+            self.som.graph.unfold_smap()
+            self.som.get_kinetic_communities(dwell_time = self.dwell_time)
+            self.som.kinetic_graph.get_minimum_spanning_tree()
+            self.set_bmu1_bmu2()
         if start == None:
             start = self.bmu_1
         if end == None:
