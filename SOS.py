@@ -93,6 +93,7 @@ class SOS:
         self.dcd = dcd
         self.smap = smap
         self.pool = Pool(processes=n_process)
+        self.n_process = n_process
         self.inputmat = inputmat
         if self.smap is not None and self.inputmat is not None:
             self.som = SOM.SOM(inputmat, smap=self.smap, n_process = n_process,
@@ -142,6 +143,8 @@ class SOS:
             self.inputmat = descriptors
         else:
             self.inputmat = numpy.r_[self.inputmat, descriptors]
+        if self.som is None:
+            self.som = SOM.SOM(self.inputmat, n_process = self.n_process)
         if self.som is not None:
             self.som.inputvectors = self.inputmat
             self.som.n_input, self.som.cardinal = self.som.inputvectors.shape
