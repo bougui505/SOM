@@ -19,6 +19,9 @@ import numpy
 import os
 import glob
 import progress_reporting as Progress
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 from multiprocessing import Pool
 
 def run_simulation(pdb):
@@ -108,6 +111,23 @@ class SOS:
 
         self.metric = 'euclidean'
         self.set_bmu1_bmu2()
+
+    def plot_path(self, paths, outfilename='path.pdf'):
+        """
+        paths is a list of list of ravelled index in the SOM space
+        """
+        for path in paths:
+            xy = numpy.asarray([self.som.graph.change_of_basis\
+                                [numpy.unravel_index(e, self.som.smap.shape[:-1])] \
+                                for e in path])
+            start = tuple(xy[0])
+            end = tuple(xy[-1])
+            plt.scatter(start[1], start[0], color='green', s=200)
+            plt.scatter(end[1], end[0], color='r', s=200)
+            plt.plot(xy[:,1], xy[:,0], '.-', color='r', linewidth=2.5)
+        plt.imshow(numpy.log(self.som.graph.unfolded_umat),
+                   interpolation='nearest')
+        plt.savefig(outfilename)
 
 
     def set_bmu1_bmu2(self):
@@ -211,7 +231,7 @@ class SOS:
         self.bmu_2.
         """
         if self.som.kinetic_graph is None:
-            self.som.get_kinetic_communities()
+            self.som.get_kinetic_communities(dwell_time = self.dwell_time)
         path_som = self.som.kinetic_graph.shortestPath(self.bmu_1, self.bmu_2)
         if self.som.representatives is None:
             self.som.get_representatives()
@@ -256,6 +276,7 @@ class SOS:
         if self.bmu_1 is None or self.bmu_2 is None:
             # Ensure that the som is updated
             self.smap = self.som.smap
+            self.som.find_bmus()
             self.som.graph.unfold_smap()
             self.som.get_kinetic_communities(dwell_time = self.dwell_time)
             self.som.kinetic_graph.get_minimum_spanning_tree()
