@@ -121,7 +121,12 @@ class production():
 
     def run(self, number_of_steps=1000, report_interval=10,
                     filename_output_dcd="trajectory.dcd",
-                    filename_output_log="openmm_production.log"):
+                    filename_output_log="openmm_production.log",
+                    filename_output_checkpoint="trajectory.chk"):
+        """
+        The checkpoint is created to restart a simulation.
+        See https://goo.gl/G9mqzE for more details
+        """
         print("MD production running...")
         self.simulation.reporters.append(app.DCDReporter(filename_output_dcd,
                                                          report_interval))
@@ -131,4 +136,24 @@ class production():
             density=True, progress=True, remainingTime=True, speed=True,
             totalSteps=number_of_steps, separator='\t'))
         self.simulation.step(number_of_steps)
+        with open(filename_output_checkpoint, 'wb') as f:
+            f.write(self.simulation.context.createCheckpoint())
         print("done")
+
+    def restart(self, filename_input_checkpoint="trajectory.chk",
+                number_of_steps=1000, report_interval=10,
+                filename_output_dcd="trajectory.dcd",
+                filename_output_log="openmm_production.log",
+                filename_output_checkpoint="trajectory.chk"):
+        """
+        Restart an MD from checkpoint file.
+        See: https://goo.gl/G9mqzE for more details
+        """
+        # Load the checkpoint
+        with open(filename_input_checkpoint, 'rb') as f:
+            self.simulation.context.loadCheckpoint(f.read())
+        self.run(number_of_steps=number_of_steps,
+                 report_interval=report_interval,
+                 filename_output_dcd=filename_output_dcd,
+                 filename_output_log=filename_output_log,
+                 filename_output_checkpoint=filename_output_checkpoint)
