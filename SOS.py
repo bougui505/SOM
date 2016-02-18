@@ -128,6 +128,7 @@ class SOS:
         plt.imshow(numpy.log(self.som.graph.unfolded_umat),
                    interpolation='nearest')
         plt.savefig(outfilename)
+        plt.clf()
 
 
     def set_bmu1_bmu2(self):
