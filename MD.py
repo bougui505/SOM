@@ -32,7 +32,7 @@ class equilibration:
         print("Adding solvent...")
         self.modeller.addSolvent(self.forcefield, padding=padding,
                                  ionicStrength=ionicStrength)
-        print("done")
+        print("Adding solvent: done")
 
     def create_system(self, nonbondedMethod=app.PME,
                     nonbondedCutoff=1.0*unit.nanometers,
@@ -55,12 +55,12 @@ class equilibration:
                                         self.integrator, self.platform)
         self.simulation.context.setPositions(self.modeller.positions)
         self.simulation.context.setVelocitiesToTemperature(temperature)
-        print("done")
+        print("Creating system: done")
 
     def minimize(self):
         print("Minimizing...")
         self.simulation.minimizeEnergy()
-        print("done")
+        print("Minimizing: done")
 
     def equilibrate(self, number_of_steps=15000, report_interval=1000,
                     filename_output_pdb="equilibrated.pdb",
@@ -75,7 +75,7 @@ class equilibration:
         positions = self.simulation.context.getState(getPositions=True).getPositions()
         app.PDBFile.writeFile(self.simulation.topology, positions,
                               open(filename_output_pdb, 'w'))
-        print("done")
+        print("Equilibrating: done")
 
 class production():
     """
@@ -117,7 +117,7 @@ class production():
                                         self.integrator, self.platform)
         self.simulation.context.setPositions(self.modeller.positions)
         self.simulation.context.setVelocitiesToTemperature(temperature)
-        print("done")
+        print("Creating system: done")
 
     def run(self, number_of_steps=1000, report_interval=10,
                     filename_output_dcd="trajectory.dcd",
@@ -138,7 +138,7 @@ class production():
         self.simulation.step(number_of_steps)
         with open(filename_output_checkpoint, 'wb') as f:
             f.write(self.simulation.context.createCheckpoint())
-        print("done")
+        print("MD production running: done")
 
     def restart(self, filename_input_checkpoint="trajectory.chk",
                 number_of_steps=1000, report_interval=10,
