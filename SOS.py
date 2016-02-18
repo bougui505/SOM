@@ -277,6 +277,7 @@ class SOS:
             # Ensure that the som is updated
             self.smap = self.som.smap
             self.som.find_bmus()
+            self.som.get_representatives()
             self.som.graph.unfold_smap()
             self.som.get_kinetic_communities(dwell_time = self.dwell_time)
             self.som.kinetic_graph.get_minimum_spanning_tree()
