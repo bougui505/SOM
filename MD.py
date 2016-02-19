@@ -122,14 +122,19 @@ class production():
     def run(self, number_of_steps=1000, report_interval=10,
                     filename_output_dcd="trajectory.dcd",
                     filename_output_log="openmm_production.log",
-                    filename_output_checkpoint="trajectory.chk"):
+                    filename_output_checkpoint="trajectory.chk",
+                    filename_output_pdb=None):
         """
         The checkpoint is created to restart a simulation.
         See https://goo.gl/G9mqzE for more details
+        If filename_output_pdb is not None, then a multimodel pdb file is created.
         """
         print("MD production running...")
         self.simulation.reporters.append(app.DCDReporter(filename_output_dcd,
                                                          report_interval))
+        if filename_output_pdb is not None:
+            self.simulation.reporters.append(app.PDBReporter(filename_output_pdb,
+                                                             report_interval))
         self.simulation.reporters.append(app.StateDataReporter(filename_output_log,
             report_interval, step=True, time=True, potentialEnergy=True,
             kineticEnergy=True, totalEnergy=True, temperature=True, volume=True,
