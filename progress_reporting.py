@@ -21,20 +21,30 @@ class Progress:
         """
         self.n_step = n_step
         self.progress = set([ int(self.n_step*p/100) for p in range(0,100,delta)[1:] ])
+        self.progress.update([self.n_step,])
         self.c = 0
         self.delta = delta
         self.t1 = datetime.now()
         self.label = label
 
-    def count(self):
+    def count(self, report=None):
+        """
+        • report: A string or value you want to report
+        """
         self.c += 1
-        if self.c in self.progress:
+        if self.c in self.progress or self.c == 1:
             t2 = datetime.now()
             percent = float(self.c)*100/(self.n_step)
-            eta = (t2 - self.t1) * int((100 - percent) / self.delta)
-            if self.label is None:
-                print "%d %% ETA: %s"%(percent, eta)
+            if self.c > 1:
+                eta = (t2 - self.t1) * int((100 - percent) / self.delta)
             else:
-                print "%s: %d %% ETA: %s"%(self.label, percent, eta)
+                eta = (t2 - self.t1) * int((100 - percent) / percent)
+            if self.label is None:
+                string = "%d %% ETA: %s"%(percent, eta)
+            else:
+                string = "%s: %d %% ETA: %s"%(self.label, percent, eta)
+            if report is not None:
+                string+=" | %s"%report
+            print string
             sys.stdout.flush()
             self.t1 = t2
