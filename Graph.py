@@ -8,6 +8,11 @@ import scipy.ndimage
 import networkx
 import community
 
+class node(object):
+    def __init__(self, index, distance, parent):
+        self.index = index
+        self.distance = distance
+        self.parent = parent
 
 class Graph:
     def __init__(self, adjacency_matrix=None, smap=None):
@@ -131,6 +136,32 @@ class Graph:
                                                                 self.adjacency_matrix == numpy.inf),
                                           axis=0)).reshape(umat_shape)
         return umat
+
+    def bfs(self, root):
+        """
+        Breadth-First-Search on the minimum spanning tree
+        See:
+        https://en.wikipedia.org/wiki/Breadth-first_search
+        """
+        if self.minimum_spanning_tree is None:
+            self.get_minimum_spanning_tree()
+        mstree = self.get_graph(adjacency_matrix=self.minimum_spanning_tree)
+        node_list = mstree.keys()
+        node_list.sort()
+        nodes = [node(e, numpy.inf, numpy.nan) for e in node_list]
+        Q = []
+        root = nodes[root]
+        root.distance = 0
+        Q.append(root)
+        while len(Q) > 0:
+            current = Q.pop()
+            for n in mstree[current.index].keys():
+                n = nodes[n]
+                if numpy.isinf(n.distance):
+                    n.distance = current.distance + 1
+                    n.parent = current
+                    Q.append(n)
+        return current.index
 
     def dijkstra(self, starting_cell = None, break_at_local_min = False,
                  get_predecessors = False):
