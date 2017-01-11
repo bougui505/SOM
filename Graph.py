@@ -33,6 +33,9 @@ class Graph:
         self.minimum_spanning_tree = None
         self.local_minima = None # Local minima of the U-matrix in the unfolded
                                  # space
+        if self.smap is None:
+            n = self.adjacency_matrix.shape[0]
+            self.smap = numpy.zeros((n, 1))
 
     def get_adjacency_matrix(self):
         """
@@ -155,13 +158,16 @@ class Graph:
         Q.append(root)
         while len(Q) > 0:
             current = Q.pop()
-            for n in mstree[current.index].keys():
-                n = nodes[n]
+            for i in mstree[current.index].keys():
+                n = nodes[i]
                 if numpy.isinf(n.distance):
                     n.distance = current.distance + 1
                     n.parent = current
                     Q.append(n)
-        return current.index
+        # Sort nodes by ascending distances:
+        sorter = numpy.argsort([n.distance for n in nodes if not numpy.isinf(n.distance)])
+        nodes = numpy.asarray(nodes)[sorter]
+        return nodes
 
     def dijkstra(self, starting_cell = None, break_at_local_min = False,
                  get_predecessors = False):
@@ -175,6 +181,8 @@ class Graph:
         of predecessor. That is usefull to compute the shortest path.
 
         """
+        if type(starting_cell) == int:
+            starting_cell = (starting_cell, 0)
         if self.minimum_spanning_tree is None:
             self.get_minimum_spanning_tree()
         if break_at_local_min:
@@ -222,6 +230,10 @@ class Graph:
         The output is a list of the vertices in order along
         the shortest path.
         """
+        if type(start) == int:
+            start = (start, 0)
+        if type(end) == int:
+            end = (end, 0)
         D,P = self.dijkstra(starting_cell=start, get_predecessors=True)
         Path = []
         nx, ny = self.smap.shape[:2]
