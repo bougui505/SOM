@@ -150,7 +150,7 @@ class Graph:
             self.get_minimum_spanning_tree()
         mstree = self.get_graph(adjacency_matrix=self.minimum_spanning_tree)
         node_list = range(self.minimum_spanning_tree.shape[0])
-        nodes = [node(e, numpy.inf, numpy.nan) for e in node_list]
+        nodes = {e:node(e, numpy.inf, numpy.nan) for e in node_list}
         Q = []
         root = nodes[root]
         root.distance = 0
@@ -164,7 +164,10 @@ class Graph:
                     n.parent = current
                     Q.append(n)
         # Sort nodes by ascending distances:
-        sorter = numpy.argsort([n.distance for n in nodes if not numpy.isinf(n.distance)])
+        nodes = numpy.asarray(nodes.values())
+        selection = numpy.bool_(1-numpy.isinf([n.distance for n in nodes]))
+        nodes = nodes[selection]
+        sorter = numpy.argsort([n.distance for n in nodes])
         nodes = numpy.asarray(nodes)[sorter]
         return nodes
 
