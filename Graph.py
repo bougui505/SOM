@@ -150,7 +150,7 @@ class Graph:
             self.get_minimum_spanning_tree()
         mstree = self.get_graph(adjacency_matrix=self.minimum_spanning_tree)
         node_list = range(self.minimum_spanning_tree.shape[0])
-        nodes = {e:node(e, numpy.inf, numpy.nan) for e in node_list}
+        nodes = {e:node(e, numpy.inf, None) for e in node_list}
         Q = []
         root = nodes[root]
         root.distance = 0
