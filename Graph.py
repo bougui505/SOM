@@ -160,7 +160,7 @@ class Graph:
             for i in mstree[current.index].keys():
                 n = nodes[i]
                 if numpy.isinf(n.distance):
-                    n.distance = current.distance + self.minimum_spanning_tree[current.index, i]
+                    n.distance = current.distance + 1
                     n.parent = current
                     Q.append(n)
         # Sort nodes by ascending distances:
