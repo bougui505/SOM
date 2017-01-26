@@ -54,6 +54,22 @@ class Graph:
                     adjacency_matrix[ravel_index, ravel_index_2] = distance
         self.adjacency_matrix = adjacency_matrix
 
+    def get_laplacian_matrix(self, boolean=True):
+        """
+        return the laplacian matrix for the graph
+        """
+        if self.minimum_spanning_tree is None:
+            self.get_minimum_spanning_tree()
+        if not boolean:
+            L = - 1 / self.minimum_spanning_tree
+            for i in range(L.shape[0]):
+                L[i,i] = - L[i,:].sum()
+        else:
+            A = 1 - numpy.isinf(self.minimum_spanning_tree)
+            D = numpy.identity(A.shape[0])*A.sum(axis=0)
+            L = D - A
+        return L
+
     def neighbor_dim2_toric(self, p, s):
         """Efficient toric neighborhood function for 2D SOM.
         """
