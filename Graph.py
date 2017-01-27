@@ -8,6 +8,7 @@ import scipy.spatial.distance
 import scipy.ndimage
 import networkx
 import community
+import numbers
 
 class node(object):
     def __init__(self, index, distance, parent):
@@ -207,7 +208,7 @@ class Graph:
         of predecessor. That is usefull to compute the shortest path.
 
         """
-        if type(starting_cell) == int:
+        if isinstance(starting_cell, numbers.Integral):
             starting_cell = (starting_cell, 0)
         if self.minimum_spanning_tree is None:
             self.get_minimum_spanning_tree()
@@ -256,9 +257,9 @@ class Graph:
         The output is a list of the vertices in order along
         the shortest path.
         """
-        if type(start) == int:
+        if isinstance(start, numbers.Integral):
             start = (start, 0)
-        if type(end) == int:
+        if isinstance(end, numbers.Integral):
             end = (end, 0)
         D,P = self.dijkstra(starting_cell=start, get_predecessors=True)
         Path = []
