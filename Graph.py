@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: UTF8 -*-
 
 import itertools
 
@@ -156,11 +157,14 @@ class Graph:
                                           axis=0)).reshape(umat_shape)
         return umat
 
-    def bfs(self, root):
+    def bfs(self, root, pdist=None):
         """
         Breadth-First-Search on the minimum spanning tree
         See:
         https://en.wikipedia.org/wiki/Breadth-first_search
+        • pdist: pairwise distance matrix between nodes (shape: n*n, with n the
+        number of nodes). If not None, use the distances given in the matrix to
+        compute the distance from the root.
         """
         if self.minimum_spanning_tree is None:
             self.get_minimum_spanning_tree()
@@ -176,7 +180,11 @@ class Graph:
             for i in mstree[current.index].keys():
                 n = nodes[i]
                 if numpy.isinf(n.distance):
-                    n.distance = current.distance + 1
+                    if pdist is None:
+                        n.distance = current.distance + 1
+                    else:
+                        n.distance = current.distance + pdist[current.index,
+                                                              n.index]
                     n.parent = current
                     Q.append(n)
         # Sort nodes by ascending distances:
