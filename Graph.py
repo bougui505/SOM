@@ -197,7 +197,7 @@ class Graph:
         return nodes
 
     def dijkstra(self, starting_cell = None, break_at_local_min = False,
-                 get_predecessors = False):
+                 get_predecessors = False, max_distance=numpy.inf):
         """
 
         Apply dijkstra distance transform to the SOM map. If break_at_local_min
@@ -206,6 +206,9 @@ class Graph:
 
         If get_predecessors is True, the function returns also the dictionnary
         of predecessor. That is usefull to compute the shortest path.
+
+        • max_distance: If not inf: break the dijkstra when the maximal
+        distance reach the given value
 
         """
         if isinstance(starting_cell, numbers.Integral):
@@ -233,6 +236,8 @@ class Graph:
                 if d < m[e]:
                     m[e] = d
                     P[e] = cc
+            if m[e] > max_distance:
+                break
             visit_mask[cc] = True
             m_masked = numpy.ma.masked_array(m, visit_mask)
             if n_visited_cell == visit_mask.sum():
