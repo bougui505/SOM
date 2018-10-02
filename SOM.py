@@ -19,19 +19,13 @@ from scipy.ndimage.morphology import distance_transform_edt
 from multiprocessing import Pool
 from collections import OrderedDict
 import Graph
+from tqdm import trange
 
 
 def is_interactive():
     import __main__ as main
 
     return not hasattr(main, '__file__')
-
-
-if is_interactive():
-    import progressbar_notebook as progressbar
-else:
-    import progressbar
-
 
 def get_bmus(v_smap_iscomplex):
     a, smap, is_complex = v_smap_iscomplex
@@ -254,21 +248,16 @@ class SOM:
         if self.optional_features is not None:
             self.feature_map -= (self.feature_map - self.optional_features[k]) * radmap[..., None]
 
-    def learn(self, verbose=False):
+    def learn(self):
         Map = self.smap
-        print 'Learning for %s vectors' % len(self.inputvectors)
+        #print 'Learning for %s vectors' % len(self.inputvectors)
         for trainingPhase in range(self.number_of_phase):
             kv = []
-            print '%s iterations' % self.iterations[trainingPhase]
-            ## Progress bar
+            #print '%s iterations' % self.iterations[trainingPhase]
             tpn = trainingPhase + 1
-            if verbose:
-                widgets = ['Training phase %s : ' % tpn, progressbar.Percentage(),
-                           progressbar.Bar(marker='=', left='[', right=']'), progressbar.ETA()]
-                pbar = progressbar.ProgressBar(widgets=widgets, maxval=self.iterations[trainingPhase] - 1)
-                pbar.start()
-            ###
-            for t in range(self.iterations[trainingPhase]):
+            for t in trange(self.iterations[trainingPhase],
+                            desc='Learning phase %d'%tpn,
+                            mininterval=1.):
                 if len(kv) > 0:
                     k = kv.pop()
                 else:
@@ -279,10 +268,6 @@ class SOM:
                 bmu = self.findBMU(k, Map)
                 self.apply_learning(Map, k, bmu, self.radiusFunction(t, trainingPhase),
                                     self.learning)
-                if verbose:
-                    pbar.update(t)
-            if verbose:
-                pbar.finish()
         self.smap = Map
         MapFile = open('map_%sx%s.dat' % (self.X, self.Y), 'w')
         pickle.dump(Map, MapFile)  # Write Map into file map.dat
