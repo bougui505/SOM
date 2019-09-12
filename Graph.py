@@ -22,7 +22,7 @@ class Graph:
         self.smap = smap
         self.is_complex = False
         self.metric = lambda u, v: scipy.spatial.distance.euclidean(u, v)
-        if self.smap != None:
+        if self.smap is not None:
             if self.smap[0, 0].dtype == numpy.asarray(numpy.complex(1, 1)).dtype:
                 self.is_complex = True
                 print "Complex numbers space"
