@@ -10,7 +10,6 @@ Thanks!
 """
         
 import matplotlib.pyplot
-import IO
 import numpy
 import itertools
 import scipy.spatial
@@ -317,7 +316,7 @@ def minPath(matrix, gradThreshold=None, startingPoint = None, nsteps=None):
    try:
     i,j = path[r]
    except IndexError:
-    print 'BREAK !!!!!'
+    print('BREAK !!!!!')
     break
   if (i,j) not in outPath:
    outPath.append((i,j))
@@ -756,7 +755,7 @@ def mcpath(matrix, start, nstep, T=298.0, stop = None, k = None, x_offset=None, 
     if stop == None:
         target = matrix.min()
         stop = scipy.ndimage.minimum_position(matrix)
-        print 'Minimal value for (%d,%d) position'%stop
+        print('Minimal value for (%d,%d) position'%stop)
         minpos = numpy.asarray(numpy.where(matrix == target)).T
     else:
         minpos = numpy.asarray(stop)
